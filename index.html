@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desarrollo Web · Clases interactivas</title>
+<link rel="stylesheet" href="assets/css/base.css">
+<style>
+  .hero { padding: 26px 0 6px; }
+  .hero h1 { font-size: 2.4rem; }
+  .topic { margin-top: 30px; }
+  .topic-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .topic-num { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 1.2rem; flex: none; }
+  .topic-head h2 { margin: 0; font-size: 1.6rem; }
+  .topic-head p { margin: 0; color: var(--ink-2); }
+  .tile .n { font-size: .75rem; font-weight: 700; color: var(--ink-2); }
+  .status { align-self: flex-start; margin-top: auto; }
+  .t-html .topic-num { background: #e44d26; } .t-html .tile .tag { color: #e44d26; }
+  .t-js .topic-num { background: #c9a400; } .t-js .tile .tag { color: #a68700; }
+  .t-ng .topic-num { background: linear-gradient(135deg, var(--brand), var(--brand-2)); } .t-ng .tile .tag { color: var(--brand); }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><strong>Desarrollo Web · Front End (TUP)</strong></nav>
+</header>
+
+<main class="page">
+  <section class="hero">
+    <h1>Clases interactivas</h1>
+    <p class="lead">Experiencias para entender cada concepto jugando, antes de escribirlo en el proyecto.</p>
+  </section>
+
+  <!-- ====================================================== HTML y CSS -->
+  <section class="topic t-html">
+    <div class="topic-head"><div class="topic-num">1</div><div><h2>HTML y CSS</h2><p>Cómo se arma y se ve una página.</p></div></div>
+    <div class="grid">
+      <a class="card tile" href="html-css/etiquetas-basicas.html">
+        <span class="tag">HTML</span><span class="emoji">🧱</span>
+        <h3>Etiquetas básicas</h3>
+        <p>Armá una página con piezas y mirá cómo aparece en el navegador.</p>
+        <span class="pill ok status">Disponible</span>
+      </a>
+      <div class="card tile soon"><span class="tag">HTML</span><span class="emoji">🏛️</span><h3>Etiquetas semánticas</h3><p>header, nav, main, article, footer: qué parte de la página es cada una.</p><span class="pill muted status">Próximamente</span></div>
+      <div class="card tile soon"><span class="tag">HTML</span><span class="emoji">📦</span><h3>Etiquetas no semánticas</h3><p>div y span: cajas sin significado para agrupar y dar estilo.</p><span class="pill muted status">Próximamente</span></div>
+      <div class="card tile soon"><span class="tag">CSS</span><span class="emoji">🎯</span><h3>Selectores</h3><p>Por etiqueta, clase, ID y pseudoclases: a qué elementos apunta cada regla.</p><span class="pill muted status">Próximamente</span></div>
+      <div class="card tile soon"><span class="tag">CSS</span><span class="emoji">🎨</span><h3>Propiedades</h3><p>Color, tipografía, fondo y bordes, con efecto en vivo.</p><span class="pill muted status">Próximamente</span></div>
+      <div class="card tile soon"><span class="tag">CSS</span><span class="emoji">🪆</span><h3>Modelo de la caja</h3><p>Margin, border, padding y contenido.</p><span class="pill muted status">Próximamente</span></div>
+    </div>
+  </section>
+
+  <!-- ====================================================== JS y TS -->
+  <section class="topic t-js">
+    <div class="topic-head"><div class="topic-num">2</div><div><h2>JavaScript y TypeScript</h2><p>Darle comportamiento a la página.</p></div></div>
+    <div class="grid">
+      <div class="card tile soon"><span class="tag">JavaScript</span><span class="emoji">❔</span><h3>A definir</h3><p>Temas de JavaScript por definir.</p><span class="pill muted status">Próximamente</span></div>
+      <div class="card tile soon"><span class="tag">TypeScript</span><span class="emoji">📐</span><h3>Interfaces</h3><p>El molde que tiene que respetar un objeto, como un contacto de la Agenda.</p><span class="pill muted status">Próximamente</span></div>
+    </div>
+  </section>
+
+  <!-- ====================================================== Angular -->
+  <section class="topic t-ng">
+    <div class="topic-head"><div class="topic-num">3</div><div><h2>Angular</h2><p>Construyendo la Agenda de contactos.</p></div></div>
+    <div class="grid">
+      <div class="card tile soon"><span class="tag">Angular</span><span class="emoji">🧩</span><h3>¿Qué es un componente?</h3><p>Una pieza de la pantalla con su propio HTML, estilos y lógica.</p><span class="pill muted status">Próximamente</span></div>
+      <div class="card tile soon"><span class="tag">Angular</span><span class="emoji">🎛️</span><h3>Inputs de un componente</h3><p>El mismo componente, distintos datos, distinto resultado.</p><span class="pill muted status">Próximamente</span></div>
+      <div class="card tile soon"><span class="tag">Angular</span><span class="emoji">⚡</span><h3>¿Qué es una señal?</h3><p>Un valor que avisa cuando cambia, y todo lo que depende de él se actualiza.</p><span class="pill muted status">Próximamente</span></div>
+      <div class="card tile soon"><span class="tag">Angular</span><span class="emoji">🗺️</span><h3>Router</h3><p>Moverse entre páginas sin recargar, incluyendo rutas con parámetros.</p><span class="pill muted status">Próximamente</span></div>
+      <div class="card tile soon"><span class="tag">Angular</span><span class="emoji">🎟️</span><h3>Token JWT</h3><p>Qué es el token, qué guarda el front y qué hace cuando vence.</p><span class="pill muted status">Próximamente</span></div>
+      <a class="card tile" href="angular/guards.html">
+        <span class="tag">Angular</span><span class="emoji">💂</span>
+        <h3>Guards</h3>
+        <p>Quién puede entrar a cada ruta según el token y los permisos.</p>
+        <span class="pill ok status">Disponible</span>
+      </a>
+      <div class="card tile soon"><span class="tag">Angular</span><span class="emoji">🔗</span><h3>Servicios e inyección</h3><p>Por qué todos los componentes ven los mismos contactos.</p><span class="pill muted status">Próximamente</span></div>
+      <div class="card tile soon"><span class="tag">Angular</span><span class="emoji">📡</span><h3>Fetch y promesas</h3><p>Pedirle datos al backend y esperar la respuesta.</p><span class="pill muted status">Próximamente</span></div>
+      <div class="card tile soon"><span class="tag">Angular</span><span class="emoji">📝</span><h3>Formularios</h3><p>Cargar, validar y enviar un contacto nuevo.</p><span class="pill muted status">Próximamente</span></div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

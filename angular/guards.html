@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guards · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+  .layout { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .bottom { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (max-width: 1000px) { .bottom { grid-template-columns: 1fr; } }
+
+  /* ---------- escena ---------- */
+  .scene-wrap { position: relative; width: 100%; max-width: 1150px; justify-self: center; overflow: hidden; border-radius: var(--radius); border: 1px solid var(--line); background: #e9f1e3; box-shadow: var(--shadow); }
+  .scene { position: absolute; left: 0; top: 0; width: 960px; height: 500px; transform-origin: 0 0; }
+  .ground { position: absolute; inset: 0; background:
+      radial-gradient(circle at 20% 90%, rgba(255,255,255,.5), transparent 40%),
+      linear-gradient(#dfeedd, #d2e6cf); }
+  .path { position: absolute; background: #efe3cf; border-radius: 40px; }
+
+  .building { position: absolute; border-radius: 16px; background: #fff; border: 3px solid #cfc7bb; box-shadow: 0 6px 0 #cfc7bb; transition: border-color .3s, box-shadow .3s; }
+  .building > .name { position: absolute; top: -15px; left: 16px; background: var(--ink); color: #fff; font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 999px; font-family: var(--mono); }
+  .building.logged { background: #f7f2ff; border-color: #c8b4e8; box-shadow: 0 6px 0 #c8b4e8; }
+  .building.logged > .name { background: var(--brand-2); }
+
+  .room { position: absolute; border-radius: 12px; background: #fafafa; border: 2px dashed #cfc7bb; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: all .35s; }
+  .room .r-icon { font-size: 34px; transition: transform .35s; }
+  .room .r-name { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--ink-2); }
+  .room .r-url { font-family: var(--mono); font-size: 12px; color: var(--ink-2); opacity: .8; }
+  .room.lit { border: 2px solid var(--ok); background: var(--ok-bg); box-shadow: 0 0 0 6px rgba(31,138,76,.15); }
+  .room.lit .r-icon { transform: scale(1.15); }
+  .door { position: absolute; width: 54px; height: 12px; border-radius: 6px; background: #8a6b4a; transform: translateX(-50%); transition: background .3s, width .3s; }
+  .door.open { background: var(--ok); width: 70px; }
+  .door.shut { background: var(--bad); }
+
+  .guard { position: absolute; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; z-index: 6; }
+  .guard .g-body { font-size: 42px; line-height: 1; filter: drop-shadow(0 3px 2px rgba(0,0,0,.18)); transition: transform .2s; }
+  .guard .g-name { font-family: var(--mono); font-size: 12px; font-weight: 700; background: #fff; border: 1px solid var(--line); padding: 1px 7px; border-radius: 6px; margin-top: 2px; white-space: nowrap; }
+  .guard.active .g-body { animation: bob .5s ease-in-out infinite alternate; }
+  .bubble { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%) scale(.6); opacity: 0; background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 6px 10px; font-family: var(--mono); font-size: 14px; font-weight: 700; white-space: nowrap; transition: all .2s; z-index: 20; }
+  .bubble::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -7px; border: 7px solid transparent; border-top-color: var(--ink); }
+  .bubble.show { opacity: 1; transform: translateX(-50%) scale(1); }
+  .bubble.ok { border-color: var(--ok); color: var(--ok); } .bubble.ok::after { border-top-color: var(--ok); }
+  .bubble.bad { border-color: var(--bad); color: var(--bad); } .bubble.bad::after { border-top-color: var(--bad); }
+
+  .sign { position: absolute; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; }
+  .sign .s-board { background: #7a5a3a; color: #fff; font-weight: 700; padding: 6px 12px; border-radius: 8px; font-size: 15px; white-space: nowrap; box-shadow: 0 3px 0 #5a4028; }
+  .sign .s-pole { width: 6px; height: 24px; background: #5a4028; }
+
+  .addr { position: absolute; left: 18px; top: 410px; width: 210px; background: #fff; border: 2px solid var(--ink); border-radius: 10px; padding: 6px 10px; font-family: var(--mono); font-size: 15px; box-shadow: 0 3px 0 var(--ink); }
+  .addr .a-label { font-family: var(--sans); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); font-weight: 700; }
+  .addr .a-url { font-weight: 700; color: var(--info); }
+
+  .user { position: absolute; transform: translate(-50%, -100%); z-index: 10; display: flex; flex-direction: column; align-items: center; }
+  .user .u-body { font-size: 46px; line-height: 1; filter: drop-shadow(0 4px 2px rgba(0,0,0,.2)); }
+  .user.walking .u-body { animation: bob .22s ease-in-out infinite alternate; }
+  .user .badges { position: absolute; top: -8px; right: -30px; display: flex; flex-direction: column; gap: 2px; }
+  .badge { font-size: 12px; font-weight: 700; background: #fff; border: 2px solid var(--ok); color: var(--ok); padding: 0 6px; border-radius: 6px; white-space: nowrap; transition: all .4s; }
+  .badge.expired { border-color: var(--warn); color: var(--warn); }
+  .badge.admin { border-color: var(--brand-2); color: var(--brand-2); }
+  .badge.burn { transform: scale(0) rotate(-30deg); opacity: 0; }
+  .user .bubble { bottom: calc(100% + 18px); }
+  @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+
+  .clock { position: absolute; left: 240px; top: 462px; font-size: 13px; background: var(--warn-bg); color: var(--warn); border: 2px solid var(--warn); padding: 4px 8px; border-radius: 8px; font-weight: 700; opacity: 0; transform: scale(.7); transition: all .3s; }
+  .clock.show { opacity: 1; transform: scale(1); }
+
+  /* ---------- predicción ---------- */
+  .overlay { position: absolute; inset: 0; background: rgba(29,27,34,.55); display: none; align-items: center; justify-content: center; z-index: 40; border-radius: var(--radius); }
+  .overlay.show { display: flex; }
+  .ask { background: #fff; border-radius: 18px; padding: 26px 28px; max-width: 640px; width: 92%; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+  .ask h2 { font-size: 1.5rem; }
+  .ask .scenario { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 16px; }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .choices button { font: inherit; font-size: 1.05rem; padding: 14px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); cursor: pointer; text-align: left; }
+  .choices button:hover { border-color: var(--brand-2); background: #f7f2ff; }
+  .choices .ci { font-size: 1.4rem; margin-right: 8px; }
+
+  .result { display: none; margin-top: 10px; padding: 12px 16px; border-radius: 12px; font-weight: 600; font-size: 1.05rem; }
+  .result.show { display: block; }
+  .result.ok { background: var(--ok-bg); color: var(--ok); }
+  .result.bad { background: var(--bad-bg); color: var(--bad); }
+
+  /* ---------- narración ---------- */
+  .log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow: auto; }
+  .log li { display: flex; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); font-size: .98rem; opacity: .55; }
+  .log li.current { opacity: 1; background: #fff6d6; outline: 2px solid #ffd666; }
+  .log li.done { opacity: .85; }
+  .log .li-icon { flex: none; width: 1.5em; text-align: center; }
+  .log:empty::before { content: "Elegí un escenario y apretá ▶ Navegar."; color: var(--ink-2); }
+  .code-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .code-file { font-family: var(--mono); font-weight: 700; }
+  #code { max-height: 340px; }
+  .score { font-weight: 700; font-size: 1.05rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › Angular › <strong>Guards</strong></nav>
+</header>
+
+<main class="page layout">
+  <section class="card">
+    <div class="controls">
+      <div class="control">
+        <span class="label">Token</span>
+        <div class="seg" id="tokenSeg">
+          <button data-v="none" aria-pressed="true">🚫 Sin token</button>
+          <button data-v="valid">🎟️ Válido</button>
+          <button data-v="expired">⌛ Vencido</button>
+        </div>
+      </div>
+      <div class="control">
+        <span class="label">Permisos</span>
+        <label class="switch"><input type="checkbox" id="admin"> El token dice <code>role: "admin"</code></label>
+      </div>
+      <div class="control">
+        <span class="label">Quiere entrar a</span>
+        <div class="seg mono" id="urlSeg">
+          <button data-v="/">/</button>
+          <button data-v="/login">/login</button>
+          <button data-v="/contacts" aria-pressed="true">/contacts</button>
+          <button data-v="/admin">/admin</button>
+          <button data-v="/cualquier-cosa">/cualquier-cosa</button>
+        </div>
+      </div>
+      <div class="control">
+        <span class="label">Velocidad</span>
+        <div class="seg" id="speedSeg">
+          <button data-v="0.6">🐢</button>
+          <button data-v="1" aria-pressed="true">1×</button>
+          <button data-v="1.8">🐇</button>
+        </div>
+      </div>
+      <div class="spacer" style="flex:1"></div>
+      <div class="control">
+        <label class="switch"><input type="checkbox" id="predict"> Modo predicción</label>
+        <span class="score" id="score" hidden></span>
+      </div>
+      <button class="btn" id="randomBtn" title="Elige token, permisos y ruta al azar">🎲 Al azar</button>
+      <button class="btn primary big" id="playBtn">▶ Navegar</button>
+    </div>
+    <div class="result" id="result"></div>
+  </section>
+
+  <section class="scene-wrap" id="sceneWrap">
+    <div class="scene" id="scene">
+      <div class="ground"></div>
+      <!-- caminos -->
+      <div class="path" style="left:70px; top:425px; width:440px; height:34px"></div>
+      <div class="path" style="left:150px; top:270px; width:34px; height:180px"></div>
+      <div class="path" style="left:470px; top:350px; width:200px; height:34px"></div>
+      <div class="path" style="left:623px; top:320px; width:34px; height:60px"></div>
+
+      <!-- Login -->
+      <div class="building" style="left:30px; top:40px; width:270px; height:230px"><span class="name">/login · /register</span></div>
+      <div class="room" id="room-login" style="left:55px; top:70px; width:220px; height:150px">
+        <div class="r-icon">🔐</div><div class="r-name">LoginComponent</div><div class="r-url">/login</div>
+      </div>
+      <div class="door" id="door-login" style="left:167px; top:264px"></div>
+
+      <!-- Layout logueado -->
+      <div class="building logged" style="left:350px; top:30px; width:580px; height:290px"><span class="name">LoggedComponent (ruta padre "")</span></div>
+      <div class="room" id="room-contacts" style="left:375px; top:60px; width:250px; height:150px">
+        <div class="r-icon">📇</div><div class="r-name">ContactsComponent</div><div class="r-url">/contacts</div>
+      </div>
+      <div class="door" id="door-contacts" style="left:500px; top:205px"></div>
+      <div class="room" id="room-admin" style="left:655px; top:60px; width:250px; height:150px">
+        <div class="r-icon">🛠️</div><div class="r-name">AdminComponent</div><div class="r-url">/admin · ejemplo extra</div>
+      </div>
+      <div class="door" id="door-admin" style="left:780px; top:205px"></div>
+      <div class="door" id="door-logged" style="left:640px; top:314px"></div>
+
+      <!-- guards -->
+      <div class="guard" id="g-onlyGuestGuard" style="left:240px; top:330px"><div class="bubble"></div><div class="g-body">💂</div><div class="g-name">onlyGuestGuard</div></div>
+      <div class="guard" id="g-onlyUserGuard" style="left:720px; top:392px"><div class="bubble"></div><div class="g-body">💂</div><div class="g-name">onlyUserGuard</div></div>
+      <div class="guard" id="g-adminGuard" style="left:865px; top:290px"><div class="bubble"></div><div class="g-body">💂‍♀️</div><div class="g-name">adminGuard</div></div>
+
+      <!-- Router -->
+      <div class="sign" id="router" style="left:470px; top:430px"><div class="bubble"></div><div class="s-board">🧭 Router</div><div class="s-pole"></div></div>
+
+      <!-- Barra de direcciones -->
+      <div class="addr"><div class="a-label">Barra de direcciones</div><div class="a-url" id="addrUrl">/contacts</div></div>
+      <div class="clock" id="clock">⏰ AuthService: token vencido → logout()</div>
+
+      <!-- Usuario -->
+      <div class="user" id="user" style="left:272px; top:445px">
+        <div class="bubble"></div>
+        <div class="u-body">🧑‍💻</div>
+        <div class="badges" id="badges"></div>
+      </div>
+
+      <div class="overlay" id="overlay">
+        <div class="ask">
+          <h2>¿Dónde termina el usuario?</h2>
+          <div class="scenario" id="askScenario"></div>
+          <div class="choices">
+            <button data-v="/login"><span class="ci">🔐</span>En el Login</button>
+            <button data-v="/contacts"><span class="ci">📇</span>En Contactos</button>
+            <button data-v="/admin"><span class="ci">🛠️</span>En Admin</button>
+            <button data-v="error"><span class="ci">💥</span>Error: no existe la ruta</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="bottom">
+    <section class="card">
+      <div class="card-title">Qué está pasando</div>
+      <ol class="log" id="log"></ol>
+    </section>
+  </div>
+
+  <section class="note">
+    <strong>Para discutir en clase:</strong> el guard sólo mira si <em>existe</em> un token. ¿Qué pasa si alguien escribe a mano cualquier texto en <code>localStorage.token</code>? ¿Entra a /contacts? ¿Puede ver contactos de otra persona?
+  </section>
+</main>
+
+<script src="../assets/js/guard-sim.js"></script>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const scene = $("#scene"), wrap = $("#sceneWrap"), user = $("#user");
+  const logEl = $("#log");
+  const state = { token: "none", admin: false, url: "/contacts", speed: 1, predict: false, guess: null, hits: 0, total: 0, running: false };
+
+  // ---------- escala de la escena ----------
+  function fit() {
+    const k = wrap.clientWidth / 960;
+    scene.style.transform = `scale(${k})`;
+    wrap.style.height = 500 * k + "px";
+  }
+  addEventListener("resize", fit); fit();
+
+  // ---------- controles ----------
+  function bindSeg(id, key, parse = (v) => v) {
+    const seg = $(id);
+    seg.addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b || state.running) return;
+      seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+      state[key] = parse(b.dataset.v);
+      syncUI();
+    });
+  }
+  function setSeg(id, v) { $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === String(v))); }
+  bindSeg("#tokenSeg", "token");
+  bindSeg("#urlSeg", "url");
+  bindSeg("#speedSeg", "speed", Number);
+  $("#admin").addEventListener("change", (e) => { state.admin = e.target.checked; syncUI(); });
+  $("#predict").addEventListener("change", (e) => { state.predict = e.target.checked; $("#score").hidden = !state.predict; renderScore(); });
+
+  function syncUI() {
+    const adminInput = $("#admin");
+    adminInput.disabled = state.token === "none";
+    if (state.token === "none") { adminInput.checked = false; state.admin = false; }
+    if (!state.running) resetScene();
+  }
+
+  function renderScore() { $("#score").textContent = `Aciertos: ${state.hits} / ${state.total}`; }
+
+  // ---------- escena ----------
+  const P = {
+    start: [272, 445], router: [470, 445],
+    loginWait: [167, 330], loginIn: [100, 212],
+    gateWait: [640, 392], corridor: [640, 290],
+    contactsIn: [420, 200], adminWait: [780, 290], adminIn: [700, 200],
+  };
+  let where = "start";
+
+  function badges() {
+    const b = [];
+    if (state.token === "valid") b.push('<span class="badge">🎟️ token</span>');
+    if (state.token === "expired") b.push('<span class="badge expired">⌛ token</span>');
+    if (state.admin && state.token !== "none") b.push('<span class="badge admin">⭐ admin</span>');
+    $("#badges").innerHTML = b.join("");
+  }
+
+  function place(pt) { user.style.transition = "none"; user.style.left = pt[0] + "px"; user.style.top = pt[1] + "px"; }
+
+  function resetScene() {
+    place(P.start); where = "start";
+    user.classList.remove("walking");
+    document.querySelectorAll(".room").forEach(r => r.classList.remove("lit"));
+    document.querySelectorAll(".door").forEach(d => d.classList.remove("open", "shut"));
+    document.querySelectorAll(".bubble").forEach(b => b.className = "bubble");
+    document.querySelectorAll(".guard").forEach(g => g.classList.remove("active"));
+    $("#clock").classList.remove("show");
+    $("#addrUrl").textContent = state.url;
+    badges();
+  }
+
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms / state.speed));
+
+  async function walk(points) {
+    user.classList.add("walking");
+    for (const pt of points) {
+      const x = parseFloat(user.style.left), y = parseFloat(user.style.top);
+      const d = Math.hypot(pt[0] - x, pt[1] - y);
+      const ms = Math.max(150, d * 3.2) / state.speed;
+      user.style.transition = `left ${ms}ms linear, top ${ms}ms linear`;
+      user.style.left = pt[0] + "px"; user.style.top = pt[1] + "px";
+      await new Promise(r => setTimeout(r, ms + 20));
+    }
+    user.classList.remove("walking");
+  }
+
+  // caminos desde donde está el usuario hasta el Router
+  function pathToRouter() {
+    const back = {
+      start: [P.router],
+      router: [],
+      loginWait: [[167, 445], P.router],
+      gateWait: [[640, 367], [487, 367], P.router],
+      corridor: [P.gateWait, [640, 367], [487, 367], P.router],
+      adminWait: [P.corridor, P.gateWait, [640, 367], [487, 367], P.router],
+    }[where] || [P.router];
+    return back;
+  }
+
+  function bubble(el, text, kind = "") {
+    const b = el.querySelector(".bubble");
+    b.textContent = text; b.className = "bubble show " + kind;
+  }
+  function hideBubble(el) { el.querySelector(".bubble").className = "bubble"; }
+
+  // ---------- narración + código ----------
+  function log(icon, text) {
+    logEl.querySelectorAll("li.current").forEach(li => { li.classList.remove("current"); li.classList.add("done"); });
+    const li = document.createElement("li");
+    li.className = "current";
+    li.innerHTML = `<span class="li-icon">${icon}</span><span>${text}</span>`;
+    logEl.appendChild(li); li.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+  function showCode() { /* el código se ve en el repo real */ }
+
+  // ---------- reproducción ----------
+  async function play() {
+    if (state.running) return;
+    resetScene();
+    logEl.innerHTML = "";
+    $("#result").className = "result";
+    const { events, final } = GuardSim.simulate(state.url, state);
+    state.running = true;
+    $("#playBtn").disabled = true;
+
+    for (const ev of events) {
+      if (ev.kind === "expired") {
+        $("#clock").classList.add("show");
+        log("⏰", ev.text);
+        showCode("auth.service.ts", GuardSim.LINES.auth.check, "bad");
+        await sleep(1300);
+        $("#badges").querySelectorAll(".badge").forEach(b => b.classList.add("burn"));
+        showCode("auth.service.ts", GuardSim.LINES.auth.logout, "");
+        await sleep(1100);
+        $("#badges").innerHTML = "";
+      }
+      if (ev.kind === "navStart" && !ev.continued) {
+        log("🧭", ev.text);
+        bubble(user, ev.url);
+        await walk(pathToRouter()); where = "router";
+        hideBubble(user);
+        bubble($("#router"), `buscando ${ev.url}`);
+        showCode("app.routes.ts", [], "");
+        await sleep(900);
+      }
+      if (ev.kind === "configRedirect") {
+        log("↪️", ev.text);
+        bubble($("#router"), `"" → redirectTo login`);
+        showCode("app.routes.ts", ev.lines, "");
+        $("#addrUrl").textContent = ev.to;
+        await sleep(1500);
+      }
+      if (ev.kind === "notFound") {
+        log("💥", ev.text);
+        bubble($("#router"), "❓ no conozco esa ruta", "bad");
+        bubble(user, "🤷");
+        showCode("app.routes.ts", [], "");
+        await sleep(1600);
+      }
+      if (ev.kind === "match") {
+        log("🗺️", ev.text);
+        showCode("app.routes.ts", ev.lines, "");
+        hideBubble($("#router"));
+        if (ev.key === "/login" || ev.key === "/register") { await walk([[167, 445], P.loginWait]); where = "loginWait"; }
+        else { await walk([[487, 367], [640, 367], P.gateWait]); where = "gateWait"; }
+        await sleep(300);
+      }
+      if (ev.kind === "guard") {
+        const g = $("#g-" + ev.guard);
+        if (ev.guard === "adminGuard") { await walk([P.corridor, P.adminWait]); where = "adminWait"; }
+        g.classList.add("active");
+        showCode(ev.file, GuardSim.LINES.guard.check, "");
+        bubble(g, ev.question);
+        log("💂", `<code>${ev.guard}</code> pregunta: <code>${ev.question}</code>`);
+        await sleep(1500);
+        bubble(g, ev.ok ? "✅ return true" : `⛔ a ${ev.redirect}`, ev.ok ? "ok" : "bad");
+        showCode(ev.file, ev.ok ? GuardSim.LINES.guard.check : (ev.guard === "adminGuard" ? [9, 10] : GuardSim.LINES.guard.redirect), ev.ok ? "ok" : "bad");
+        const door = ev.guard === "onlyGuestGuard" ? "#door-login" : ev.guard === "onlyUserGuard" ? "#door-logged" : "#door-admin";
+        $(door).classList.add(ev.ok ? "open" : "shut");
+        log(ev.ok ? "✅" : "⛔", ev.text);
+        await sleep(1400);
+        g.classList.remove("active");
+        if (ev.ok && ev.guard === "onlyUserGuard") { await walk([P.corridor]); where = "corridor"; }
+      }
+      if (ev.kind === "redirect") {
+        log("🔁", ev.text);
+        if (!ev.skipLocationChange) $("#addrUrl").textContent = ev.to;
+        await sleep(900);
+        document.querySelectorAll(".bubble").forEach(b => { if (b.parentElement !== user) b.className = "bubble"; });
+        document.querySelectorAll(".door").forEach(d => d.classList.remove("open", "shut"));
+      }
+      if (ev.kind === "render") {
+        const target = { "/login": [P.loginIn, "#room-login", "#door-login"], "/register": [P.loginIn, "#room-login", "#door-login"],
+          "/contacts": [P.contactsIn, "#room-contacts", "#door-contacts"], "/contacts/:id": [P.contactsIn, "#room-contacts", "#door-contacts"],
+          "/admin": [P.adminIn, "#room-admin", "#door-admin"] }[ev.key];
+        $(target[2]).classList.add("open");
+        if (ev.key === "/contacts" || ev.key === "/contacts/:id") await walk([[500, 290], [500, 205], target[0]]);
+        else if (ev.key === "/admin") await walk([[780, 205], target[0]]);
+        else await walk([[167, 255], target[0]]);
+        $(target[1]).classList.add("lit");
+        log("🎉", ev.text + (ev.addressBar !== ev.url ? ` Ojo: la barra dice <code>${ev.addressBar}</code> pero se ve <code>${ev.url}</code>.` : ""));
+        showCode("app.routes.ts", ev.route.lines, "ok");
+      }
+    }
+
+    // resultado de la predicción
+    if (state.predict && state.guess) {
+      const answer = final.kind === "error" ? "error" : final.url;
+      const right = state.guess === answer;
+      state.total++; if (right) state.hits++;
+      renderScore();
+      const names = { "/login": "el Login", "/contacts": "Contactos", "/admin": "Admin", error: "un error de ruta" };
+      const r = $("#result");
+      r.className = "result show " + (right ? "ok" : "bad");
+      r.innerHTML = right ? `🎯 ¡Bien! Terminó en ${names[answer]}.` : `😅 No: terminó en ${names[answer]} (habían dicho ${names[state.guess]}).`;
+      state.guess = null;
+    }
+    state.running = false;
+    $("#playBtn").disabled = false;
+  }
+
+  // ---------- modo predicción ----------
+  function scenarioPills() {
+    const t = { none: "🚫 Sin token", valid: "🎟️ Token válido", expired: "⌛ Token vencido" }[state.token];
+    return `<span class="pill muted">${t}</span>` + (state.admin ? '<span class="pill info">⭐ role: admin</span>' : "") + `<span class="pill warn" style="font-family:var(--mono)">quiere ir a ${state.url}</span>`;
+  }
+  $("#playBtn").addEventListener("click", () => {
+    if (state.predict) { $("#askScenario").innerHTML = scenarioPills(); $("#overlay").classList.add("show"); }
+    else play();
+  });
+  $("#overlay").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-v]"); if (!b) return;
+    state.guess = b.dataset.v;
+    $("#overlay").classList.remove("show");
+    play();
+  });
+
+  $("#randomBtn").addEventListener("click", () => {
+    if (state.running) return;
+    const pick = (a) => a[Math.floor(Math.random() * a.length)];
+    state.token = pick(["none", "valid", "valid", "expired"]);
+    state.admin = state.token !== "none" && Math.random() < .5;
+    state.url = pick(["/", "/login", "/contacts", "/admin", "/admin", "/cualquier-cosa"]);
+    setSeg("#tokenSeg", state.token); setSeg("#urlSeg", state.url);
+    $("#admin").checked = state.admin;
+    syncUI();
+  });
+
+  syncUI();
+})();
+</script>
+</body>
+</html>
