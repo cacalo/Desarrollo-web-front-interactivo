@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propiedades CSS · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+  [hidden] { display: none !important; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 22px 24px 60px; }
+  .modes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .modes .seg button { font-size: 1.02rem; padding: 9px 16px; }
+  .layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+  .col-title { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); font-weight: 700; margin: 0 0 10px; display: flex; justify-content: space-between; align-items: center; }
+  .explain { margin-top: 14px; min-height: 3em; padding: 12px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 1.05rem; }
+  .explain.ok { background: var(--ok-bg); border-color: #bfe5cc; }
+  .explain.bad { background: var(--bad-bg); border-color: #f3c0c0; }
+  .confetti { position: fixed; top: -20px; width: 10px; height: 14px; z-index: 200; pointer-events: none; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  /* ---------------- perillas ---------------- */
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+  .pgroup { font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; color: var(--brand-2); font-weight: 800; margin: 10px 0 2px; }
+  .pgroup:first-child { margin-top: 0; }
+  .prop { display: grid; grid-template-columns: 128px 1fr; gap: 10px; align-items: center; padding: 6px 6px; border-radius: 10px; transition: background .3s; }
+  .prop.changed { background: #fff6d6; }
+  .prop .pn { font-family: var(--mono); font-size: .9rem; font-weight: 700; color: #b0004a; }
+  .prop .pn small { display: block; font-family: var(--sans); font-weight: 400; color: var(--ink-2); font-size: .74rem; }
+  .sw { display: flex; flex-wrap: wrap; gap: 5px; }
+  .sw button { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1.5px #c9c3ba; cursor: pointer; }
+  .sw button[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--ink); }
+  .rng { display: flex; align-items: center; gap: 8px; }
+  .rng input { flex: 1; accent-color: var(--brand-2); }
+  .rng output { font-family: var(--mono); font-size: .85rem; min-width: 44px; text-align: right; }
+  .prop .seg button { padding: 4px 9px; font-size: .85rem; }
+  .target-seg { margin-bottom: 8px; }
+  .target-seg .seg button { font-family: var(--mono); font-size: .88rem; }
+
+  /* ---------------- escenario ---------------- */
+  .stage { background: repeating-conic-gradient(#f1eee9 0% 25%, #f8f6f2 0% 50%) 50% / 24px 24px; border: 1px solid var(--line); border-radius: var(--radius); min-height: 330px; display: grid; place-items: center; padding: 30px; position: relative; }
+  .stage.duo { grid-template-columns: 1fr 1fr; gap: 24px; }
+  .stage .tag-label { position: absolute; top: 10px; font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); }
+  .slot { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .slot .lbl { font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); }
+  .tarjeta { width: 320px; padding: 18px 20px; box-sizing: border-box;
+    transition: color .7s, background-color .7s, font-size .7s, border-width .7s, border-color .7s, border-radius .7s, box-shadow .3s; }
+  .tarjeta h3 { margin: 0 0 4px; font-size: 1.45em; transition: color .7s, font-size .7s; }
+  .tarjeta .origen { margin: 0 0 10px; opacity: .75; }
+  .tarjeta .precio { margin: 0; font-size: 1.25em; transition: color .7s, font-size .7s; }
+  .tarjeta .pic { font-size: 2.2em; line-height: 1; margin-bottom: 6px; }
+  .tarjeta.mini { width: 260px; }
+  .pick-h3 h3, .pick-precio .precio, .pick-tarjeta { outline: 3px dashed #ffd666; outline-offset: 5px; }
+
+  .rule { font-family: var(--mono); font-size: 1.15rem; background: #1e1d24; color: #e8e6ef; border-radius: 14px; padding: 14px 18px; line-height: 1.55; margin-top: 14px; }
+  .rule .sel { color: #82cfff; font-weight: 800; }
+  .rule .pr { color: #ff7ab2; } .rule .vl { color: #ffd479; }
+  .rule .line { display: block; padding-left: 1.5em; border-radius: 4px; }
+  .rule .line.flash { animation: flashline 1s; }
+  @keyframes flashline { from { background: rgba(255, 214, 102, .35); } to { background: transparent; } }
+  .rule .empty { color: #6d6879; font-style: italic; padding-left: 1.5em; display: block; }
+  .chip-color { display: inline-block; width: .8em; height: .8em; border-radius: 3px; vertical-align: middle; margin-right: 4px; border: 1px solid rgba(255,255,255,.4); }
+  .bar { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+
+  /* ---------------- igualá ---------------- */
+  .lvls { display: flex; gap: 6px; }
+  .lvls button { width: 34px; height: 34px; border-radius: 10px; border: 2px solid var(--line); background: #fff; font-weight: 800; cursor: pointer; }
+  .lvls button.on { border-color: var(--brand-2); box-shadow: 0 0 0 3px rgba(123,44,191,.2); }
+  .lvls button.done { background: var(--ok); color: #fff; border-color: var(--ok); }
+  .meter { height: 14px; background: var(--surface-2); border-radius: 999px; overflow: hidden; margin-top: 8px; }
+  .meter i { display: block; height: 100%; background: linear-gradient(90deg, #ffd166, var(--ok)); width: 0; transition: width .4s; }
+  .checks { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .checks li { font-family: var(--mono); font-size: .85rem; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); transition: all .3s; }
+  .checks li.ok { background: var(--ok); color: #fff; }
+
+  /* ---------------- ¿qué cambió? ---------------- */
+  .q-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin-top: 16px; }
+  @media (max-width: 1000px) { .q-layout { grid-template-columns: 1fr; } }
+  .scoreboard { display: flex; gap: 14px; align-items: center; font-weight: 700; font-size: 1.1rem; }
+  .progress { flex: 1; height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .progress i { display: block; height: 100%; background: var(--brand-2); transition: width .3s; }
+  .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .answers button { font-family: var(--mono); font-size: 1.2rem; font-weight: 800; padding: 16px 10px; border-radius: 14px; border: 3px solid #f0c6d8; color: #b0004a; background: #fff; cursor: pointer; transition: transform .12s, background .2s; }
+  .answers button:hover:not(:disabled) { transform: translateY(-2px); border-color: #b0004a; }
+  .answers button.right { background: var(--ok); border-color: var(--ok); color: #fff; animation: pop .4s; }
+  .answers button.wrong { background: var(--bad); border-color: var(--bad); color: #fff; animation: shakeb .4s; }
+  .answers button:disabled:not(.right):not(.wrong) { opacity: .45; }
+  @keyframes pop { 50% { transform: scale(1.06); } }
+  @keyframes shakeb { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .diff { font-family: var(--mono); font-size: 1.2rem; background: #1e1d24; color: #e8e6ef; border-radius: 12px; padding: 12px 16px; margin-top: 12px; }
+  .diff .old { color: #ff8a8a; text-decoration: line-through; } .diff .new { color: #8ff0c9; font-weight: 800; }
+  .stage .ping { position: absolute; top: 14px; right: 16px; font-weight: 800; color: var(--brand-2); opacity: 0; transition: opacity .3s; }
+  .stage .ping.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › HTML y CSS › <strong>Propiedades</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="play" aria-pressed="true">🎛️ Probar propiedades</button>
+      <button data-v="match">🪞 Igualá el diseño</button>
+      <button data-v="guess">🕵️ ¿Qué propiedad cambió?</button>
+    </div>
+  </div>
+
+  <!-- ====================================================== probar + igualá (comparten perillas) -->
+  <div class="layout" id="knobsLayout">
+    <aside>
+      <div class="target-seg" id="targetWrap">
+        <h3 class="col-title">¿A quién le aplicás la regla?</h3>
+        <div class="seg" id="targetSeg">
+          <button data-v="tarjeta" aria-pressed="true">.tarjeta</button>
+          <button data-v="h3">.tarjeta h3</button>
+          <button data-v="precio">.precio</button>
+        </div>
+      </div>
+      <div class="panel" id="panel"></div>
+    </aside>
+
+    <section>
+      <!-- probar -->
+      <div id="playView">
+        <div class="stage" id="playStage"><span class="tag-label">El navegador</span><div id="playCardHost"></div></div>
+        <div class="rule" id="rule"></div>
+        <div class="bar"><button class="btn" id="resetBtn">↺ Volver a como estaba</button><button class="btn" id="randomBtn">🎲 Diseño al azar</button></div>
+        <div class="explain" id="pExplain">Mové las perillas: cada una es una <strong>propiedad</strong> y lo que elegís es su <strong>valor</strong>. Juntas forman una regla de CSS.</div>
+      </div>
+
+      <!-- igualá -->
+      <div id="matchView" hidden>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap">
+          <div class="lvls" id="lvls"></div>
+          <div style="font-weight:700" id="lvlName"></div>
+        </div>
+        <div class="stage duo" style="margin-top:12px">
+          <div class="slot"><span class="lbl">🎯 Objetivo</span><div id="goalHost"></div></div>
+          <div class="slot"><span class="lbl">✋ La tuya</span><div id="mineHost"></div></div>
+        </div>
+        <div class="meter"><i id="meter"></i></div>
+        <ul class="checks" id="checks"></ul>
+        <div class="explain" id="mExplain">Usá las perillas hasta que tu tarjeta quede igual a la del objetivo.</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ====================================================== ¿qué cambió? -->
+  <div class="q-layout" id="guessView" hidden>
+    <section>
+      <div class="stage" id="guessStage" style="min-height:380px"><span class="ping" id="ping">✨ ¡Cambió algo!</span><div id="guessHost"></div></div>
+      <div class="bar">
+        <button class="btn primary big" id="changeBtn">▶ Cambiar</button>
+        <button class="btn" id="replayBtn" hidden>🔁 Ver de nuevo</button>
+      </div>
+    </section>
+    <section class="card">
+      <div class="scoreboard"><span id="gScore">⭐ 0</span><div class="progress"><i id="gProg"></i></div><span id="gRound"></span></div>
+      <div style="font-size:1.4rem; font-weight:700; margin-top:16px">¿Qué propiedad cambió?</div>
+      <div style="color:var(--ink-2)">Miren bien la tarjeta, apreten <strong>Cambiar</strong> y voten.</div>
+      <div class="answers" id="answers"></div>
+      <div id="diffBox"></div>
+      <div class="explain" id="gExplain" hidden></div>
+      <button class="btn primary big" id="nextBtn" hidden style="margin-top:12px">Siguiente ▶</button>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  function confetti() {
+    const colors = ["#e44d26", "#2a9d8f", "#1a5fb4", "#7b2cbf", "#d6336c", "#ffd166"];
+    for (let k = 0; k < 90; k++) {
+      const c = document.createElement("div"); c.className = "confetti";
+      c.style.cssText = `left:${Math.random() * 100}vw;background:${colors[k % 6]};animation-duration:${1.6 + Math.random() * 1.8}s;animation-delay:${Math.random() * .4}s`;
+      document.body.appendChild(c); setTimeout(() => c.remove(), 4000);
+    }
+  }
+
+  // ============================================================== propiedades disponibles
+  const SW = ["#222222", "#ffffff", "#5a1e33", "#c3002f", "#1a5fb4", "#2a9d8f", "#ffe066", "#f4ede4"];
+  const PROPS = [
+    { group: "Texto" },
+    { k: "color", css: "color", hint: "color de la letra", type: "swatch", opts: SW },
+    { k: "fontSize", css: "font-size", hint: "tamaño de la letra", type: "range", min: 12, max: 40, unit: "px" },
+    { k: "fontFamily", css: "font-family", hint: "tipografía", type: "seg", opts: [["Arial", "Arial, sans-serif"], ["Georgia", "Georgia, serif"], ["Courier", "'Courier New', monospace"], ["Cursiva", "'Segoe Script', 'Brush Script MT', cursive"]] },
+    { k: "fontWeight", css: "font-weight", hint: "grosor", type: "seg", opts: [["normal", "normal"], ["bold", "bold"]] },
+    { k: "textAlign", css: "text-align", hint: "alineación", type: "seg", opts: [["left", "left"], ["center", "center"], ["right", "right"]] },
+    { group: "Caja" },
+    { k: "backgroundColor", css: "background-color", hint: "color de fondo", type: "swatch", opts: SW },
+    { k: "borderWidth", css: "border-width", hint: "grosor del borde", type: "range", min: 0, max: 10, unit: "px" },
+    { k: "borderStyle", css: "border-style", hint: "tipo de borde", type: "seg", opts: [["solid", "solid"], ["dashed", "dashed"], ["dotted", "dotted"]] },
+    { k: "borderColor", css: "border-color", hint: "color del borde", type: "swatch", opts: SW },
+    { k: "borderRadius", css: "border-radius", hint: "esquinas redondeadas", type: "range", min: 0, max: 40, unit: "px" },
+  ];
+  const PLIST = PROPS.filter(p => p.k);
+  const P = Object.fromEntries(PLIST.map(p => [p.k, p]));
+  const BASE = { color: "#222222", fontSize: 16, fontFamily: "Arial, sans-serif", fontWeight: "normal", textAlign: "left", backgroundColor: "#ffffff", borderWidth: 1, borderStyle: "solid", borderColor: "#dddddd", borderRadius: 0 };
+  const label = (p, v) => p.type === "seg" ? (p.opts.find(o => o[1] === v) || [v])[0] : p.type === "range" ? v + p.unit : v;
+  const cssVal = (p, v) => p.type === "range" ? v + p.unit : v;
+
+  // ============================================================== tarjeta
+  function cardHtml(cls = "") {
+    return `<div class="tarjeta ${cls}"><div class="pic">🍷</div><h3>Malbec Reserva</h3><p class="origen">Mendoza · 2022</p><p class="precio">$12.500</p></div>`;
+  }
+  // aplica un conjunto de propiedades a un elemento (sólo las que están definidas)
+  function applyTo(el, st) {
+    PLIST.forEach(p => { el.style[p.k] = st[p.k] === undefined ? "" : cssVal(p, st[p.k]); });
+  }
+
+  // ============================================================== perillas
+  let onKnob = () => {};
+  let knobState = () => ({});
+  function renderPanel() {
+    const st = knobState();
+    $("#panel").innerHTML = PROPS.map(p => {
+      if (p.group) return `<div class="pgroup">${p.group}</div>`;
+      const v = st.values[p.k];
+      let ctl = "";
+      if (p.type === "swatch") ctl = `<div class="sw">${p.opts.map(c => `<button data-k="${p.k}" data-v="${c}" style="background:${c}" aria-pressed="${c === v}" title="${c}"></button>`).join("")}</div>`;
+      if (p.type === "range") ctl = `<div class="rng"><input type="range" data-k="${p.k}" min="${p.min}" max="${p.max}" value="${v}"><output>${v}${p.unit}</output></div>`;
+      if (p.type === "seg") ctl = `<div class="seg">${p.opts.map(([l, val]) => `<button data-k="${p.k}" data-v="${val}" aria-pressed="${val === v}">${l}</button>`).join("")}</div>`;
+      return `<div class="prop ${st.changed.has(p.k) ? "changed" : ""}" data-row="${p.k}"><div class="pn">${p.css}<small>${p.hint}${st.inherited?.has(p.k) ? " · heredado" : ""}</small></div>${ctl}</div>`;
+    }).join("");
+  }
+  $("#panel").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-k]"); if (!b) return;
+    onKnob(b.dataset.k, b.dataset.v);
+  });
+  $("#panel").addEventListener("input", (e) => {
+    const r = e.target.closest("input[type=range]"); if (!r) return;
+    r.nextElementSibling.textContent = r.value + P[r.dataset.k].unit;
+    onKnob(r.dataset.k, +r.value, true);
+  });
+
+  // ============================================================== MODO 1: probar
+  // Cada "selector" guarda sólo las propiedades que le cambiaste. .tarjeta arranca con BASE.
+  const T = { target: "tarjeta", rules: { tarjeta: {}, h3: {}, precio: {} }, last: null };
+  const SEL = { tarjeta: ".tarjeta", h3: ".tarjeta h3", precio: ".precio" };
+  const INHERITS = new Set(["color", "fontSize", "fontFamily", "fontWeight", "textAlign"]);
+  function playEls() {
+    const card = $("#playCardHost .tarjeta");
+    return { tarjeta: card, h3: card.querySelector("h3"), precio: card.querySelector(".precio") };
+  }
+  function playRender() {
+    const els = playEls();
+    applyTo(els.tarjeta, { ...BASE, ...T.rules.tarjeta });
+    applyTo(els.h3, T.rules.h3);
+    applyTo(els.precio, T.rules.precio);
+    // en .tarjeta h3 y .precio, las propiedades que no tocaste muestran el valor que heredan / el normal
+    els.h3.style.fontSize = T.rules.h3.fontSize ? T.rules.h3.fontSize + "px" : "";
+    els.precio.style.fontSize = T.rules.precio.fontSize ? T.rules.precio.fontSize + "px" : "";
+    $("#playCardHost .tarjeta").className = "tarjeta pick-" + T.target;
+    renderRule();
+  }
+  function renderRule() {
+    const r = T.rules[T.target];
+    const keys = PLIST.map(p => p.k).filter(k => r[k] !== undefined);
+    const lines = [];
+    const hasBorder = ["borderWidth", "borderStyle", "borderColor"].some(k => r[k] !== undefined);
+    keys.forEach(k => {
+      if (k.startsWith("border") && k !== "borderRadius") return;
+      const p = P[k];
+      const v = p.type === "swatch" ? `<span class="chip-color" style="background:${r[k]}"></span>${r[k]}` : cssVal(p, r[k]);
+      lines.push({ k, html: `<span class="pr">${p.css}</span>: <span class="vl">${v}</span>;` });
+    });
+    if (hasBorder) {
+      const b = { ...BASE, ...r };
+      lines.push({ k: "border", html: `<span class="pr">border</span>: <span class="vl">${b.borderWidth}px ${b.borderStyle} <span class="chip-color" style="background:${b.borderColor}"></span>${b.borderColor}</span>;` });
+    }
+    const flashK = T.last && (T.last.startsWith("border") && T.last !== "borderRadius" ? "border" : T.last);
+    $("#rule").innerHTML = `<span class="sel">${SEL[T.target]}</span> {` +
+      (lines.length ? lines.map(l => `<span class="line ${l.k === flashK ? "flash" : ""}">${l.html}</span>`).join("") : `<span class="empty">/* todavía no le pusiste propiedades */</span>`) + `}`;
+  }
+  function playKnobState() {
+    const own = T.rules[T.target];
+    const values = {}, inherited = new Set();
+    PLIST.forEach(p => {
+      if (own[p.k] !== undefined) values[p.k] = own[p.k];
+      else if (T.target === "tarjeta") values[p.k] = BASE[p.k];
+      else {
+        const fromCard = { ...BASE, ...T.rules.tarjeta }[p.k];
+        if (INHERITS.has(p.k)) { values[p.k] = p.k === "fontSize" ? Math.round(fromCard * (T.target === "h3" ? 1.45 : 1.25)) : fromCard; inherited.add(p.k); }
+        else values[p.k] = p.k === "backgroundColor" ? "transparent" : p.k === "borderWidth" ? 0 : p.k === "borderRadius" ? 0 : BASE[p.k];
+      }
+    });
+    return { values, changed: new Set(Object.keys(own)), inherited };
+  }
+  function playOnKnob(k, v, fromRange) {
+    T.rules[T.target][k] = v; T.last = k;
+    playRender();
+    if (!fromRange) renderPanel(); else $(`[data-row="${k}"]`)?.classList.add("changed");
+    explainChange(k);
+  }
+  function explainChange(k) {
+    const p = P[k];
+    let msg = `Cambiaste <code>${p.css}</code> (${p.hint}).`;
+    if (T.target === "tarjeta" && INHERITS.has(k)) msg += " Mirá: el título y el precio también cambiaron, porque <strong>heredan</strong> esta propiedad de la tarjeta.";
+    if (T.target === "tarjeta" && !INHERITS.has(k)) msg += " Esta propiedad <strong>no se hereda</strong>: sólo afecta a la caja de la tarjeta.";
+    if (T.target !== "tarjeta" && INHERITS.has(k)) msg += ` Ahora <code>${SEL[T.target]}</code> tiene su propio valor y ya no hereda el de la tarjeta.`;
+    $("#pExplain").innerHTML = msg;
+  }
+  bindSeg("#targetSeg", (v) => { T.target = v; T.last = null; playRender(); renderPanel(); $("#pExplain").innerHTML = v === "tarjeta" ? "La regla se aplica a toda la tarjeta." : `Ahora la regla es sólo para <code>${SEL[v]}</code>. Las propiedades marcadas «heredado» vienen de la tarjeta.`; });
+  $("#resetBtn").onclick = () => { T.rules = { tarjeta: {}, h3: {}, precio: {} }; T.last = null; playRender(); renderPanel(); };
+  $("#randomBtn").onclick = () => {
+    const pick = (a) => a[Math.floor(Math.random() * a.length)];
+    const r = {};
+    PLIST.forEach(p => { if (Math.random() < .6) r[p.k] = p.type === "swatch" ? pick(p.opts) : p.type === "seg" ? pick(p.opts)[1] : p.min + Math.floor(Math.random() * (p.max - p.min)); });
+    if (r.color && r.color === (r.backgroundColor || BASE.backgroundColor)) r.color = r.color === "#222222" ? "#ffffff" : "#222222";
+    T.target = "tarjeta"; $$("#targetSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === "tarjeta"));
+    T.rules.tarjeta = r; T.last = null; playRender(); renderPanel();
+  };
+
+  // ============================================================== MODO 2: igualá
+  const LEVELS = [
+    { name: "Colores", goal: { color: "#5a1e33", backgroundColor: "#f4ede4" } },
+    { name: "Tipografía", goal: { textAlign: "center", fontWeight: "bold", fontSize: 20 } },
+    { name: "Bordes", goal: { borderWidth: 3, borderStyle: "dashed", borderColor: "#c3002f", borderRadius: 16 } },
+    { name: "Etiqueta elegante", goal: { fontFamily: "Georgia, serif", backgroundColor: "#5a1e33", color: "#ffffff", textAlign: "center", borderRadius: 12 } },
+    { name: "Cartel de oferta", goal: { fontFamily: "'Courier New', monospace", fontSize: 22, backgroundColor: "#ffe066", borderWidth: 4, borderStyle: "dotted", borderColor: "#1a5fb4", borderRadius: 30, textAlign: "right" } },
+  ];
+  const M = { lvl: 0, mine: {}, done: new Set() };
+  function eq(p, a, b) { return p.type === "range" ? Math.abs(a - b) <= 1 : a === b; }
+  function matchRender() {
+    const goal = { ...BASE, ...LEVELS[M.lvl].goal }, mine = { ...BASE, ...M.mine };
+    applyTo($("#goalHost .tarjeta"), goal);
+    applyTo($("#mineHost .tarjeta"), mine);
+    // se comparan las propiedades que el objetivo cambia, y además cualquier otra que hayas tocado
+    const keys = [...new Set([...Object.keys(LEVELS[M.lvl].goal), ...Object.keys(M.mine)])].filter(k => !eq(P[k], BASE[k], goal[k]) || !eq(P[k], mine[k], goal[k]));
+    const ok = keys.filter(k => eq(P[k], mine[k], goal[k]));
+    $("#meter").style.width = (keys.length ? ok.length / keys.length : 0) * 100 + "%";
+    $("#checks").innerHTML = keys.map(k => `<li class="${ok.includes(k) ? "ok" : ""}">${ok.includes(k) ? "✓ " : ""}${P[k].css}</li>`).join("");
+    const done = keys.length && ok.length === keys.length;
+    if (done && !M.done.has(M.lvl)) {
+      M.done.add(M.lvl); renderLvls(); confetti();
+      $("#mExplain").className = "explain ok";
+      $("#mExplain").innerHTML = `🎉 <strong>¡Igualita!</strong> ${M.lvl < LEVELS.length - 1 ? `<button class="btn" id="nextLvl" style="margin-left:8px">Siguiente nivel ▶</button>` : "Completaste todos los niveles 🏆"}`;
+      $("#nextLvl")?.addEventListener("click", () => goLevel(M.lvl + 1));
+    } else if (!done) {
+      $("#mExplain").className = "explain";
+      $("#mExplain").innerHTML = `Te faltan ${keys.length - ok.length} propiedad${keys.length - ok.length === 1 ? "" : "es"}. Los nombres de abajo te dicen <strong>cuáles</strong>, no qué valor tienen. 😉`;
+    }
+  }
+  function renderLvls() {
+    $("#lvls").innerHTML = LEVELS.map((l, k) => `<button data-k="${k}" class="${k === M.lvl ? "on" : ""} ${M.done.has(k) ? "done" : ""}" title="${l.name}">${M.done.has(k) ? "✓" : k + 1}</button>`).join("");
+    $("#lvlName").textContent = `Nivel ${M.lvl + 1}: ${LEVELS[M.lvl].name}`;
+  }
+  $("#lvls").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) goLevel(+b.dataset.k); });
+  function goLevel(k) {
+    M.lvl = k; M.mine = {};
+    renderLvls(); renderPanel(); matchRender();
+  }
+  function matchKnobState() { return { values: { ...BASE, ...M.mine }, changed: new Set(Object.keys(M.mine)) }; }
+  function matchOnKnob(k, v, fromRange) { M.mine[k] = v; if (!fromRange) renderPanel(); else $(`[data-row="${k}"]`)?.classList.add("changed"); matchRender(); }
+
+  // ============================================================== MODO 3: ¿qué cambió?
+  const ROUNDS = 8;
+  const G = { round: 0, score: 0, before: null, after: null, k: null, phase: "idle", showing: "before" };
+  const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
+  function newCardState() {
+    const s = { ...BASE };
+    if (Math.random() < .5) { s.backgroundColor = pickOne(["#ffffff", "#f4ede4"]); }
+    return s;
+  }
+  function startGuess() { G.round = 0; G.score = 0; G.used = []; nextGuess(); }
+  function nextGuess() {
+    G.round++; G.phase = "idle";
+    G.before = newCardState();
+    let k; do { k = pickOne(PLIST).k; } while (G.used.includes(k) && G.used.length < PLIST.length);
+    G.used.push(k); G.k = k;
+    const p = P[k];
+    let v; do {
+      v = p.type === "swatch" ? pickOne(p.opts) : p.type === "seg" ? pickOne(p.opts)[1] : p.min + Math.round(Math.random() * (p.max - p.min));
+    } while (eq(p, v, G.before[k]) || (p.type === "range" && Math.abs(v - G.before[k]) < (p.max - p.min) / 3) || (k === "color" && v === G.before.backgroundColor) || (k === "backgroundColor" && v === G.before.color) || (k === "borderColor" && G.before.borderWidth < 2 && false));
+    G.after = { ...G.before, [k]: v };
+    if (k === "borderColor" || k === "borderStyle") { G.before.borderWidth = 4; G.after.borderWidth = 4; }
+    applyTo($("#guessHost .tarjeta"), G.before);
+    const others = PLIST.map(p => p.css).filter(c => c !== p.css).sort(() => Math.random() - .5).slice(0, 3);
+    $("#answers").innerHTML = [p.css, ...others].sort(() => Math.random() - .5).map(c => `<button data-o="${c}" disabled>${c}</button>`).join("");
+    $("#diffBox").innerHTML = ""; $("#gExplain").hidden = true; $("#nextBtn").hidden = true;
+    $("#changeBtn").hidden = false; $("#replayBtn").hidden = true; $("#ping").classList.remove("show");
+    $("#gRound").textContent = `${G.round} de ${ROUNDS}`;
+    $("#gProg").style.width = ((G.round - 1) / ROUNDS) * 100 + "%";
+    $("#gScore").textContent = `⭐ ${G.score}`;
+  }
+  $("#changeBtn").onclick = () => {
+    applyTo($("#guessHost .tarjeta"), G.after);
+    $("#ping").classList.add("show");
+    G.phase = "changed"; G.showing = "after";
+    $$("#answers button").forEach(b => b.disabled = false);
+    $("#changeBtn").hidden = true; $("#replayBtn").hidden = false;
+  };
+  $("#replayBtn").onclick = () => {
+    const card = $("#guessHost .tarjeta");
+    applyTo(card, G.before);
+    setTimeout(() => applyTo(card, G.after), 1100);
+  };
+  $("#answers").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-o]"); if (!b || b.disabled) return;
+    const p = P[G.k], ok = b.dataset.o === p.css;
+    if (ok) G.score++;
+    $$("#answers button").forEach(x => { x.disabled = true; if (x.dataset.o === p.css) x.classList.add("right"); });
+    if (!ok) b.classList.add("wrong");
+    $("#diffBox").innerHTML = `<div class="diff">${p.css}: <span class="old">${label(p, G.before[G.k])}</span> → <span class="new">${label(p, G.after[G.k])}</span></div>`;
+    $("#gExplain").hidden = false;
+    $("#gExplain").className = "explain " + (ok ? "ok" : "bad");
+    $("#gExplain").innerHTML = (ok ? "🎯 <strong>¡Bien visto!</strong> " : "😅 <strong>No era esa.</strong> ") + `<code>${p.css}</code> controla el ${p.hint}.`;
+    $("#gScore").textContent = `⭐ ${G.score}`;
+    $("#gProg").style.width = (G.round / ROUNDS) * 100 + "%";
+    $("#nextBtn").hidden = false; $("#nextBtn").textContent = G.round >= ROUNDS ? "Ver resultado ▶" : "Siguiente ▶";
+  });
+  $("#nextBtn").onclick = () => {
+    if (G.round === -1) return startGuess();
+    if (G.round < ROUNDS) return nextGuess();
+    $("#answers").innerHTML = ""; $("#diffBox").innerHTML = "";
+    $("#gExplain").className = "explain ok";
+    $("#gExplain").innerHTML = `<div style="font-size:1.6rem;font-weight:800">${G.score} de ${ROUNDS} ${G.score >= ROUNDS - 1 ? "🏆" : G.score >= ROUNDS / 2 ? "👏" : "💪"}</div>`;
+    $("#changeBtn").hidden = true; $("#replayBtn").hidden = true;
+    $("#nextBtn").textContent = "Jugar de nuevo ↻"; G.round = -1;
+    if (G.score >= ROUNDS / 2) confetti();
+  };
+
+  // ============================================================== modos
+  function bindSeg(id, fn) {
+    $(id).addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+      fn(b.dataset.v);
+    });
+  }
+  function setMode(m) {
+    $("#knobsLayout").hidden = m === "guess";
+    $("#guessView").hidden = m !== "guess";
+    $("#playView").hidden = m !== "play";
+    $("#matchView").hidden = m !== "match";
+    $("#targetWrap").hidden = m !== "play";
+    if (m === "play") { onKnob = playOnKnob; knobState = playKnobState; renderPanel(); playRender(); }
+    if (m === "match") { onKnob = matchOnKnob; knobState = matchKnobState; goLevel(M.lvl); }
+    if (m === "guess") startGuess();
+  }
+  bindSeg("#modeSeg", setMode);
+
+  $("#playCardHost").innerHTML = cardHtml();
+  $("#goalHost").innerHTML = cardHtml("mini");
+  $("#mineHost").innerHTML = cardHtml("mini");
+  $("#guessHost").innerHTML = cardHtml();
+  setMode("play");
+})();
+</script>
+</body>
+</html>

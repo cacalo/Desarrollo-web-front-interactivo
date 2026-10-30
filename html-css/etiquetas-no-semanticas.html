@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Etiquetas no semánticas · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+  :root { --div: #7b2cbf; --span: #1a5fb4; --sem: #2a9d8f; }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 22px 24px 60px; }
+  .modes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .modes .seg button { font-size: 1.02rem; padding: 9px 16px; }
+  .col-title { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); font-weight: 700; margin: 0 0 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .browser { background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .chrome { background: #e8e4de; padding: 9px 12px; display: flex; align-items: center; gap: 10px; }
+  .lights { display: flex; gap: 6px; } .lights i { width: 12px; height: 12px; border-radius: 50%; background: #f26b5b; } .lights i:nth-child(2) { background: #f6bf4f; } .lights i:nth-child(3) { background: #5ec860; }
+  .addr { flex: 1; background: #fff; border-radius: 999px; padding: 5px 14px; font-family: var(--mono); font-size: 14px; color: var(--ink-2); }
+  .explain { margin-top: 12px; min-height: 3.2em; padding: 12px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 1.05rem; }
+  .explain.ok { background: var(--ok-bg); border-color: #bfe5cc; }
+  .explain.bad { background: var(--bad-bg); border-color: #f3c0c0; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 12px; font-size: 1rem; transition: all .25s; pointer-events: none; z-index: 150; }
+  .toast.show { transform: translate(-50%, 0); opacity: 1; }
+  .confetti { position: fixed; top: -20px; width: 10px; height: 14px; z-index: 200; pointer-events: none; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  /* ====================================================== modo 1: agrupar */
+  .group-layout { display: grid; grid-template-columns: 290px minmax(0, 1fr) 250px; gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1150px) { .group-layout { grid-template-columns: 1fr; } }
+  .steps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .step { border: 2px solid var(--line); border-radius: 14px; padding: 12px 14px; background: #fff; opacity: .5; transition: all .3s; }
+  .step.active { opacity: 1; border-color: var(--brand-2); box-shadow: 0 0 0 4px rgba(123,44,191,.12); }
+  .step.done { opacity: 1; border-color: var(--ok); background: var(--ok-bg); }
+  .step h3 { display: flex; gap: 8px; align-items: center; margin: 0 0 4px; font-size: 1.05rem; }
+  .step .num { width: 26px; height: 26px; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center; font-size: .9rem; flex: none; }
+  .step.active .num { background: var(--brand-2); color: #fff; } .step.done .num { background: var(--ok); color: #fff; }
+  .step p { margin: 0; font-size: .93rem; color: var(--ink-2); }
+  .step .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { border: 2px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 12px; font: inherit; font-size: .9rem; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--brand-2); color: #fff; border-color: var(--brand-2); }
+  .chip:disabled { opacity: .45; cursor: not-allowed; }
+
+  .stage { padding: 18px; min-height: 460px; font-family: "Segoe UI", system-ui, sans-serif; position: relative; }
+  .stage .el { position: relative; cursor: pointer; border-radius: 6px; outline: 2px dashed transparent; outline-offset: 2px; transition: outline-color .2s, background .2s, box-shadow .2s; }
+  .stage .el:hover { outline-color: #c9c3ba; }
+  .stage .el.sel { outline: 3px solid #ffd666; background: #fff8d6; }
+  .stage img.el { display: block; width: 56px; height: 56px; border-radius: 50%; margin: 8px 0 4px; }
+  .stage h3.el { margin: 0; font-size: 1.15rem; font-family: Georgia, serif; }
+  .stage p.el { margin: 0 0 8px; color: #555; }
+  .gdiv { position: relative; border: 2.5px dashed var(--div); border-radius: 10px; padding: 14px 12px 8px; margin: 14px 0; transition: all .45s; animation: wrapIn .5s ease-out; }
+  @keyframes wrapIn { from { transform: scale(1.06); opacity: 0; border-color: transparent; } }
+  .gdiv > .dl { position: absolute; top: -12px; left: 10px; background: var(--div); color: #fff; font-family: var(--mono); font-size: 12px; font-weight: 800; padding: 1px 8px; border-radius: 6px; cursor: pointer; z-index: 2; white-space: nowrap; transition: opacity .3s; }
+  .gdiv > .dl .x { margin-left: 6px; opacity: .7; } .gdiv > .dl .x:hover { opacity: 1; }
+  .gdiv.sel { outline: 3px solid #ffd666; outline-offset: 3px; background: #fffbe6; }
+  .gdiv.container { border-color: #c95fd6; }
+  .gdiv.container > .dl { background: #c95fd6; }
+  .gdiv.container.row { display: flex; gap: 14px; align-items: stretch; }
+  .gdiv.container.row > .gdiv { flex: 1; margin: 6px 0; }
+  /* estilos de la "clase tarjeta" */
+  .gdiv.card.s-borde { border: 2px solid #ddd; }
+  .gdiv.card.s-fondo { background: #faf6ff; }
+  .gdiv.card.s-sombra { box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+  .gdiv.card.s-redondo { border-radius: 20px; }
+  .stage.clean .gdiv { border-style: solid; }
+  .stage.clean .gdiv > .dl { opacity: 0; }
+  .stage.clean .gdiv.card:not(.s-borde) { border-color: transparent; }
+  .stage.clean .gdiv.container { border-color: transparent; padding: 0; }
+  .stage.clean .el:hover { outline-color: transparent; }
+  .toolbar { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+
+  .tree { font-family: var(--mono); font-size: 13.5px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .tree ul { list-style: none; margin: 0; padding-left: 16px; border-left: 2px solid var(--surface-2); }
+  .tree > ul { padding-left: 0; border-left: 0; }
+  .tree li { margin: 3px 0; animation: slidein .3s; }
+  .tree .t { display: inline-block; padding: 1px 7px; border-radius: 6px; font-weight: 700; color: #fff; }
+  .tree .t.div { background: var(--div); } .tree .t.other { background: #8a8590; }
+  .tree .t.container { background: #c95fd6; }
+  .tree small { color: var(--ink-2); margin-left: 4px; }
+  @keyframes slidein { from { opacity: 0; transform: translateX(-8px); } }
+
+  /* ====================================================== modo 2: div vs span */
+  .paint-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1050px) { .paint-layout { grid-template-columns: 1fr; } }
+  .tools { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+  .pen { display: flex; gap: 8px; }
+  .pen button { font-family: var(--mono); font-weight: 800; font-size: 1.15rem; padding: 10px 18px; border-radius: 12px; border: 3px solid var(--line); background: #fff; cursor: pointer; }
+  .pen button[data-v="span"] { color: var(--span); } .pen button[data-v="div"] { color: var(--div); }
+  .pen button[aria-pressed="true"][data-v="span"] { background: var(--span); color: #fff; border-color: var(--span); }
+  .pen button[aria-pressed="true"][data-v="div"] { background: var(--div); color: #fff; border-color: var(--div); }
+  .swatches { display: flex; gap: 6px; }
+  .swatches button { width: 32px; height: 32px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 2px var(--line); cursor: pointer; }
+  .swatches button[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--ink); }
+  .texts { padding: 22px 26px; font-family: Georgia, serif; font-size: 1.35rem; line-height: 1.7; }
+  .texts p { margin: 0 0 22px; position: relative; }
+  .texts p::before { content: "<p>"; position: absolute; left: -22px; top: -16px; font-family: var(--mono); font-size: 11px; color: #aaa; opacity: 0; transition: opacity .2s; }
+  .texts.xray p { outline: 1.5px dashed #bbb; outline-offset: 4px; } .texts.xray p::before { opacity: 1; left: -4px; top: -24px; }
+  .w { cursor: pointer; border-radius: 4px; transition: background .15s; display: inline-block; }
+  .w:hover { background: #f1ede7; }
+  .mark { position: relative; padding: 0 3px; border-radius: 5px; }
+  .mark.span { display: inline; }
+  .mark.div { display: block; margin-top: 14px; }
+  .mark .ml { position: absolute; top: -13px; left: 0; font-family: var(--mono); font-size: 11px; font-weight: 800; color: #fff; padding: 0 5px; border-radius: 4px; line-height: 1.5; opacity: 0; transition: opacity .2s; white-space: nowrap; }
+  .mark.span .ml { background: var(--span); } .mark.div .ml { background: var(--div); }
+  .texts.xray .mark .ml { opacity: 1; }
+  .texts.xray .mark.span { outline: 2px dashed var(--span); }
+  .texts.xray .mark.div { outline: 2px dashed var(--div); }
+  .rules { display: flex; flex-direction: column; gap: 12px; }
+  .rule { display: flex; gap: 12px; align-items: flex-start; }
+  .rule .badge { font-family: var(--mono); font-weight: 800; color: #fff; border-radius: 8px; padding: 3px 9px; flex: none; }
+  .ruler-demo { margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: .95rem; background: #fcfbf9; }
+  .ruler-demo .rd-span { background: rgba(26,95,180,.15); outline: 2px solid var(--span); border-radius: 3px; }
+  .ruler-demo .rd-div { background: rgba(123,44,191,.12); outline: 2px solid var(--div); border-radius: 3px; margin: 6px 0; animation: grow 1.2s ease-out infinite alternate; transform-origin: left; }
+  @keyframes grow { from { clip-path: inset(0 70% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+  /* ====================================================== modo 3: juego */
+  .game { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin-top: 16px; }
+  @media (max-width: 1000px) { .game { grid-template-columns: 1fr; } }
+  .scenario { font-size: 1.55rem; font-weight: 700; line-height: 1.3; min-height: 3.2em; }
+  .scenario em { font-style: normal; background: #fff1b8; padding: 0 4px; border-radius: 4px; }
+  .answers { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 16px; }
+  .answers button { --c: #555; font-size: 1.2rem; font-weight: 700; padding: 14px 16px; border-radius: 14px; border: 3px solid color-mix(in srgb, var(--c) 35%, white); color: var(--c); background: #fff; cursor: pointer; text-align: left; transition: transform .12s, background .2s; }
+  .answers button code { font-size: 1.1rem; background: transparent; color: inherit; font-weight: 800; }
+  .answers button:hover:not(:disabled) { transform: translateX(4px); border-color: var(--c); }
+  .answers button.right { background: var(--ok); border-color: var(--ok); color: #fff; animation: pop .4s; }
+  .answers button.wrong { background: var(--bad); border-color: var(--bad); color: #fff; animation: shakeb .4s; }
+  .answers button:disabled:not(.right):not(.wrong) { opacity: .45; }
+  @keyframes pop { 50% { transform: scale(1.04); } }
+  @keyframes shakeb { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .feedback { min-height: 3em; margin-top: 14px; font-size: 1.1rem; }
+  .scoreboard { display: flex; gap: 14px; align-items: center; font-weight: 700; font-size: 1.1rem; }
+  .progress { flex: 1; height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .progress i { display: block; height: 100%; background: var(--brand-2); transition: width .3s; }
+  .preview { padding: 22px; min-height: 260px; font-family: "Segoe UI", system-ui, sans-serif; font-size: 1.05rem; position: relative; }
+  .preview .hidden-note { color: var(--ink-2); text-align: center; padding-top: 70px; }
+  .preview .px { position: relative; animation: reveal .6s ease-out; }
+  @keyframes reveal { from { opacity: 0; transform: translateY(8px); } }
+  .preview .px-div { outline: 2px dashed var(--div); border-radius: 6px; padding: 10px; display: block; }
+  .preview .px-span { outline: 2px dashed var(--span); border-radius: 3px; }
+  .preview .px-sem { outline: 2px dashed var(--sem); border-radius: 6px; padding: 10px; display: block; }
+  .preview .px > .tl { position: absolute; top: -11px; left: 6px; font-family: var(--mono); font-size: 11px; font-weight: 800; color: #fff; padding: 0 5px; border-radius: 4px; }
+  .preview .px-div > .tl { background: var(--div); } .preview .px-span > .tl { background: var(--span); left: 0; top: -14px; } .preview .px-sem > .tl { background: var(--sem); }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › HTML y CSS › <strong>Etiquetas no semánticas</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="group" aria-pressed="true">📦 Agrupar con div</button>
+      <button data-v="paint">🖍️ div vs span</button>
+      <button data-v="game">🎲 ¿div, span o semántica?</button>
+    </div>
+  </div>
+
+  <!-- ====================================================== agrupar -->
+  <section class="group-layout" id="group">
+    <aside>
+      <h3 class="col-title">Pasos</h3>
+      <ol class="steps">
+        <li class="step active" id="st1">
+          <h3><span class="num">1</span>Agrupá cada contacto</h3>
+          <p>Tocá la foto, el nombre y el teléfono de <strong>un</strong> contacto y apretá «Envolver en un div». Hacelo con los tres.</p>
+        </li>
+        <li class="step" id="st2">
+          <h3><span class="num">2</span>Dale estilo al grupo</h3>
+          <p>Ahora que cada contacto es una caja, le podemos dar estilo a la caja entera.</p>
+          <div class="actions" id="styleChips">
+            <button class="chip" data-s="borde" disabled>Borde</button>
+            <button class="chip" data-s="fondo" disabled>Fondo</button>
+            <button class="chip" data-s="sombra" disabled>Sombra</button>
+            <button class="chip" data-s="redondo" disabled>Esquinas redondas</button>
+          </div>
+        </li>
+        <li class="step" id="st3">
+          <h3><span class="num">3</span>Acomodá las tarjetas</h3>
+          <p>Seleccioná las tres tarjetas (tocando su etiqueta <code>&lt;div&gt;</code>), envolvelas en otro div y elegí cómo se acomodan.</p>
+          <div class="actions" id="layoutChips">
+            <button class="chip" data-l="col" aria-pressed="true" disabled>Una debajo de otra</button>
+            <button class="chip" data-l="row" disabled>Una al lado de otra</button>
+          </div>
+        </li>
+      </ol>
+    </aside>
+    <section>
+      <h3 class="col-title">La página de contactos</h3>
+      <div class="browser">
+        <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="addr">localhost:4200/contacts</div></div>
+        <div class="stage" id="stage"></div>
+      </div>
+      <div class="toolbar">
+        <button class="btn primary" id="wrapBtn" disabled>📦 Envolver en un &lt;div&gt;</button>
+        <span id="selInfo" style="color:var(--ink-2)"></span>
+        <span style="flex:1"></span>
+        <label class="switch"><input type="checkbox" id="clean"> 👁️ Ver sin marcas</label>
+        <button class="btn" id="resetGroup">↺ Empezar de nuevo</button>
+      </div>
+      <div class="explain" id="gExplain">Así se ve la lista si ponemos las etiquetas una debajo de la otra: no hay forma de decir «esto es un contacto». Para eso sirve <code>&lt;div&gt;</code>: <strong>una caja sin significado para agrupar</strong>.</div>
+    </section>
+    <aside>
+      <h3 class="col-title">Estructura</h3>
+      <div class="tree" id="tree"></div>
+    </aside>
+  </section>
+
+  <!-- ====================================================== div vs span -->
+  <section class="paint-layout" id="paint" hidden>
+    <section>
+      <div class="tools">
+        <div class="control"><span class="label">Marcar con</span>
+          <div class="pen" id="pen"><button data-v="span" aria-pressed="true">&lt;span&gt;</button><button data-v="div">&lt;div&gt;</button></div>
+        </div>
+        <div class="control"><span class="label">Color</span>
+          <div class="swatches" id="swatches">
+            <button data-c="#ffe066" style="background:#ffe066" aria-pressed="true" title="Amarillo"></button>
+            <button data-c="#ffc9c9" style="background:#ffc9c9" title="Rosa"></button>
+            <button data-c="#b2f2bb" style="background:#b2f2bb" title="Verde"></button>
+            <button data-c="#a5d8ff" style="background:#a5d8ff" title="Celeste"></button>
+          </div>
+        </div>
+        <label class="switch"><input type="checkbox" id="xray2" checked> 🩻 Rayos X</label>
+        <button class="btn" id="clearPaint">🧽 Borrar marcas</button>
+      </div>
+      <div class="browser">
+        <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="addr">vinoteca.html</div></div>
+        <div class="texts xray" id="texts"></div>
+      </div>
+      <div class="explain" id="pExplain">Tocá una palabra para marcarla. Probá primero con <code>&lt;span&gt;</code> y después con <code>&lt;div&gt;</code>.</div>
+    </section>
+    <section class="card">
+      <div class="card-title">La diferencia</div>
+      <div class="rules">
+        <div class="rule"><span class="badge" style="background:var(--span)">&lt;span&gt;</span><div><strong>Va en línea.</strong> Ocupa sólo lo que mide su contenido y se queda dentro del texto. Sirve para marcar <em>una parte</em> de un texto.</div></div>
+        <div class="rule"><span class="badge" style="background:var(--div)">&lt;div&gt;</span><div><strong>Es un bloque.</strong> Empieza en una línea nueva y ocupa todo el ancho disponible. Sirve para agrupar <em>varias cosas</em>.</div></div>
+      </div>
+      <div class="ruler-demo">
+        Un texto con un <span class="rd-span">span</span> adentro, que sigue normal.
+        <div class="rd-div">Un div: ocupa todo el ancho →</div>
+        Y el texto sigue abajo.
+      </div>
+      <p style="margin:14px 0 0; color:var(--ink-2); font-size:.95rem">Ninguno de los dos significa nada: no le dicen al navegador <em>qué es</em> el contenido. Por eso, si existe una etiqueta semántica que encaje (<code>nav</code>, <code>article</code>, <code>footer</code>…), se usa esa.</p>
+    </section>
+  </section>
+
+  <!-- ====================================================== juego -->
+  <section class="game" id="game" hidden>
+    <section class="card">
+      <div class="scoreboard"><span id="gScore">⭐ 0</span><div class="progress"><i id="gProg"></i></div><span id="gRound"></span></div>
+      <div style="color:var(--ink-2); margin-top:16px">¿Qué etiqueta usarías?</div>
+      <div class="scenario" id="scenario"></div>
+      <div class="answers" id="answers">
+        <button data-o="div" style="--c:var(--div)"><code>&lt;div&gt;</code> · una caja para agrupar</button>
+        <button data-o="span" style="--c:var(--span)"><code>&lt;span&gt;</code> · una marca dentro del texto</button>
+        <button data-o="sem" style="--c:var(--sem)">Una etiqueta semántica <code>(nav, article…)</code></button>
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <button class="btn primary big" id="nextQ" hidden>Siguiente ▶</button>
+    </section>
+    <section>
+      <div class="browser">
+        <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="addr">así quedaría</div></div>
+        <div class="preview" id="preview"></div>
+      </div>
+    </section>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  function toast(msg) { const t = $("#toast"); t.innerHTML = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600); }
+  function confetti() {
+    const colors = ["#e44d26", "#2a9d8f", "#1a5fb4", "#7b2cbf", "#d6336c", "#ffd166"];
+    for (let k = 0; k < 90; k++) {
+      const c = document.createElement("div"); c.className = "confetti";
+      c.style.cssText = `left:${Math.random() * 100}vw;background:${colors[k % 6]};animation-duration:${1.6 + Math.random() * 1.8}s;animation-delay:${Math.random() * .4}s`;
+      document.body.appendChild(c); setTimeout(() => c.remove(), 4000);
+    }
+  }
+  // Animación FLIP: guarda dónde estaba cada elemento y lo hace deslizar a su nuevo lugar
+  function flip(els, change) {
+    const before = new Map(els().map(e => [e.dataset.key, e.getBoundingClientRect()]));
+    change();
+    els().forEach(e => {
+      const b = before.get(e.dataset.key); if (!b) return;
+      const a = e.getBoundingClientRect();
+      const dx = b.left - a.left, dy = b.top - a.top;
+      if (dx || dy) e.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: 550, easing: "cubic-bezier(.3,.8,.3,1)" });
+    });
+  }
+  function bindSeg(id, fn) {
+    $(id).addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+      fn(b.dataset.v ?? b.dataset.c);
+    });
+  }
+
+  // ============================================================== MODO 1: agrupar
+  const avatar = (ch, color) => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"><circle cx="28" cy="28" r="28" fill="${color}"/><text x="28" y="36" font-family="Arial" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">${ch}</text></svg>`);
+  const CONTACTS = [
+    { name: "Ana Torres", phone: "11 4567-8901", color: "#e76f51" },
+    { name: "Bruno Díaz", phone: "11 2233-4455", color: "#2a9d8f" },
+    { name: "Carla Méndez", phone: "351 555-0101", color: "#7b2cbf" },
+  ];
+  const ELS = CONTACTS.flatMap((c, i) => [
+    { key: `img${i}`, tag: "img", c: i, label: `foto de ${c.name.split(" ")[0]}` },
+    { key: `h3${i}`, tag: "h3", c: i, label: c.name },
+    { key: `p${i}`, tag: "p", c: i, label: c.phone },
+  ]);
+  let gid = 1;
+  const M = { nodes: [], sel: [], styles: new Set(), layout: "col", step: 1 };
+  function resetGroup() {
+    M.nodes = ELS.map(e => ({ type: "el", ...e })); M.sel = []; M.styles.clear(); M.layout = "col"; M.step = 1;
+    $$("#styleChips .chip").forEach(c => c.setAttribute("aria-pressed", false));
+    $$("#layoutChips .chip").forEach(c => c.setAttribute("aria-pressed", c.dataset.l === "col"));
+    $("#gExplain").className = "explain";
+    $("#gExplain").innerHTML = "Así se ve la lista si ponemos las etiquetas una debajo de la otra: no hay forma de decir «esto es un contacto». Para eso sirve <code>&lt;div&gt;</code>: <strong>una caja sin significado para agrupar</strong>.";
+    renderGroup();
+  }
+  function elHtml(e) {
+    const c = CONTACTS[e.c];
+    const sel = M.sel.includes(e.key) ? " sel" : "";
+    if (e.tag === "img") return `<img class="el${sel}" data-key="${e.key}" src="${avatar(c.name[0], c.color)}" alt="${e.label}">`;
+    if (e.tag === "h3") return `<h3 class="el${sel}" data-key="${e.key}">${c.name}</h3>`;
+    return `<p class="el${sel}" data-key="${e.key}">📞 ${c.phone}</p>`;
+  }
+  const isCard = (n) => n.type === "div" && n.children.length === 3 && n.children.every(ch => ch.type === "el" && ch.c === n.children[0].c);
+  function nodeHtml(n) {
+    if (n.type === "el") return elHtml(n);
+    const card = isCard(n);
+    const cls = ["gdiv", card ? "card" : "", n.container ? "container" : "", n.container && M.layout === "row" ? "row" : "", M.sel.includes(n.key) ? "sel" : ""]
+      .concat(card ? [...M.styles].map(s => "s-" + s) : []).join(" ");
+    const label = n.container ? `&lt;div&gt; contenedor` : card ? `&lt;div&gt; ${CONTACTS[n.children[0].c].name.split(" ")[0]}` : `&lt;div&gt;`;
+    return `<div class="${cls}" data-key="${n.key}"><span class="dl" data-key="${n.key}">${label}<span class="x" data-unwrap="${n.key}" title="Sacar el div">✕</span></span>${n.children.map(nodeHtml).join("")}</div>`;
+  }
+  function renderGroup() {
+    $("#stage").innerHTML = M.nodes.map(nodeHtml).join("");
+    renderTree();
+    $("#wrapBtn").disabled = !canWrap();
+    $("#selInfo").textContent = M.sel.length ? `${M.sel.length} seleccionado${M.sel.length > 1 ? "s" : ""}` : "";
+    updateSteps();
+  }
+  function treeHtml(n) {
+    if (n.type === "el") return `<li><span class="t other">${n.tag}</span><small>${n.label}</small></li>`;
+    return `<li><span class="t div ${n.container ? "container" : ""}">div</span><small>${n.container ? "contenedor" : isCard(n) ? "tarjeta" : ""}</small><ul>${n.children.map(treeHtml).join("")}</ul></li>`;
+  }
+  function renderTree() { $("#tree").innerHTML = `<ul><li><span class="t other">body</span><ul>${M.nodes.map(treeHtml).join("")}</ul></li></ul>`; }
+
+  function canWrap() {
+    if (!M.sel.length) return false;
+    const idx = M.sel.map(k => M.nodes.findIndex(n => n.key === k));
+    if (idx.some(i => i < 0)) return false;
+    idx.sort((a, b) => a - b);
+    return idx.every((v, i) => i === 0 || v === idx[i - 1] + 1);
+  }
+  $("#stage").addEventListener("click", (e) => {
+    const un = e.target.closest("[data-unwrap]");
+    if (un) { unwrap(un.dataset.unwrap); return; }
+    const t = e.target.closest(".el, .dl"); if (!t) return;
+    const key = t.dataset.key;
+    if (!M.nodes.some(n => n.key === key)) { toast("Eso ya está dentro de un div. Para mover el grupo entero, tocá la etiqueta del div."); return; }
+    M.sel = M.sel.includes(key) ? M.sel.filter(k => k !== key) : [...M.sel, key];
+    renderGroup();
+  });
+  $("#wrapBtn").onclick = () => {
+    if (!canWrap()) return;
+    const idx = M.sel.map(k => M.nodes.findIndex(n => n.key === k)).sort((a, b) => a - b);
+    const children = idx.map(i => M.nodes[i]);
+    const allCards = children.length === 3 && children.every(isCard);
+    const div = { type: "div", key: "d" + gid++, children, container: allCards };
+    M.nodes.splice(idx[0], idx.length, div);
+    M.sel = [];
+    renderGroup();
+    if (isCard(div)) say("ok", `✅ Ahora <strong>${CONTACTS[div.children[0].c].name}</strong> es una caja. Mirá la estructura: el <code>div</code> tiene adentro la foto, el nombre y el teléfono.`);
+    else if (div.container) say("ok", "✅ Las tres tarjetas están dentro de un div contenedor. Ahora elegí cómo se acomodan.");
+    else if (children.some(c => c.type === "el") && new Set(children.filter(c => c.type === "el").map(c => c.c)).size > 1) say("bad", "🤔 Ese div mezcla datos de contactos distintos. Agrupá lo que va junto: <strong>los tres datos de una misma persona</strong>. Podés sacarlo con la ✕.");
+    else say("bad", "🤔 A ese grupo le falta algo: cada contacto tiene foto, nombre y teléfono. Sacalo con la ✕ y probá de nuevo.");
+  };
+  function unwrap(key) {
+    const i = M.nodes.findIndex(n => n.key === key); if (i < 0) return;
+    const n = M.nodes[i];
+    M.nodes.splice(i, 1, ...n.children);
+    M.sel = [];
+    if (n.container) M.layout = "col";
+    renderGroup();
+  }
+  function say(kind, html) { $("#gExplain").className = "explain " + kind; $("#gExplain").innerHTML = html; }
+
+  function updateSteps() {
+    const cards = M.nodes.filter(isCard).length + M.nodes.filter(n => n.container).reduce((a, n) => a + n.children.filter(isCard).length, 0);
+    const s1 = cards === 3, s2 = s1 && M.styles.size >= 2, container = M.nodes.some(n => n.container), s3 = s2 && container && M.layout === "row";
+    const set = (id, done, active) => { $(id).classList.toggle("done", done); $(id).classList.toggle("active", !done && active); };
+    set("#st1", s1, true); set("#st2", s2, s1); set("#st3", s3, s2);
+    $$("#styleChips .chip").forEach(c => c.disabled = !s1);
+    $$("#layoutChips .chip").forEach(c => c.disabled = !container);
+    const prev = M.step;
+    M.step = s3 ? 4 : s2 ? 3 : s1 ? 2 : 1;
+    if (M.step > prev) {
+      if (M.step === 2) setTimeout(() => M.step === 2 && say("ok", "🎉 Los tres contactos están agrupados. Ahora probá darle estilo a las cajas: el estilo se aplica a <strong>todo el grupo</strong> de una."), 900);
+      if (M.step === 3) say("ok", "✨ Con un div pudimos decorar el contacto entero. Sin el div, ¿a qué le ponías el borde? Último paso: acomodar las tarjetas.");
+      if (M.step === 4) { say("ok", "🏆 <strong>¡Listo!</strong> Los div no se ven y no significan nada, pero nos dejaron <strong>agrupar</strong> para dar estilo y acomodar. Probá «Ver sin marcas»."); confetti(); }
+    }
+  }
+  $("#styleChips").addEventListener("click", (e) => {
+    const c = e.target.closest(".chip"); if (!c || c.disabled) return;
+    const s = c.dataset.s;
+    M.styles.has(s) ? M.styles.delete(s) : M.styles.add(s);
+    c.setAttribute("aria-pressed", M.styles.has(s));
+    renderGroup();
+  });
+  $("#layoutChips").addEventListener("click", (e) => {
+    const c = e.target.closest(".chip"); if (!c || c.disabled) return;
+    $$("#layoutChips .chip").forEach(x => x.setAttribute("aria-pressed", x === c));
+    flip(() => $$("#stage .gdiv.card"), () => { M.layout = c.dataset.l; renderGroup(); });
+  });
+  $("#resetGroup").onclick = resetGroup;
+  $("#clean").addEventListener("change", (e) => $("#stage").classList.toggle("clean", e.target.checked));
+
+  // ============================================================== MODO 2: div vs span
+  const SENTENCES = [
+    "La Vinoteca del Valle tiene el mejor Malbec de Mendoza y envíos gratis a todo el país.",
+    "Precio: $12.500 — oferta válida hasta el domingo.",
+  ];
+  const P = { pen: "span", color: "#ffe066", marks: {}, told: { span: false, div: false } };
+  // Se arma con el DOM (no con innerHTML) para que el div quede de verdad dentro del <p>
+  function renderTexts() {
+    const host = $("#texts"); host.innerHTML = "";
+    SENTENCES.forEach((s, si) => {
+      const p = document.createElement("p");
+      s.split(" ").forEach((w, wi) => {
+        if (wi) p.appendChild(document.createTextNode(" "));
+        const k = `${si}-${wi}`, m = P.marks[k];
+        const word = document.createElement("span");
+        word.className = "w"; word.dataset.k = k; word.dataset.key = "w" + k; word.textContent = w;
+        if (!m) { p.appendChild(word); return; }
+        const box = document.createElement(m.tag);
+        box.className = "mark " + m.tag; box.style.background = m.color;
+        box.innerHTML = `<span class="ml">&lt;${m.tag}&gt;</span>`;
+        box.appendChild(word);
+        p.appendChild(box);
+      });
+      host.appendChild(p);
+    });
+  }
+  $("#texts").addEventListener("click", (e) => {
+    const w = e.target.closest(".w"); if (!w) return;
+    const k = w.dataset.k;
+    const prev = P.marks[k];
+    flip(() => $$("#texts .w"), () => {
+      if (prev && prev.tag === P.pen && prev.color === P.color) delete P.marks[k];
+      else P.marks[k] = { tag: P.pen, color: P.color };
+      renderTexts();
+    });
+    const m = P.marks[k];
+    if (!m) return;
+    if (m.tag === "span") $("#pExplain").innerHTML = `🔵 Con <code>&lt;span&gt;</code> la palabra «${w.textContent}» se pintó <strong>y se quedó en su lugar</strong>: el resto del texto ni se movió.`;
+    else $("#pExplain").innerHTML = `🟣 Con <code>&lt;div&gt;</code> la palabra «${w.textContent}» <strong>saltó a su propia línea</strong> y la caja ocupa todo el ancho. El párrafo quedó partido. <small>(Y además, un div no debería ir dentro de un &lt;p&gt;.)</small>`;
+  });
+  bindSeg("#pen", (v) => P.pen = v);
+  bindSeg("#swatches", (c) => P.color = c);
+  $("#xray2").addEventListener("change", (e) => $("#texts").classList.toggle("xray", e.target.checked));
+  $("#clearPaint").onclick = () => flip(() => $$("#texts .w"), () => { P.marks = {}; renderTexts(); });
+
+  // ============================================================== MODO 3: juego
+  const SCEN = [
+    { q: "Quiero pintar de rojo la palabra <em>oferta</em> dentro de una oración.", a: "span",
+      why: "Es una parte de un texto y tiene que quedarse en la línea: <code>&lt;span&gt;</code>.",
+      prev: `Aprovechá esta <span class="px px-span" style="color:#c62828;font-weight:700"><span class="tl">&lt;span&gt;</span>oferta</span> antes del domingo.` },
+    { q: "Quiero juntar la foto, el nombre y el teléfono de un contacto para hacer una tarjeta.", a: "div",
+      why: "Son varias cosas que van juntas y no hay una etiqueta con un significado más preciso: <code>&lt;div&gt;</code>. (Si fuera un contenido que se entiende solo, también podría ser <code>&lt;article&gt;</code>.)",
+      prev: `<div class="px px-div"><span class="tl">&lt;div&gt;</span><strong>🧑 Ana Torres</strong><br>📞 11 4567-8901</div>` },
+    { q: "Quiero agrupar los enlaces del menú principal del sitio.", a: "sem",
+      why: "¡Trampa! Existe una etiqueta que dice exactamente qué es: <code>&lt;nav&gt;</code>. Si hay una semántica que encaja, va esa.",
+      prev: `<div class="px px-sem"><span class="tl">&lt;nav&gt;</span>Inicio · Vinos · Ofertas · Contacto</div>` },
+    { q: "Quiero que el precio <em>$12.500</em> se vea más grande dentro de la frase «Precio: $12.500 por botella».", a: "span",
+      why: "Es un pedacito de una frase: <code>&lt;span&gt;</code>. Con un div el precio saltaría a otra línea.",
+      prev: `Precio: <span class="px px-span" style="font-size:1.5em;font-weight:800"><span class="tl">&lt;span&gt;</span>$12.500</span> por botella` },
+    { q: "Quiero envolver todo el formulario de login para centrarlo en la pantalla.", a: "div",
+      why: "Es una caja para acomodar cosas en la pantalla, sin un significado especial: <code>&lt;div&gt;</code>.",
+      prev: `<div class="px px-div" style="max-width:240px;margin:0 auto;text-align:center"><span class="tl">&lt;div&gt;</span>📧 Email<br>🔑 Contraseña<br><button>Ingresar</button></div>` },
+    { q: "Quiero marcar el pie de página con el copyright y las redes.", a: "sem",
+      why: "Para eso está <code>&lt;footer&gt;</code>: le dice al navegador que es el pie de la página.",
+      prev: `<div class="px px-sem"><span class="tl">&lt;footer&gt;</span>© 2026 Vinoteca del Valle · Instagram</div>` },
+    { q: "Quiero poner un ícono ⭐ al lado del nombre de un contacto favorito, en la misma línea.", a: "span",
+      why: "Va pegado al texto, en la misma línea: <code>&lt;span&gt;</code>.",
+      prev: `<strong>Ana Torres</strong> <span class="px px-span" style="color:#e0a800"><span class="tl">&lt;span&gt;</span>⭐</span>` },
+    { q: "Quiero agrupar tres tarjetas de vinos para mostrarlas una al lado de la otra.", a: "div",
+      why: "Es un contenedor para acomodar las tarjetas: <code>&lt;div&gt;</code>.",
+      prev: `<div class="px px-div" style="display:flex;gap:8px"><span class="tl">&lt;div&gt;</span><span style="flex:1;border:1px solid #ddd;border-radius:8px;padding:8px">🍷 Malbec</span><span style="flex:1;border:1px solid #ddd;border-radius:8px;padding:8px">🍷 Cabernet</span><span style="flex:1;border:1px solid #ddd;border-radius:8px;padding:8px">🍷 Torrontés</span></div>` },
+    { q: "Quiero marcar una nota del blog completa: título, fecha y texto.", a: "sem",
+      why: "Es un contenido que se entiende solo: <code>&lt;article&gt;</code>.",
+      prev: `<div class="px px-sem"><span class="tl">&lt;article&gt;</span><strong>Cómo guardar tus vinos</strong><br><small>12/10/2026</small><br>Acostados, lejos de la luz…</div>` },
+  ];
+  const G = { order: [], i: 0, score: 0, answered: false };
+  function startGame() { G.order = [...SCEN].sort(() => Math.random() - .5); G.i = 0; G.score = 0; showQ(); }
+  function showQ() {
+    const s = G.order[G.i];
+    G.answered = false;
+    $("#scenario").innerHTML = s.q;
+    $$("#answers button").forEach(b => { b.disabled = false; b.classList.remove("right", "wrong"); });
+    $("#answers").hidden = false;
+    $("#feedback").innerHTML = ""; $("#nextQ").hidden = true;
+    $("#preview").innerHTML = `<div class="hidden-note">🤔 Respondan y acá aparece cómo quedaría.</div>`;
+    $("#gRound").textContent = `${G.i + 1} de ${G.order.length}`;
+    $("#gProg").style.width = (G.i / G.order.length) * 100 + "%";
+    $("#gScore").textContent = `⭐ ${G.score}`;
+  }
+  $("#answers").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-o]"); if (!b || G.answered) return;
+    G.answered = true;
+    const s = G.order[G.i], ok = b.dataset.o === s.a;
+    if (ok) G.score++;
+    $$("#answers button").forEach(x => { x.disabled = true; if (x.dataset.o === s.a) x.classList.add("right"); });
+    if (!ok) b.classList.add("wrong");
+    $("#feedback").innerHTML = (ok ? "🎯 <strong>¡Bien!</strong> " : "😅 <strong>No.</strong> ") + s.why;
+    $("#preview").innerHTML = s.prev.replace(/class="px /g, 'class="px ');
+    $("#gScore").textContent = `⭐ ${G.score}`;
+    $("#gProg").style.width = ((G.i + 1) / G.order.length) * 100 + "%";
+    $("#nextQ").hidden = false;
+    $("#nextQ").textContent = G.i === G.order.length - 1 ? "Ver resultado ▶" : "Siguiente ▶";
+  });
+  $("#nextQ").onclick = () => {
+    if (G.i === -1) return startGame();
+    if (G.i < G.order.length - 1) { G.i++; showQ(); return; }
+    $("#scenario").innerHTML = `${G.score} de ${G.order.length} ${G.score >= G.order.length - 1 ? "🏆" : G.score >= G.order.length / 2 ? "👏" : "💪"}`;
+    $("#answers").hidden = true;
+    $("#feedback").innerHTML = "Regla para llevarse: <strong>si hay una etiqueta semántica que diga qué es, va esa</strong>. Si no: <code>div</code> para agrupar cajas y <code>span</code> para marcar un pedacito de texto.";
+    $("#preview").innerHTML = "";
+    $("#nextQ").textContent = "Jugar de nuevo ↻"; G.i = -1;
+    if (G.score >= G.order.length / 2) confetti();
+  };
+
+  // ============================================================== modos
+  bindSeg("#modeSeg", (m) => {
+    $("#group").hidden = m !== "group";
+    $("#paint").hidden = m !== "paint";
+    $("#game").hidden = m !== "game";
+    if (m === "game") startGame();
+  });
+
+  resetGroup();
+  renderTexts();
+})();
+</script>
+</body>
+</html>

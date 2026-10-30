@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modelo de la caja · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+  :root { --m: #f9cc9d; --m-d: #c96a12; --b: #fddd5c; --b-d: #a07800; --p: #c3e6a9; --p-d: #3f8a1f; --c: #a8d4f5; --c-d: #1a5fb4; }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 22px 24px 60px; }
+  .modes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .modes .seg button { font-size: 1.02rem; padding: 9px 16px; }
+  .col-title { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); font-weight: 700; margin: 0 0 10px; }
+  .explain { margin-top: 14px; min-height: 3em; padding: 12px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 1.05rem; }
+  .explain.ok { background: var(--ok-bg); border-color: #bfe5cc; }
+  .explain.bad { background: var(--bad-bg); border-color: #f3c0c0; }
+  .confetti { position: fixed; top: -20px; width: 10px; height: 14px; z-index: 200; pointer-events: none; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  .layout { display: grid; grid-template-columns: 320px minmax(0, 1fr) 300px; gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1200px) { .layout { grid-template-columns: 1fr; } }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .knob { border-radius: 12px; padding: 10px 12px; border: 2px solid transparent; transition: border-color .2s, background .2s; }
+  .knob.hot { border-color: var(--k-d); background: color-mix(in srgb, var(--k) 35%, white); }
+  .knob .kh { display: flex; justify-content: space-between; align-items: baseline; }
+  .knob .kn { font-family: var(--mono); font-weight: 800; font-size: 1.05rem; color: var(--k-d); display: flex; align-items: center; gap: 8px; }
+  .knob .kn::before { content: ""; width: 14px; height: 14px; border-radius: 4px; background: var(--k); border: 1.5px solid var(--k-d); }
+  .knob output { font-family: var(--mono); font-weight: 700; }
+  .knob small { display: block; color: var(--ink-2); margin: 2px 0 6px; }
+  .knob input { width: 100%; accent-color: var(--k-d); }
+
+  /* ---------------- escenario de las capas ---------------- */
+  .stage { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 26px; position: relative; min-height: 470px; overflow: hidden; }
+  .column { position: relative; width: fit-content; margin: 0 auto; }
+  .neighbor { width: 300px; padding: 10px 14px; background: #ecebe8; border-radius: 8px; color: #8a8590; font-size: .9rem; text-align: center; position: relative; z-index: 2; }
+  .boxcard { position: relative; z-index: 2; box-sizing: content-box; font-family: Georgia, serif; transition: margin .25s, padding .25s, border-width .25s, width .25s; border-style: solid; border-color: #5a1e33; background: #fff; }
+  .boxcard .inner { transition: background .25s; }
+  .boxcard h3 { margin: 0 0 4px; font-size: 1.3rem; } .boxcard p { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; color: #555; }
+  .layers .boxcard { border-color: var(--b); background: var(--p); }
+  .layers .boxcard .inner { background: var(--c); }
+  .mlayer { position: absolute; z-index: 1; background: repeating-linear-gradient(45deg, var(--m), var(--m) 6px, #fbdcb8 6px, #fbdcb8 12px); border-radius: 4px; transition: all .25s; opacity: 0; pointer-events: none; }
+  .layers .mlayer { opacity: 1; }
+  .hover-tag { position: absolute; z-index: 5; pointer-events: none; font-family: var(--mono); font-weight: 800; font-size: 13px; color: #fff; padding: 3px 9px; border-radius: 7px; opacity: 0; transition: opacity .15s; white-space: nowrap; }
+  .hover-tag.show { opacity: 1; }
+  .layer-hl { position: absolute; z-index: 4; pointer-events: none; border: 3px solid; border-radius: 4px; opacity: 0; transition: all .15s; }
+  .layer-hl.show { opacity: 1; }
+  .stage-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+
+  /* diagrama tipo DevTools */
+  .dt { font-family: var(--mono); font-size: 12.5px; text-align: center; user-select: none; }
+  .dt .lay { position: relative; border: 1.5px dashed rgba(0,0,0,.35); padding: 22px 26px; border-radius: 4px; cursor: default; transition: filter .15s, box-shadow .15s; }
+  .dt .lay.hot { box-shadow: 0 0 0 3px var(--ink); z-index: 2; }
+  .dt .lay > .ln { position: absolute; top: 3px; left: 6px; font-size: 11px; font-weight: 800; opacity: .8; }
+  .dt .v { position: absolute; font-weight: 700; }
+  .dt .v.t { top: 3px; left: 50%; transform: translateX(-50%); } .dt .v.b { bottom: 3px; left: 50%; transform: translateX(-50%); }
+  .dt .v.l { left: 6px; top: 50%; transform: translateY(-50%); } .dt .v.r { right: 6px; top: 50%; transform: translateY(-50%); }
+  .dt .lm { background: var(--m); } .dt .lb { background: var(--b); border-style: solid; } .dt .lp { background: var(--p); } .dt .lc { background: var(--c); padding: 12px 10px; font-weight: 800; }
+  .dt .v.flash { animation: vflash .6s; }
+  @keyframes vflash { 50% { transform: translate(-50%, 0) scale(1.5); color: #c3002f; } }
+  .total { margin-top: 14px; font-size: 1rem; background: var(--surface-2); border-radius: 12px; padding: 10px 12px; }
+  .total code { background: #fff; }
+
+  /* ---------------- misterio del ancho ---------------- */
+  .mys { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1050px) { .mys { grid-template-columns: 1fr; } }
+  .bs-seg .seg button { font-family: var(--mono); font-size: .92rem; }
+  .ruler-zone { position: relative; width: 600px; margin-top: 18px !important; max-width: 100%; margin: 0 auto; }
+  .ruler { position: relative; height: 34px; margin-bottom: 8px; }
+  .ruler .bar { position: absolute; left: 0; height: 26px; top: 4px; border-radius: 6px; display: flex; overflow: hidden; transition: width .4s; font-family: var(--mono); font-size: 12px; font-weight: 800; }
+  .ruler .bar span { display: grid; place-items: center; transition: width .4s; overflow: hidden; white-space: nowrap; }
+  .ruler .goal { position: absolute; top: 0; height: 34px; border-right: 3px dashed var(--brand); transition: left .4s; }
+  .ruler .goal b { position: absolute; top: -20px; right: -30px; font-family: var(--mono); font-size: 12px; color: var(--brand); white-space: nowrap; }
+  .shelf { box-sizing: content-box; width: 600px; max-width: 100%; border: 3px solid var(--ink); border-radius: 10px; padding: 0; display: flex; flex-wrap: wrap; align-content: flex-start; min-height: 150px; position: relative; background: repeating-linear-gradient(90deg, #faf8f5, #faf8f5 49.8%, #e9e4dc 49.8%, #e9e4dc 50.2%, #faf8f5 50.2%); }
+  .shelf-label { font-family: var(--mono); font-size: 12px; color: var(--ink-2); margin: 0 auto 6px; width: 600px; max-width: 100%; }
+  .wcard { width: 300px; border-style: solid; border-color: var(--b-d); background: var(--p); font-family: Georgia, serif; transition: padding .35s, border-width .35s; }
+  .wcard .inner { background: var(--c); padding: 4px 0; min-height: 70px; transition: width .35s; }
+  .wcard h4 { margin: 0; font-size: 1.1rem; } .wcard p { margin: 0; font-size: .85rem; font-family: "Segoe UI", system-ui, sans-serif; }
+  .wcard.bb { box-sizing: border-box; } .wcard.cb { box-sizing: content-box; }
+  .calc { font-family: var(--mono); font-size: 1.15rem; margin-top: 14px; background: #1e1d24; color: #e8e6ef; border-radius: 12px; padding: 12px 16px; line-height: 1.6; }
+  .calc .bad { color: #ff8a8a; font-weight: 800; } .calc .ok { color: #8ff0c9; font-weight: 800; }
+
+  /* ---------------- juego ---------------- */
+  .game { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; margin-top: 16px; }
+  @media (max-width: 1000px) { .game { grid-template-columns: 1fr; } }
+  .gstage { min-height: 420px; display: grid; place-items: center; }
+  .spot { position: absolute; z-index: 6; pointer-events: none; border-radius: 3px; background: repeating-linear-gradient(45deg, rgba(255, 214, 102, .75), rgba(255, 214, 102, .75) 5px, rgba(255, 214, 102, .35) 5px, rgba(255, 214, 102, .35) 10px); outline: 3px solid #e0a800; transition: all .4s cubic-bezier(.3,.8,.3,1); animation: blink 1s ease-in-out infinite; }
+  @keyframes blink { 50% { outline-color: #ffd666; outline-offset: 3px; } }
+  .scoreboard { display: flex; gap: 14px; align-items: center; font-weight: 700; font-size: 1.1rem; }
+  .progress { flex: 1; height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .progress i { display: block; height: 100%; background: var(--brand-2); transition: width .3s; }
+  .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .answers button { --k: #ddd; --k-d: #555; font-family: var(--mono); font-size: 1.3rem; font-weight: 800; padding: 16px; border-radius: 14px; border: 3px solid var(--k); color: var(--k-d); background: #fff; cursor: pointer; transition: transform .12s, background .2s; }
+  .answers button:hover:not(:disabled) { transform: translateY(-2px); background: color-mix(in srgb, var(--k) 30%, white); }
+  .answers button.right { background: var(--ok); border-color: var(--ok); color: #fff; animation: pop .4s; }
+  .answers button.wrong { background: var(--bad); border-color: var(--bad); color: #fff; animation: shakeb .4s; }
+  .answers button:disabled:not(.right):not(.wrong) { opacity: .45; }
+  @keyframes pop { 50% { transform: scale(1.06); } }
+  @keyframes shakeb { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › HTML y CSS › <strong>Modelo de la caja</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="layers" aria-pressed="true">🪆 Las capas</button>
+      <button data-v="width">📏 El misterio del ancho</button>
+      <button data-v="game">🔎 ¿Qué espacio es?</button>
+    </div>
+  </div>
+
+  <!-- ====================================================== capas -->
+  <section class="layout" id="layersView">
+    <aside class="panel" id="knobs">
+      <div class="knob" data-l="margin" style="--k:var(--m);--k-d:var(--m-d)"><div class="kh"><span class="kn">margin</span><output>20px</output></div><small>espacio <strong>afuera</strong> del borde: separa de los vecinos</small><input type="range" min="0" max="60" value="20" data-p="margin"></div>
+      <div class="knob" data-l="border" style="--k:var(--b);--k-d:var(--b-d)"><div class="kh"><span class="kn">border</span><output>4px</output></div><small>el borde de la caja</small><input type="range" min="0" max="20" value="4" data-p="border"></div>
+      <div class="knob" data-l="padding" style="--k:var(--p);--k-d:var(--p-d)"><div class="kh"><span class="kn">padding</span><output>16px</output></div><small>espacio <strong>adentro</strong>, entre el borde y el contenido</small><input type="range" min="0" max="60" value="16" data-p="padding"></div>
+      <div class="knob" data-l="content" style="--k:var(--c);--k-d:var(--c-d)"><div class="kh"><span class="kn">width</span><output>260px</output></div><small>el ancho del <strong>contenido</strong></small><input type="range" min="160" max="360" value="260" data-p="width"></div>
+    </aside>
+    <section>
+      <div class="stage" id="lstage">
+        <div class="stage-bar">
+          <label class="switch"><input type="checkbox" id="showLayers" checked> 🎨 Pintar las capas</label>
+          <span style="color:var(--ink-2); font-size:.9rem">Pasá el mouse por la tarjeta</span>
+        </div>
+        <div class="column" id="column">
+          <div class="neighbor">otra caja de arriba</div>
+          <div class="mlayer" id="mlayer"></div>
+          <div class="boxcard" id="boxcard"><div class="inner"><h3>🍷 Malbec Reserva</h3><p>Mendoza · 2022 · $12.500</p></div></div>
+          <div class="neighbor">otra caja de abajo</div>
+          <div class="layer-hl" id="layerHl"></div>
+          <div class="hover-tag" id="hoverTag"></div>
+        </div>
+      </div>
+      <div class="explain" id="lExplain">Toda etiqueta HTML es una caja con <strong>cuatro capas</strong>, de afuera hacia adentro: <span style="color:var(--m-d);font-weight:700">margin</span>, <span style="color:var(--b-d);font-weight:700">border</span>, <span style="color:var(--p-d);font-weight:700">padding</span> y el <span style="color:var(--c-d);font-weight:700">contenido</span>.</div>
+    </section>
+    <aside>
+      <h3 class="col-title">Así lo muestran las DevTools</h3>
+      <div class="dt" id="dt">
+        <div class="lay lm" data-l="margin"><span class="ln">margin</span><span class="v t">20</span><span class="v b">20</span><span class="v l">20</span><span class="v r">20</span>
+          <div class="lay lb" data-l="border"><span class="ln">border</span><span class="v t">4</span><span class="v b">4</span><span class="v l">4</span><span class="v r">4</span>
+            <div class="lay lp" data-l="padding"><span class="ln">padding</span><span class="v t">16</span><span class="v b">16</span><span class="v l">16</span><span class="v r">16</span>
+              <div class="lay lc" data-l="content"><span id="dtContent">260 × 50</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="total" id="total"></div>
+    </aside>
+  </section>
+
+  <!-- ====================================================== misterio del ancho -->
+  <section class="mys" id="widthView" hidden>
+    <aside class="panel">
+      <div style="font-size:1.05rem">Dos tarjetas con <code>width: 300px</code> en un estante de <strong>600px</strong>. ¿Entran?</div>
+      <div class="knob" style="--k:var(--p);--k-d:var(--p-d)"><div class="kh"><span class="kn">padding</span><output id="wpOut">0px</output></div><input type="range" min="0" max="40" value="0" id="wPad"></div>
+      <div class="knob" style="--k:var(--b);--k-d:var(--b-d)"><div class="kh"><span class="kn">border</span><output id="wbOut">0px</output></div><input type="range" min="0" max="15" value="0" id="wBor"></div>
+      <div class="bs-seg"><div class="col-title" style="margin-bottom:6px">box-sizing</div>
+        <div class="seg" id="bsSeg"><button data-v="cb" aria-pressed="true">content-box</button><button data-v="bb">border-box</button></div>
+        <small style="display:block;color:var(--ink-2);margin-top:6px" id="bsHint">content-box: el width es sólo el contenido (así viene por defecto).</small>
+      </div>
+    </aside>
+    <section class="stage" style="min-height:0">
+      <div class="ruler-zone">
+        <div class="ruler" id="ruler"><div class="bar" id="rbar"></div><div class="goal" id="rgoal"><b>width: 300px</b></div></div>
+      </div>
+      <div class="shelf-label">estante · width: 600px</div>
+      <div class="shelf" id="shelf" style="margin:0 auto">
+        <div class="wcard cb" id="w1"><div class="inner"><h4>🍷 Malbec</h4><p>$12.500</p></div></div>
+        <div class="wcard cb" id="w2"><div class="inner"><h4>🍷 Cabernet</h4><p>$11.900</p></div></div>
+      </div>
+      <div class="calc" id="calc"></div>
+      <div class="explain" id="wExplain">Subí el <strong>padding</strong> y mirá qué pasa con la segunda tarjeta.</div>
+    </section>
+  </section>
+
+  <!-- ====================================================== juego -->
+  <section class="game" id="gameView" hidden>
+    <section class="stage gstage" id="gstage">
+      <div class="column" id="gcolumn">
+        <div class="neighbor">otra caja</div>
+        <div class="boxcard" id="gcard" style="transition:none"><div class="inner"><h3>🍷 Malbec Reserva</h3><p>Mendoza · 2022 · $12.500</p></div></div>
+        <div class="neighbor">otra caja</div>
+      </div>
+      <div class="mlayer" id="gmlayer" style="position:absolute"></div>
+      <div class="spot" id="spot"></div>
+    </section>
+    <section class="card">
+      <div class="scoreboard"><span id="gScore">⭐ 0</span><div class="progress"><i id="gProg"></i></div><span id="gRound"></span></div>
+      <div style="font-size:1.45rem; font-weight:700; margin-top:16px">¿Qué es la parte rayada?</div>
+      <div style="color:var(--ink-2)">Voten entre todos y después toquen la respuesta.</div>
+      <div class="answers" id="answers">
+        <button data-o="margin" style="--k:var(--m);--k-d:var(--m-d)">margin</button>
+        <button data-o="border" style="--k:var(--b);--k-d:var(--b-d)">border</button>
+        <button data-o="padding" style="--k:var(--p);--k-d:var(--p-d)">padding</button>
+        <button data-o="content" style="--k:var(--c);--k-d:var(--c-d)">contenido</button>
+      </div>
+      <div class="explain" id="gExplain" hidden></div>
+      <button class="btn primary big" id="nextBtn" hidden style="margin-top:12px">Siguiente ▶</button>
+    </section>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  function confetti() {
+    const colors = ["#e44d26", "#2a9d8f", "#1a5fb4", "#7b2cbf", "#d6336c", "#ffd166"];
+    for (let k = 0; k < 90; k++) {
+      const c = document.createElement("div"); c.className = "confetti";
+      c.style.cssText = `left:${Math.random() * 100}vw;background:${colors[k % 6]};animation-duration:${1.6 + Math.random() * 1.8}s;animation-delay:${Math.random() * .4}s`;
+      document.body.appendChild(c); setTimeout(() => c.remove(), 4000);
+    }
+  }
+  const COLORS = { margin: ["var(--m)", "var(--m-d)"], border: ["var(--b)", "var(--b-d)"], padding: ["var(--p)", "var(--p-d)"], content: ["var(--c)", "var(--c-d)"] };
+  const NAMES = { margin: "margin", border: "border", padding: "padding", content: "contenido" };
+
+  // geometría de una caja: rectángulos de cada capa (relativos a "origin")
+  function boxRects(el, origin, v) {
+    const o = origin.getBoundingClientRect(), r = el.getBoundingClientRect();
+    const bx = { x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height };   // borde exterior
+    const grow = (b, n) => ({ x: b.x - n, y: b.y - n, w: b.w + 2 * n, h: b.h + 2 * n });
+    return { margin: grow(bx, v.margin), border: bx, padding: grow(bx, -v.border), content: grow(bx, -v.border - v.padding) };
+  }
+  const place = (el, b) => Object.assign(el.style, { left: b.x + "px", top: b.y + "px", width: b.w + "px", height: b.h + "px" });
+
+  // ============================================================== MODO 1: capas
+  const V = { margin: 20, border: 4, padding: 16, width: 260 };
+  const card = $("#boxcard"), column = $("#column");
+  function applyBox(el, v) {
+    el.style.margin = v.margin + "px";
+    el.style.borderWidth = v.border + "px";
+    el.style.padding = v.padding + "px";
+    el.style.width = v.width + "px";
+  }
+  function renderLayers(changed) {
+    applyBox(card, V);
+    $$("#knobs .knob").forEach(k => { const i = $("input", k); $("output", k).textContent = i.value + "px"; });
+    // el margin se pinta con una capa rayada detrás (el margin real no tiene color)
+    requestAnimationFrame(() => place($("#mlayer"), boxRects(card, column, V).margin));
+    setTimeout(() => place($("#mlayer"), boxRects(card, column, V).margin), 280);
+    // diagrama
+    const set = (l, val) => $$(`.dt .lay[data-l="${l}"] > .v`).forEach(x => { if (x.textContent !== String(val)) { x.textContent = val; if (changed === l || (changed === "width" && l === "content")) { x.classList.remove("flash"); void x.offsetWidth; x.classList.add("flash"); } } });
+    set("margin", V.margin); set("border", V.border); set("padding", V.padding);
+    setTimeout(() => {
+      const h = Math.round(card.querySelector(".inner").getBoundingClientRect().height);
+      $("#dtContent").textContent = `${V.width} × ${h}`;
+    }, 260);
+    const totalW = V.width + 2 * V.padding + 2 * V.border;
+    $("#total").innerHTML = `Ancho que ocupa en pantalla:<br><code>${V.width}</code> + <code>${V.padding}×2</code> + <code>${V.border}×2</code> = <strong>${totalW}px</strong><br><small>+ el margin para separarse: ${V.margin}px por lado</small>`;
+  }
+  $("#knobs").addEventListener("input", (e) => {
+    const i = e.target.closest("input"); if (!i) return;
+    V[i.dataset.p] = +i.value;
+    renderLayers(i.dataset.p === "width" ? "width" : i.dataset.p);
+    const tips = {
+      margin: "El <strong>margin</strong> empuja a las cajas vecinas. Es transparente: no toma el color de fondo de la tarjeta.",
+      border: "El <strong>border</strong> es la línea que rodea la caja. Si lo subís, la caja crece.",
+      padding: "El <strong>padding</strong> separa el contenido del borde. Toma el color de fondo de la tarjeta.",
+      width: "El <strong>width</strong>, por defecto, mide sólo el contenido. El padding y el borde se suman por fuera. (Ver «El misterio del ancho».)",
+    };
+    $("#lExplain").innerHTML = tips[i.dataset.p];
+  });
+  $("#showLayers").addEventListener("change", (e) => $("#lstage").classList.toggle("layers", e.target.checked));
+  $("#lstage").classList.add("layers");
+
+  // pasar el mouse: detectar en qué capa está el puntero
+  function layerAt(x, y, R) {
+    const inside = (b) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
+    if (inside(R.content)) return "content";
+    if (inside(R.padding)) return "padding";
+    if (inside(R.border)) return "border";
+    if (inside({ x: R.border.x - V.margin, y: R.border.y - V.margin, w: R.border.w + 2 * V.margin, h: R.border.h + 2 * V.margin })) return "margin";
+    return null;
+  }
+  function highlight(l) {
+    const hl = $("#layerHl"), tag = $("#hoverTag");
+    $$("#knobs .knob").forEach(k => k.classList.toggle("hot", k.dataset.l === l));
+    $$(".dt .lay").forEach(k => k.classList.toggle("hot", k.dataset.l === l));
+    if (!l) { hl.classList.remove("show"); tag.classList.remove("show"); return; }
+    const R = boxRects(card, column, V);
+    const b = l === "margin" ? { x: R.border.x - V.margin, y: R.border.y - V.margin, w: R.border.w + 2 * V.margin, h: R.border.h + 2 * V.margin } : R[l];
+    place(hl, b); hl.style.borderColor = COLORS[l][1]; hl.classList.add("show");
+    const val = l === "content" ? `${V.width}px de ancho` : `${V[l]}px`;
+    tag.textContent = `${NAMES[l]} · ${val}`; tag.style.background = COLORS[l][1];
+    tag.style.left = b.x + "px"; tag.style.top = b.y - 26 + "px"; tag.classList.add("show");
+  }
+  column.addEventListener("mousemove", (e) => {
+    const o = column.getBoundingClientRect();
+    highlight(layerAt(e.clientX - o.left, e.clientY - o.top, boxRects(card, column, V)));
+  });
+  column.addEventListener("mouseleave", () => highlight(null));
+  $("#dt").addEventListener("mouseover", (e) => { const l = e.target.closest(".lay"); highlight(l ? l.dataset.l : null); });
+  $("#dt").addEventListener("mouseleave", () => highlight(null));
+
+  // ============================================================== MODO 2: misterio del ancho
+  const W = { pad: 0, bor: 0, bs: "cb" };
+  function renderWidth() {
+    [$("#w1"), $("#w2")].forEach(c => { c.className = "wcard " + W.bs; c.style.padding = W.pad + "px"; c.style.borderWidth = W.bor + "px"; });
+    $("#wpOut").textContent = W.pad + "px"; $("#wbOut").textContent = W.bor + "px";
+    const total = W.bs === "cb" ? 300 + 2 * W.pad + 2 * W.bor : 300;
+    const content = W.bs === "cb" ? 300 : 300 - 2 * W.pad - 2 * W.bor;
+    // regla: escala 1px = 1px (zona de 640px)
+    const seg = (w, bg, fg, txt) => `<span style="width:${w}px;background:${bg};color:${fg}">${w >= 34 ? txt : ""}</span>`;
+    $("#rbar").innerHTML = seg(W.bor, "var(--b)", "var(--b-d)", W.bor) + seg(W.pad, "var(--p)", "var(--p-d)", W.pad) + seg(content, "var(--c)", "var(--c-d)", `contenido ${content}px`) + seg(W.pad, "var(--p)", "var(--p-d)", W.pad) + seg(W.bor, "var(--b)", "var(--b-d)", W.bor);
+    $("#rbar").style.width = total + "px";
+    $("#rgoal").style.left = "0px"; $("#rgoal").style.width = "300px";
+    const fits = total * 2 <= 600;
+    $("#calc").innerHTML = W.bs === "cb"
+      ? `width (300) + padding (${W.pad}×2) + border (${W.bor}×2) = <span class="${total > 300 ? "bad" : "ok"}">${total}px</span><br>Dos tarjetas: ${total}×2 = <span class="${fits ? "ok" : "bad"}">${total * 2}px</span> en un estante de 600px ${fits ? "✅" : "❌"}`
+      : `Con border-box el width <strong>incluye</strong> padding y borde: <span class="ok">300px</span> justos.<br>El contenido se achica: 300 − ${W.pad}×2 − ${W.bor}×2 = <span class="ok">${content}px</span> ✅`;
+    if (W.bs === "cb" && !fits) $("#wExplain").innerHTML = "😱 <strong>¡La segunda tarjeta se cayó abajo!</strong> Le pusimos <code>width: 300px</code>, pero el padding y el borde se suman por fuera y ya no entran dos en 600px. Probá <code>box-sizing: border-box</code>.";
+    else if (W.bs === "bb" && (W.pad || W.bor)) $("#wExplain").innerHTML = "✅ Con <code>border-box</code> la tarjeta mide <strong>exactamente</strong> lo que dice el width. Por eso muchos proyectos ponen <code>* { box-sizing: border-box; }</code> al principio del CSS.";
+    else $("#wExplain").innerHTML = W.bs === "cb" ? "Subí el <strong>padding</strong> y mirá qué pasa con la segunda tarjeta." : "Con <code>border-box</code>, subí el padding: ¿las tarjetas se caen?";
+    $("#bsHint").textContent = W.bs === "cb" ? "content-box: el width es sólo el contenido (así viene por defecto)." : "border-box: el width incluye el padding y el borde.";
+  }
+  $("#wPad").addEventListener("input", (e) => { W.pad = +e.target.value; renderWidth(); });
+  $("#wBor").addEventListener("input", (e) => { W.bor = +e.target.value; renderWidth(); });
+  $("#bsSeg").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    $$("#bsSeg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    W.bs = b.dataset.v; renderWidth();
+  });
+
+  // ============================================================== MODO 3: ¿qué espacio es?
+  const ROUNDS = 8;
+  const G = { round: 0, score: 0, v: null, answer: null, used: [] };
+  const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  function nextRound() {
+    G.round++;
+    const v = { margin: rnd(18, 40), border: rnd(6, 14), padding: rnd(18, 40), width: 280 };
+    G.v = v;
+    const gc = $("#gcard");
+    applyBox(gc, v);
+    $("#gstage").classList.remove("layers");
+    $("#gmlayer").style.opacity = "0";
+    // se elige qué capa preguntar, sin repetir mucho
+    let kind; do { kind = ["margin", "border", "padding", "content"][rnd(0, 3)]; } while (G.used.slice(-2).includes(kind));
+    G.used.push(kind); G.answer = kind;
+    requestAnimationFrame(() => {
+      const R = boxRects(gc, $("#gstage"), v);
+      const side = ["top", "bottom", "left", "right"][rnd(0, 3)];
+      let b;
+      if (kind === "content") b = R.content;
+      else {
+        const outer = kind === "margin" ? { x: R.border.x - v.margin, y: R.border.y - v.margin, w: R.border.w + 2 * v.margin, h: R.border.h + 2 * v.margin } : R[kind];
+        const inner = kind === "margin" ? R.border : kind === "border" ? R.padding : R.content;
+        if (side === "top") b = { x: inner.x, y: outer.y, w: inner.w, h: inner.y - outer.y };
+        if (side === "bottom") b = { x: inner.x, y: inner.y + inner.h, w: inner.w, h: outer.y + outer.h - inner.y - inner.h };
+        if (side === "left") b = { x: outer.x, y: inner.y, w: inner.x - outer.x, h: inner.h };
+        if (side === "right") b = { x: inner.x + inner.w, y: inner.y, w: outer.x + outer.w - inner.x - inner.w, h: inner.h };
+      }
+      place($("#spot"), b); $("#spot").hidden = false;
+      const m = { x: R.border.x - v.margin, y: R.border.y - v.margin, w: R.border.w + 2 * v.margin, h: R.border.h + 2 * v.margin };
+      place($("#gmlayer"), m);
+    });
+    $$("#answers button").forEach(x => { x.disabled = false; x.classList.remove("right", "wrong"); });
+    $("#gExplain").hidden = true; $("#nextBtn").hidden = true;
+    $("#gRound").textContent = `${G.round} de ${ROUNDS}`;
+    $("#gProg").style.width = ((G.round - 1) / ROUNDS) * 100 + "%";
+    $("#gScore").textContent = `⭐ ${G.score}`;
+  }
+  const WHY = {
+    margin: "Es <strong>margin</strong>: está <em>afuera</em> del borde y separa la tarjeta de las cajas vecinas. Fijate que no tiene el fondo de la tarjeta.",
+    border: "Es <strong>border</strong>: la línea que rodea la caja.",
+    padding: "Es <strong>padding</strong>: está <em>adentro</em> del borde, entre el borde y el texto. Tiene el mismo fondo que la tarjeta.",
+    content: "Es el <strong>contenido</strong>: donde están el título y el texto.",
+  };
+  $("#answers").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-o]"); if (!b || b.disabled) return;
+    const ok = b.dataset.o === G.answer;
+    if (ok) G.score++;
+    $$("#answers button").forEach(x => { x.disabled = true; if (x.dataset.o === G.answer) x.classList.add("right"); });
+    if (!ok) b.classList.add("wrong");
+    $("#gstage").classList.add("layers"); $("#gmlayer").style.opacity = "1";
+    $("#gExplain").hidden = false;
+    $("#gExplain").className = "explain " + (ok ? "ok" : "bad");
+    $("#gExplain").innerHTML = (ok ? "🎯 <strong>¡Bien!</strong> " : "😅 ") + WHY[G.answer] + " <br><small>Ahora se ven las capas pintadas.</small>";
+    $("#gScore").textContent = `⭐ ${G.score}`;
+    $("#gProg").style.width = (G.round / ROUNDS) * 100 + "%";
+    $("#nextBtn").hidden = false; $("#nextBtn").textContent = G.round >= ROUNDS ? "Ver resultado ▶" : "Siguiente ▶";
+  });
+  $("#nextBtn").onclick = () => {
+    if (G.round === -1) { G.round = 0; G.score = 0; return nextRound(); }
+    if (G.round < ROUNDS) return nextRound();
+    $("#spot").hidden = true;
+    $("#gExplain").className = "explain ok";
+    $("#gExplain").innerHTML = `<div style="font-size:1.6rem;font-weight:800">${G.score} de ${ROUNDS} ${G.score >= ROUNDS - 1 ? "🏆" : G.score >= ROUNDS / 2 ? "👏" : "💪"}</div>Truco: <strong>padding</strong> = adentro del borde (tiene el fondo de la caja) · <strong>margin</strong> = afuera (transparente).`;
+    $("#nextBtn").textContent = "Jugar de nuevo ↻"; G.round = -1;
+    if (G.score >= ROUNDS / 2) confetti();
+  };
+
+  // ============================================================== modos
+  $("#modeSeg").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    $$("#modeSeg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    const m = b.dataset.v;
+    $("#layersView").hidden = m !== "layers"; $("#widthView").hidden = m !== "width"; $("#gameView").hidden = m !== "game";
+    if (m === "layers") renderLayers();
+    if (m === "width") renderWidth();
+    if (m === "game") { G.round = 0; G.score = 0; G.used = []; nextRound(); }
+  });
+  addEventListener("resize", () => { if (!$("#layersView").hidden) renderLayers(); });
+
+  renderLayers();
+})();
+</script>
+</body>
+</html>

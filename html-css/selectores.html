@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Selectores CSS · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+  :root { --k-tag: #e44d26; --k-class: #1a5fb4; --k-id: #7b2cbf; --k-pseudo: #2a9d8f; --k-combo: #b26a00; }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 22px 24px 60px; }
+  .modes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .modes .seg button { font-size: 1.02rem; padding: 9px 16px; }
+  .modes .right { margin-left: auto; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1050px) { .layout { grid-template-columns: 1fr; } }
+  .col-title { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); font-weight: 700; margin: 0 0 10px; }
+  .browser { background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .chrome { background: #e8e4de; padding: 9px 12px; display: flex; align-items: center; gap: 10px; }
+  .lights { display: flex; gap: 6px; } .lights i { width: 12px; height: 12px; border-radius: 50%; background: #f26b5b; } .lights i:nth-child(2) { background: #f6bf4f; } .lights i:nth-child(3) { background: #5ec860; }
+  .addr { flex: 1; background: #fff; border-radius: 999px; padding: 5px 14px; font-family: var(--mono); font-size: 14px; color: var(--ink-2); }
+  .explain { margin-top: 14px; min-height: 3.2em; padding: 12px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 1.05rem; }
+  .explain.ok { background: var(--ok-bg); border-color: #bfe5cc; }
+  .explain.bad { background: var(--bad-bg); border-color: #f3c0c0; }
+  .confetti { position: fixed; top: -20px; width: 10px; height: 14px; z-index: 200; pointer-events: none; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  /* ---------------- regla CSS grande ---------------- */
+  .rule { font-family: var(--mono); font-size: 1.5rem; background: #1e1d24; color: #e8e6ef; border-radius: 14px; padding: 16px 20px; line-height: 1.5; }
+  .rule .sel { color: #ffd479; font-weight: 800; }
+  .rule .sel.k-tag { color: #ff9b7a; } .rule .sel.k-class { color: #82cfff; } .rule .sel.k-id { color: #d5b6ff; } .rule .sel.k-pseudo { color: #8ff0c9; }
+  .rule .prop { color: #ff7ab2; } .rule .swatch-inline { display: inline-block; width: .8em; height: .8em; border-radius: 3px; vertical-align: middle; margin-right: 4px; border: 1px solid rgba(255,255,255,.4); }
+  .sel-input { width: 100%; font-family: var(--mono); font-size: 1.4rem; font-weight: 700; padding: 10px 14px; border-radius: 12px; border: 3px solid var(--line); outline: none; transition: border-color .2s; }
+  .sel-input:focus { border-color: var(--brand-2); }
+  .sel-input.invalid { border-color: var(--bad); background: var(--bad-bg); }
+  .groups { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+  .group h4 { margin: 0 0 6px; font-size: .9rem; display: flex; align-items: center; gap: 8px; }
+  .group h4 .dot { width: 12px; height: 12px; border-radius: 4px; background: var(--c); }
+  .group h4 small { font-weight: 400; color: var(--ink-2); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { --c: #555; font-family: var(--mono); font-weight: 700; font-size: .95rem; padding: 6px 12px; border-radius: 999px; border: 2px solid color-mix(in srgb, var(--c) 40%, white); color: var(--c); background: #fff; cursor: pointer; transition: all .15s; }
+  .chip:hover { border-color: var(--c); transform: translateY(-1px); }
+  .chip[aria-pressed="true"] { background: var(--c); color: #fff; border-color: var(--c); }
+  .colors { display: flex; gap: 6px; align-items: center; }
+  .colors button { width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 2px var(--line); cursor: pointer; }
+  .colors button[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--ink); }
+  .count { font-size: 1.15rem; font-weight: 700; margin-top: 12px; display: flex; gap: 10px; align-items: center; }
+  .count .big { font-size: 2rem; color: var(--brand-2); min-width: 1.4em; text-align: center; display: inline-block; }
+  .count .big.bump { animation: bump .4s; }
+  @keyframes bump { 50% { transform: scale(1.4); } }
+
+  /* ---------------- la página de ejemplo ---------------- */
+  #site, .site { padding: 20px 24px 26px; font-family: "Segoe UI", system-ui, sans-serif; font-size: 16px; color: #222; position: relative; }
+  .site header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 8px; }
+  .site h1 { font-family: Georgia, serif; font-size: 1.6rem; margin: 6px 0; }
+  .site nav { display: flex; gap: 6px; }
+  .site nav a { color: #5a1e33; text-decoration: none; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
+  .site h2 { font-size: 1.15rem; margin: 18px 0 8px; }
+  .site ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .site li { padding: 8px 12px; border: 1px solid #eee; border-radius: 10px; }
+  .site li s { color: #999; }
+  .site p { margin: 10px 0; }
+  .site .nota { font-size: .9rem; color: #666; }
+  .site button { font: inherit; padding: 8px 14px; border-radius: 10px; border: 1px solid #ccc; background: #f5f5f5; cursor: pointer; margin-right: 6px; }
+  .site footer { margin-top: 14px; border-top: 2px solid #eee; font-size: .9rem; color: #777; }
+  .site [data-sig] { position: relative; transition: background .35s, outline-color .35s, box-shadow .35s; }
+  /* etiquetas con tag.clase#id encima de cada elemento */
+  .site.sigs [data-sig]::before { content: attr(data-sig); position: absolute; top: -15px; right: 6px; font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: #6d6879; background: #fff; border: 1px solid #e3ded6; padding: 0 5px; border-radius: 5px; line-height: 1.5; z-index: 3; white-space: nowrap; pointer-events: none; }
+  .site.sigs header[data-sig]::before, .site.sigs footer[data-sig]::before, .site.sigs ul[data-sig]::before, .site.sigs nav[data-sig]::before { top: -15px; right: auto; left: 0; }
+  .site.sigs h1[data-sig]::before, .site.sigs a[data-sig]::before, .site.sigs button[data-sig]::before { right: auto; left: 0; }
+  .site.sigs ul { gap: 16px; padding-top: 6px; } .site.sigs header { padding-top: 14px; } .site.sigs p, .site.sigs h2 { margin-top: 18px; }
+  .site.sigs button { margin-top: 12px; margin-right: 70px; } .site.sigs nav { gap: 24px; }
+  /* números para votar */
+  #site.nums { padding-left: 54px; } .site.nums nav { gap: 46px; } .site.nums button { margin-right: 80px; }
+  .site.nums [data-n]::after { content: attr(data-n); position: absolute; left: -36px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 12px; font-weight: 800; display: grid; place-items: center; font-family: var(--sans); z-index: 4; }
+  .site [data-n].picked { outline: 3px solid #ffd666; outline-offset: 2px; background: #fff8d6 !important; }
+  .site [data-n].res-ok { outline: 3px solid var(--ok); outline-offset: 2px; background: var(--ok-bg) !important; animation: hit .5s; }
+  .site [data-n].res-miss { outline: 3px dashed var(--ok); outline-offset: 2px; animation: hit .5s; }
+  .site [data-n].res-bad { outline: 3px solid var(--bad); outline-offset: 2px; background: var(--bad-bg) !important; animation: shake .4s; }
+  .site.voting [data-n] { cursor: pointer; }
+  .site [data-n].target { outline: 3px dashed #e0a800; outline-offset: 3px; }
+  .site .hit { animation: hit .55s; }
+  @keyframes hit { 0% { transform: scale(1); } 40% { transform: scale(1.045); box-shadow: 0 0 0 8px rgba(255, 214, 102, .45); } 100% { transform: scale(1); } }
+  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+  /* ---------------- votar ---------------- */
+  .q-sel { font-family: var(--mono); font-size: 2.6rem; font-weight: 800; text-align: center; padding: 18px; border-radius: 16px; background: #1e1d24; color: #ffd479; margin: 10px 0 12px; }
+  .scoreboard { display: flex; gap: 14px; align-items: center; font-weight: 700; font-size: 1.1rem; }
+  .progress { flex: 1; height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .progress i { display: block; height: 100%; background: var(--brand-2); transition: width .3s; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .9rem; color: var(--ink-2); margin-top: 8px; }
+  .legend span::before { content: ""; display: inline-block; width: 14px; height: 14px; border-radius: 4px; margin-right: 5px; vertical-align: -2px; }
+  .legend .l-ok::before { background: var(--ok-bg); border: 2px solid var(--ok); }
+  .legend .l-miss::before { border: 2px dashed var(--ok); }
+  .legend .l-bad::before { background: var(--bad-bg); border: 2px solid var(--bad); }
+  .ch-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .ch-list button { width: 34px; height: 34px; border-radius: 10px; border: 2px solid var(--line); background: #fff; font-weight: 800; cursor: pointer; }
+  .ch-list button.done { background: var(--ok); color: #fff; border-color: var(--ok); }
+  .ch-list button.on { border-color: var(--brand-2); box-shadow: 0 0 0 3px rgba(123,44,191,.2); }
+  .ch-goal { font-size: 1.4rem; font-weight: 700; margin: 6px 0 12px; }
+  .hint { color: var(--ink-2); font-size: .95rem; margin-top: 8px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › HTML y CSS › <strong>Selectores</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="aim" aria-pressed="true">🎯 Apuntar</button>
+      <button data-v="vote">🗳️ ¿Qué se pinta?</button>
+      <button data-v="challenge">🏹 Desafíos</button>
+    </div>
+    <div class="right"><label class="switch"><input type="checkbox" id="sigs" checked> 🏷️ Mostrar etiquetas, clases e IDs</label></div>
+  </div>
+
+  <div class="layout">
+    <!-- ================= panel izquierdo: cambia según el modo ================= -->
+    <section>
+      <!-- apuntar -->
+      <div id="aimPanel">
+        <h3 class="col-title">Tu regla CSS</h3>
+        <input class="sel-input" id="selInput" value=".oferta" spellcheck="false" autocomplete="off" aria-label="Selector">
+        <div class="rule" style="margin-top:10px" id="ruleView"></div>
+        <div class="count" id="count"></div>
+        <div class="groups">
+          <div class="group" style="--c:var(--k-tag)"><h4><span class="dot"></span>Por etiqueta <small>todos los elementos de ese tipo</small></h4>
+            <div class="chips"><button class="chip" style="--c:var(--k-tag)">p</button><button class="chip" style="--c:var(--k-tag)">li</button><button class="chip" style="--c:var(--k-tag)">a</button><button class="chip" style="--c:var(--k-tag)">button</button><button class="chip" style="--c:var(--k-tag)">h2</button></div></div>
+          <div class="group" style="--c:var(--k-class)"><h4><span class="dot"></span>Por clase <small>empieza con punto · puede repetirse</small></h4>
+            <div class="chips"><button class="chip" style="--c:var(--k-class)">.oferta</button><button class="chip" style="--c:var(--k-class)">.vino</button><button class="chip" style="--c:var(--k-class)">.boton</button><button class="chip" style="--c:var(--k-class)">.nota</button></div></div>
+          <div class="group" style="--c:var(--k-id)"><h4><span class="dot"></span>Por ID <small>empieza con # · uno solo en la página</small></h4>
+            <div class="chips"><button class="chip" style="--c:var(--k-id)">#titulo</button><button class="chip" style="--c:var(--k-id)">#carrito</button></div></div>
+          <div class="group" style="--c:var(--k-pseudo)"><h4><span class="dot"></span>Pseudoclases <small>un estado o una posición</small></h4>
+            <div class="chips"><button class="chip" style="--c:var(--k-pseudo)">li:hover</button><button class="chip" style="--c:var(--k-pseudo)">button:hover</button><button class="chip" style="--c:var(--k-pseudo)">li:first-child</button><button class="chip" style="--c:var(--k-pseudo)">li:last-child</button><button class="chip" style="--c:var(--k-pseudo)">li:nth-child(2)</button></div></div>
+          <div class="group" style="--c:var(--k-combo)"><h4><span class="dot"></span>Combinados</h4>
+            <div class="chips"><button class="chip" style="--c:var(--k-combo)">li.oferta</button><button class="chip" style="--c:var(--k-combo)">nav a</button><button class="chip" style="--c:var(--k-combo)">footer p</button><button class="chip" style="--c:var(--k-combo)">h1, h2</button></div></div>
+          <div class="group"><h4>Pintar con</h4>
+            <div class="colors" id="colors">
+              <button data-c="#ffe066" style="background:#ffe066" aria-pressed="true"></button><button data-c="#ffc9c9" style="background:#ffc9c9"></button><button data-c="#b2f2bb" style="background:#b2f2bb"></button><button data-c="#a5d8ff" style="background:#a5d8ff"></button><button data-c="#e5dbff" style="background:#e5dbff"></button>
+            </div></div>
+        </div>
+      </div>
+
+      <!-- votar -->
+      <div id="votePanel" hidden>
+        <div class="scoreboard"><span id="vScore">⭐ 0</span><div class="progress"><i id="vProg"></i></div><span id="vRound"></span></div>
+        <div style="color:var(--ink-2); margin-top:14px">¿A qué elementos le aplica este selector? Toquen los números en la página.</div>
+        <div class="q-sel" id="vSel"></div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn primary big" id="revealBtn">👀 Revelar</button>
+          <button class="btn big" id="nextBtn" hidden>Siguiente ▶</button>
+        </div>
+        <div class="legend" id="legend" hidden><span class="l-ok">acertaron</span><span class="l-miss">se les escapó</span><span class="l-bad">no coincide</span></div>
+        <div class="explain" id="vExplain">Elegí los elementos y apretá <strong>Revelar</strong>.</div>
+      </div>
+
+      <!-- desafíos -->
+      <div id="chPanel" hidden>
+        <div class="ch-list" id="chList"></div>
+        <div class="ch-goal" id="chGoal"></div>
+        <div style="color:var(--ink-2); margin-bottom:8px">Los elementos con borde amarillo punteado son el objetivo. Escribí un selector que pinte <strong>esos y ningún otro</strong>.</div>
+        <input class="sel-input" id="chInput" spellcheck="false" autocomplete="off" placeholder="escribí un selector…" aria-label="Selector del desafío">
+        <div class="count" id="chCount"></div>
+        <button class="btn" id="hintBtn" style="margin-top:10px">💡 Pista</button>
+        <div class="hint" id="hint"></div>
+        <div class="explain" id="chExplain">Hay más de una respuesta posible para cada desafío.</div>
+      </div>
+    </section>
+
+    <!-- ================= la página ================= -->
+    <section>
+      <h3 class="col-title">La página</h3>
+      <div class="browser">
+        <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="addr">vinoteca.html</div></div>
+        <div class="site sigs" id="site">
+          <header>
+            <h1 id="titulo">🍷 Vinoteca del Valle</h1>
+            <nav><a class="activo">Inicio</a><a>Vinos</a><a>Contacto</a></nav>
+          </header>
+          <h2>Vinos destacados</h2>
+          <ul class="lista">
+            <li class="vino">Malbec Reserva · $12.500</li>
+            <li class="vino oferta">Cabernet Franc · <s>$15.000</s> $11.900</li>
+            <li class="vino">Torrontés · $8.200</li>
+            <li class="vino oferta">Bonarda · <s>$9.000</s> $6.900</li>
+          </ul>
+          <p class="nota">Precios con IVA incluido.</p>
+          <p>Envíos gratis a todo el país.</p>
+          <button class="boton" id="carrito">🛒 Carrito</button><button class="boton oferta">Ver ofertas</button>
+          <footer><p>© 2026 Vinoteca del Valle · Mendoza</p></footer>
+        </div>
+      </div>
+      <style id="userRule"></style>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const site = $("#site");
+  function confetti() {
+    const colors = ["#e44d26", "#2a9d8f", "#1a5fb4", "#7b2cbf", "#d6336c", "#ffd166"];
+    for (let k = 0; k < 90; k++) {
+      const c = document.createElement("div"); c.className = "confetti";
+      c.style.cssText = `left:${Math.random() * 100}vw;background:${colors[k % 6]};animation-duration:${1.6 + Math.random() * 1.8}s;animation-delay:${Math.random() * .4}s`;
+      document.body.appendChild(c); setTimeout(() => c.remove(), 4000);
+    }
+  }
+
+  // ---------- etiquetas tag.clase#id y números de cada elemento ----------
+  const NUMBERED = "h1, nav a, h2, li, p, button";
+  $$("*", site).forEach(el => {
+    if (el.tagName === "S") return;
+    el.dataset.sig = el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + [...el.classList].map(c => "." + c).join("");
+  });
+  $$(NUMBERED, site).forEach((el, i) => el.dataset.n = i + 1);
+  $("#sigs").addEventListener("change", (e) => site.classList.toggle("sigs", e.target.checked));
+
+  // ---------- utilidades de selectores ----------
+  function query(sel) {
+    if (!sel.trim()) return { ok: true, els: [] };
+    try {
+      const plain = sel.replace(/:hover/g, "");              // :hover depende del mouse: para contar, lo ignoramos
+      const els = $$(plain, site).filter(el => el.dataset.sig);
+      return { ok: true, els, hover: /:hover/.test(sel) };
+    } catch { return { ok: false, els: [] }; }
+  }
+  const scoped = (sel) => sel.split(",").map(s => `#site ${s.trim()}`).join(", ");
+  function kindOf(sel) {
+    if (/,|\s/.test(sel.trim()) || /^[a-z0-9]+[.#]/i.test(sel)) return "k-combo";
+    if (sel.includes(":")) return "k-pseudo";
+    if (sel.startsWith(".")) return "k-class";
+    if (sel.startsWith("#")) return "k-id";
+    return "k-tag";
+  }
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  function pulse(els) { els.forEach((el, i) => setTimeout(() => { el.classList.remove("hit"); void el.offsetWidth; el.classList.add("hit"); }, i * 70)); }
+  const setsEqual = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+
+  // ============================================================== MODO 1: apuntar
+  const A = { color: "#ffe066" };
+  function applyAim(animate = true) {
+    const sel = $("#selInput").value;
+    const q = query(sel);
+    $("#selInput").classList.toggle("invalid", !q.ok);
+    if (!q.ok) {
+      $("#userRule").textContent = "";
+      $("#ruleView").innerHTML = `<span style="color:#ff8a8a">Ese selector no es válido 🤔</span>`;
+      $("#count").innerHTML = ""; return;
+    }
+    $("#userRule").textContent = sel.trim() ? `${scoped(sel)} { background: ${A.color} !important; outline: 3px solid color-mix(in srgb, ${A.color} 60%, #000); outline-offset: 2px; }` : "";
+    $("#ruleView").innerHTML = `<span class="sel ${kindOf(sel)}">${esc(sel.trim() || "…")}</span> {<br>&nbsp;&nbsp;<span class="prop">background</span>: <span class="swatch-inline" style="background:${A.color}"></span>${A.color};<br>}`;
+    const n = q.els.length;
+    $("#count").innerHTML = q.hover
+      ? `<span class="big bump">🖱️</span> Depende del mouse: pasalo por ${n === 1 ? "el elemento" : `los ${n} elementos`} para verlo.`
+      : `<span class="big bump">${n}</span> ${n === 1 ? "elemento coincide" : "elementos coinciden"}`;
+    if (animate && !q.hover) pulse(q.els);
+    $$(".chip").forEach(c => c.setAttribute("aria-pressed", c.textContent === sel.trim()));
+  }
+  $("#selInput").addEventListener("input", () => applyAim());
+  document.querySelectorAll("#aimPanel .chip").forEach(c => c.addEventListener("click", () => { $("#selInput").value = c.textContent; applyAim(); }));
+  $("#colors").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    $$("#colors button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    A.color = b.dataset.c; applyAim(false);
+  });
+
+  // ============================================================== MODO 2: ¿qué se pinta?
+  const ROUNDS = [
+    { sel: "p", why: "Un selector de etiqueta agarra <strong>todos</strong> los <code>&lt;p&gt;</code>, estén donde estén. ¿Se acordaron del que está en el footer?" },
+    { sel: ".oferta", why: "Una clase la puede tener <strong>cualquier etiqueta</strong>: dos <code>li</code> y también un <code>button</code>." },
+    { sel: "#titulo", why: "Un ID identifica a <strong>un solo</strong> elemento de la página." },
+    { sel: "li.oferta", why: "Pegados, sin espacio: un <code>li</code> que <strong>además</strong> tenga la clase oferta. El botón tiene la clase, pero no es <code>li</code>." },
+    { sel: "nav a", why: "Con espacio: los <code>a</code> que están <strong>adentro</strong> de un <code>nav</code>." },
+    { sel: "li:first-child", why: "<code>:first-child</code> es una pseudoclase de posición: el <code>li</code> que es el primer hijo de su lista." },
+    { sel: ".boton", why: "Los dos botones tienen la clase <code>boton</code>, aunque uno además tenga un ID y el otro la clase oferta." },
+    { sel: "li:nth-child(2)", why: "<code>:nth-child(2)</code> elige al segundo hijo." },
+    { sel: "footer p", why: "Sólo el párrafo que está dentro del <code>footer</code>." },
+    { sel: "a.activo", why: "El enlace que tiene la clase <code>activo</code>: el que indica en qué página estás." },
+  ];
+  const V = { i: 0, score: 0, picked: new Set(), revealed: false };
+  function startVote() { V.i = 0; V.score = 0; showVote(); }
+  function clearMarks() { $$("[data-n]", site).forEach(el => el.classList.remove("picked", "res-ok", "res-miss", "res-bad")); }
+  function showVote() {
+    V.picked.clear(); V.revealed = false; clearMarks();
+    const r = ROUNDS[V.i];
+    $("#vSel").innerHTML = esc(r.sel);
+    $("#vSel").className = "q-sel"; $("#vSel").style.color = "";
+    $("#revealBtn").hidden = false; $("#nextBtn").hidden = true; $("#legend").hidden = true;
+    $("#vExplain").className = "explain"; $("#vExplain").innerHTML = "Elegí los elementos y apretá <strong>Revelar</strong>.";
+    $("#vRound").textContent = `${V.i + 1} de ${ROUNDS.length}`;
+    $("#vProg").style.width = (V.i / ROUNDS.length) * 100 + "%";
+    $("#vScore").textContent = `⭐ ${V.score}`;
+  }
+  site.addEventListener("click", (e) => {
+    if (!site.classList.contains("voting") || V.revealed) return;
+    const el = e.target.closest("[data-n]"); if (!el) return;
+    const n = el.dataset.n;
+    V.picked.has(n) ? V.picked.delete(n) : V.picked.add(n);
+    el.classList.toggle("picked", V.picked.has(n));
+  });
+  $("#revealBtn").onclick = () => {
+    V.revealed = true;
+    const r = ROUNDS[V.i];
+    const right = new Set($$(r.sel, site).map(el => el.dataset.n).filter(Boolean));
+    let ok = 0, miss = 0, bad = 0;
+    $$("[data-n]", site).forEach((el, k) => {
+      const n = el.dataset.n, p = V.picked.has(n), t = right.has(n);
+      el.classList.remove("picked");
+      setTimeout(() => {
+        if (p && t) el.classList.add("res-ok");
+        else if (t) el.classList.add("res-miss");
+        else if (p) el.classList.add("res-bad");
+      }, k * 45);
+      if (p && t) ok++; else if (t) miss++; else if (p) bad++;
+    });
+    const perfect = miss === 0 && bad === 0;
+    if (perfect) V.score++;
+    $("#vExplain").className = "explain " + (perfect ? "ok" : "bad");
+    $("#vExplain").innerHTML = (perfect ? "🎯 <strong>¡Perfecto!</strong> " : `😅 <strong>${ok} de ${right.size}</strong>${bad ? `, y ${bad} de más` : ""}. `) + r.why;
+    $("#vScore").textContent = `⭐ ${V.score}`;
+    $("#vProg").style.width = ((V.i + 1) / ROUNDS.length) * 100 + "%";
+    $("#revealBtn").hidden = true; $("#nextBtn").hidden = false; $("#legend").hidden = false;
+    $("#nextBtn").textContent = V.i === ROUNDS.length - 1 ? "Ver resultado ▶" : "Siguiente ▶";
+  };
+  $("#nextBtn").onclick = () => {
+    if (V.i === -1) return startVote();
+    if (V.i < ROUNDS.length - 1) { V.i++; showVote(); return; }
+    clearMarks();
+    $("#vSel").textContent = `${V.score} de ${ROUNDS.length} ${V.score >= ROUNDS.length - 1 ? "🏆" : V.score >= ROUNDS.length / 2 ? "👏" : "💪"}`;
+    $("#vExplain").className = "explain ok";
+    $("#vExplain").innerHTML = "Resumen: <code>p</code> = etiqueta · <code>.algo</code> = clase · <code>#algo</code> = ID · <code>a:hover</code> = estado · <code>nav a</code> = adentro de · <code>li.oferta</code> = las dos cosas a la vez.";
+    $("#legend").hidden = true;
+    $("#nextBtn").textContent = "Jugar de nuevo ↻"; V.i = -1;
+    if (V.score >= ROUNDS.length / 2) confetti();
+  };
+
+  // ============================================================== MODO 3: desafíos
+  const CHALLENGES = [
+    { goal: "Pintá todos los vinos de la lista.", target: "li", hint: "Todos son del mismo tipo de etiqueta.", alts: ["li", ".vino", "ul li"] },
+    { goal: "Pintá sólo el título de la página.", target: "#titulo", hint: "Tiene un ID.", alts: ["#titulo", "h1"] },
+    { goal: "Pintá todos los botones.", target: "button", hint: "Comparten una clase… o una etiqueta.", alts: ["button", ".boton"] },
+    { goal: "Pintá los vinos en oferta, pero no el botón.", target: "li.oferta", hint: "Tiene que ser un li y además tener la clase oferta.", alts: ["li.oferta", ".vino.oferta", "ul .oferta"] },
+    { goal: "Pintá todo lo que está en oferta.", target: ".oferta", hint: "Una clase, sin importar la etiqueta.", alts: [".oferta"] },
+    { goal: "Pintá los enlaces del menú.", target: "nav a", hint: "Están adentro del nav.", alts: ["nav a", "a", "header a"] },
+    { goal: "Pintá el último vino de la lista.", target: "li:last-child", hint: "Hay una pseudoclase para «el último hijo».", alts: ["li:last-child", "li:nth-child(4)"] },
+    { goal: "Pintá la nota de los precios.", target: ".nota", hint: "Tiene una clase.", alts: [".nota", "p.nota", "p:first-of-type"] },
+  ];
+  const C = { i: 0, done: new Set() };
+  function renderChList() {
+    $("#chList").innerHTML = CHALLENGES.map((c, k) => `<button data-k="${k}" class="${C.done.has(k) ? "done" : ""} ${k === C.i ? "on" : ""}">${C.done.has(k) ? "✓" : k + 1}</button>`).join("");
+  }
+  function showChallenge() {
+    const c = CHALLENGES[C.i];
+    renderChList();
+    $("#chGoal").textContent = c.goal;
+    $("#chInput").value = ""; $("#hint").textContent = "";
+    $("#chExplain").className = "explain"; $("#chExplain").innerHTML = "Hay más de una respuesta posible para cada desafío.";
+    $$("[data-sig]", site).forEach(el => el.classList.remove("target"));
+    $$(c.target, site).forEach(el => el.classList.add("target"));
+    $("#userRule").textContent = ""; $("#chCount").innerHTML = "";
+    setTimeout(() => $("#chInput").focus(), 50);
+  }
+  $("#chList").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { C.i = +b.dataset.k; showChallenge(); } });
+  $("#chInput").addEventListener("input", () => {
+    const c = CHALLENGES[C.i], sel = $("#chInput").value;
+    const q = query(sel);
+    $("#chInput").classList.toggle("invalid", !q.ok);
+    if (!q.ok || !sel.trim()) { $("#userRule").textContent = ""; $("#chCount").innerHTML = q.ok ? "" : "Ese selector no es válido 🤔"; return; }
+    $("#userRule").textContent = `${scoped(sel)} { background: #b2f2bb !important; outline: 3px solid #2f9e44; outline-offset: 2px; }`;
+    const target = $$(c.target, site);
+    const extra = q.els.filter(el => !target.includes(el)).length;
+    const hit = q.els.filter(el => target.includes(el)).length;
+    $("#chCount").innerHTML = `<span class="big">${hit}/${target.length}</span> del objetivo${extra ? ` · <span style="color:var(--bad)">${extra} de más</span>` : ""}`;
+    if (setsEqual(q.els, target) && !C.done.has(C.i)) {
+      C.done.add(C.i);
+      pulse(target);
+      const others = c.alts.filter(a => a !== sel.trim());
+      $("#chExplain").className = "explain ok";
+      $("#chExplain").innerHTML = `🎉 <strong>¡Lo lograste!</strong>${others.length ? ` Otras respuestas que también funcionan: ${others.map(o => `<code>${esc(o)}</code>`).join(", ")}.` : ""}`;
+      renderChList();
+      if (C.done.size === CHALLENGES.length) { confetti(); $("#chExplain").innerHTML += " <br>🏆 <strong>¡Completaste todos los desafíos!</strong>"; }
+      else setTimeout(() => { if (CHALLENGES[C.i] === c) { $("#chExplain").innerHTML += ` <button class="btn" id="goNext" style="margin-left:8px">Siguiente ▶</button>`; $("#goNext").onclick = () => { C.i = (C.i + 1) % CHALLENGES.length; showChallenge(); }; } }, 300);
+    } else if (!setsEqual(q.els, target)) {
+      if (C.done.has(C.i)) return;
+      $("#chExplain").className = "explain";
+      $("#chExplain").innerHTML = extra ? "Te estás llevando elementos de más. ¿Cómo podés ser más específico?" : hit < target.length ? "Todavía faltan elementos del objetivo." : "";
+    }
+  });
+  $("#hintBtn").onclick = () => $("#hint").textContent = "💡 " + CHALLENGES[C.i].hint;
+
+  // ============================================================== modos
+  $("#modeSeg").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    $$("#modeSeg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    const m = b.dataset.v;
+    $("#aimPanel").hidden = m !== "aim"; $("#votePanel").hidden = m !== "vote"; $("#chPanel").hidden = m !== "challenge";
+    site.classList.toggle("voting", m === "vote");
+    site.classList.toggle("nums", m === "vote");
+    clearMarks();
+    $$("[data-sig]", site).forEach(el => el.classList.remove("target"));
+    $("#userRule").textContent = "";
+    if (m === "aim") applyAim(false);
+    if (m === "vote") startVote();
+    if (m === "challenge") showChallenge();
+  });
+
+  applyAim(false);
+})();
+</script>
+</body>
+</html>

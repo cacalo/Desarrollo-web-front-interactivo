@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Etiquetas semánticas · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+  :root {
+    --z-header: #e44d26; --z-nav: #1a5fb4; --z-main: #2a9d8f; --z-article: #7b2cbf; --z-aside: #b26a00; --z-footer: #57525f; --z-section: #d6336c;
+  }
+  .modes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .modes .seg button { font-size: 1.02rem; padding: 9px 16px; }
+  .modes .right { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+  .col-title { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); font-weight: 700; margin: 0 0 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  [hidden] { display: none !important; }
+
+  .browser { background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .chrome { background: #e8e4de; padding: 9px 12px; display: flex; align-items: center; gap: 10px; }
+  .lights { display: flex; gap: 6px; } .lights i { width: 12px; height: 12px; border-radius: 50%; background: #f26b5b; } .lights i:nth-child(2) { background: #f6bf4f; } .lights i:nth-child(3) { background: #5ec860; }
+  .addr { flex: 1; background: #fff; border-radius: 999px; padding: 5px 14px; font-family: var(--mono); font-size: 14px; color: var(--ink-2); }
+  .viewport { position: relative; }
+
+  /* =========================================================== modo armar */
+  .build { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1000px) { .build { grid-template-columns: 1fr; } }
+  .tray { display: flex; flex-direction: column; gap: 10px; min-height: 120px; }
+  .tray-done { color: var(--ok); font-weight: 700; text-align: center; padding: 30px 10px; border: 2px dashed var(--ok); border-radius: 12px; background: var(--ok-bg); }
+  .piece { background: #fff; border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: grab; user-select: none; touch-action: none; box-shadow: 0 2px 0 var(--line); transition: transform .15s, box-shadow .15s, border-color .15s, opacity .2s; }
+  .piece:hover { transform: translateY(-2px); border-color: var(--ink-2); }
+  .piece.selected { border-color: var(--brand-2); box-shadow: 0 0 0 4px rgba(123,44,191,.2); }
+  .piece.lifted { opacity: .25; }
+  .piece.back { animation: back .4s; }
+  @keyframes back { 0% { transform: translateX(-12px); } 50% { transform: translateX(8px); } 100% { transform: none; } }
+  .drag-ghost { position: fixed; z-index: 100; pointer-events: none; transform: rotate(-2deg) scale(1.04); box-shadow: 0 14px 30px rgba(0,0,0,.25); width: 250px; transition: none; }
+  .drag-ghost.flying { transition: all .4s cubic-bezier(.3,.8,.3,1); transform: none; }
+
+  /* contenido de las piezas (se ve igual en la bandeja y en la página) */
+  .c-logo { font-family: Georgia, serif; font-size: 1.35rem; font-weight: 700; }
+  .c-nav { display: flex; gap: 14px; font-size: .95rem; } .c-nav span { text-decoration: underline; color: #1a5fb4; }
+  .c-art h4 { margin: 0 0 4px; font-family: Georgia, serif; font-size: 1.1rem; }
+  .c-art p { margin: 0; font-size: .9rem; color: #444; }
+  .c-art .row { display: flex; gap: 10px; align-items: center; }
+  .c-art .pic { font-size: 2rem; flex: none; }
+  .c-aside h4 { margin: 0 0 4px; font-size: 1rem; } .c-aside p { margin: 0; font-size: .9rem; }
+  .c-foot { font-size: .85rem; color: #555; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
+  /* zonas (wireframe) */
+  .wire { padding: 16px; display: grid; gap: 12px; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); grid-template-areas: "header header" "main aside" "footer footer"; background: #fbfaf8; transition: background .5s; }
+  .zone { --c: #999; position: relative; border: 2.5px dashed color-mix(in srgb, var(--c) 55%, white); border-radius: 12px; padding: 22px 12px 12px; min-height: 70px; background: color-mix(in srgb, var(--c) 5%, white); transition: all .45s; }
+  .zone > .zl { position: absolute; top: -12px; left: 12px; background: var(--c); color: #fff; font-family: var(--mono); font-weight: 800; font-size: 13px; padding: 1px 9px; border-radius: 7px; transition: all .3s; z-index: 2; }
+  .zone > .zl .ck { display: none; } .zone.filled > .zl .ck { display: inline; }
+  .zone.over { background: color-mix(in srgb, var(--c) 18%, white); border-style: solid; transform: scale(1.01); }
+  .zone.wrong { animation: wrong .45s; border-color: var(--bad); }
+  @keyframes wrong { 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+  .zone.filled { border-style: solid; }
+  .zone .slot { min-height: 30px; }
+  .zone .slot .piece { cursor: default; border-color: transparent; box-shadow: none; padding: 4px 2px; background: transparent; animation: landed .5s; }
+  .zone .slot .piece:hover { transform: none; }
+  @keyframes landed { from { background: #fff3a6; } to { background: transparent; } }
+  .slot-hint { color: color-mix(in srgb, var(--c) 70%, #777); font-size: .85rem; font-style: italic; }
+  .z-header { --c: var(--z-header); grid-area: header; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .z-header > .slot { flex: 1; min-width: 160px; }
+  .z-nav { --c: var(--z-nav); flex: 1.3; min-width: 220px; min-height: 56px; }
+  .z-main { --c: var(--z-main); grid-area: main; display: flex; flex-direction: column; gap: 16px; }
+  .z-article { --c: var(--z-article); }
+  .z-aside { --c: var(--z-aside); grid-area: aside; }
+  .z-footer { --c: var(--z-footer); grid-area: footer; }
+
+  /* página terminada: deja de parecer un plano y se ve como un sitio */
+  .wire.done { background: #fff; }
+  .wire.done .zone { border-color: transparent; background: transparent; }
+  .wire.done:not(.xray) .zone > .zl { opacity: 0; transform: scale(.6); }
+  .wire.done .z-header { background: #5a1e33; color: #fff; border-radius: 12px; }
+  .wire.done .z-header .c-nav span { color: #fff; text-decoration: none; opacity: .9; }
+  .wire.done .z-nav { padding-top: 12px; }
+  .wire.done .z-article { background: #fff; border: 1px solid #eee; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+  .wire.done .z-aside { background: #fff6e0; }
+  .wire.done .z-footer { background: #2a2730; color: #ddd; border-radius: 12px; } .wire.done .z-footer .c-foot { color: #ccc; }
+  .wire.done.xray .zone { border: 2px dashed var(--c); }
+
+  .status-bar { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .meter { flex: 1; min-width: 160px; height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--ok); width: 0; transition: width .4s; }
+  .explain { margin-top: 12px; min-height: 3.2em; padding: 12px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 1.05rem; transition: background .3s; }
+  .explain.ok { background: var(--ok-bg); border-color: #bfe5cc; }
+  .explain.bad { background: var(--bad-bg); border-color: #f3c0c0; }
+
+  /* =========================================================== sitios renderizados (lector y juego) */
+  .site { font-family: "Segoe UI", system-ui, sans-serif; padding: 14px; display: grid; gap: 12px; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); background: #fff; font-size: 15px; }
+  .site .r { border-radius: 10px; padding: 12px 14px; position: relative; transition: box-shadow .3s, outline-color .3s; outline: 3px solid transparent; outline-offset: 3px; }
+  .site .r-header { grid-column: 1 / -1; background: #5a1e33; color: #fff; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .site .r-header .brand { font-family: Georgia, serif; font-size: 1.3rem; font-weight: 700; flex: 1; }
+  .site .r-nav { display: flex; gap: 14px; padding: 4px 6px; } .site .r-nav span { opacity: .9; }
+  .site .r-main { padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .site .r-article, .site .r-section { border: 1px solid #eee; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+  .site .r-article h4, .site .r-section h4 { margin: 0 0 4px; font-family: Georgia, serif; font-size: 1.1rem; }
+  .site .r-article p, .site .r-section p { margin: 0; color: #444; font-size: .92rem; }
+  .site .r-aside { background: #fff6e0; align-self: start; }
+  .site .r-aside h4 { margin: 0 0 6px; } .site .r-aside ol { margin: 0; padding-left: 1.2em; font-size: .9rem; }
+  .site .r-footer { grid-column: 1 / -1; background: #2a2730; color: #ccc; font-size: .85rem; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .site.side-nav { grid-template-columns: 170px minmax(0, 1fr); }
+  .site.side-nav .r-nav { flex-direction: column; background: #f3eff9; gap: 6px; padding: 12px; align-self: start; }
+  .site.side-nav .r-nav span { opacity: 1; padding: 6px 8px; border-radius: 8px; } .site.side-nav .r-nav span.on { background: #e2d6f3; font-weight: 700; }
+  .site.diario .r-header { background: #1b2a41; } .site.diario .r-header .brand { font-size: 1.6rem; letter-spacing: -.01em; }
+  .site.agenda .r-header { background: var(--brand-2); }
+  .site .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .site .r.reading { outline-color: #ffd666; box-shadow: 0 0 0 9999px rgba(255,255,255,.55); z-index: 2; }
+  .site .r .rl { position: absolute; top: -10px; right: 8px; font-family: var(--mono); font-size: 12px; font-weight: 800; padding: 0 7px; border-radius: 6px; color: #fff; background: var(--c, #999); opacity: 0; transform: scale(.6); transition: all .3s; z-index: 3; }
+  .site.xray .r .rl, .site .r.labeled .rl { opacity: 1; transform: none; }
+  .site.xray .r { outline: 2px dashed var(--c, #999); }
+
+  /* =========================================================== modo lector */
+  .reader { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1000px) { .reader { grid-template-columns: 1fr; } }
+  .bot { position: absolute; z-index: 10; font-size: 44px; transition: left .7s cubic-bezier(.3,.8,.3,1), top .7s cubic-bezier(.3,.8,.3,1); filter: drop-shadow(0 4px 3px rgba(0,0,0,.25)); pointer-events: none; }
+  .bot .say { position: absolute; left: 40px; top: -30px; box-shadow: 0 4px 12px rgba(0,0,0,.15); background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 6px 10px; font-size: 15px; font-family: var(--sans); white-space: nowrap; font-weight: 600; opacity: 0; transform: scale(.7); transform-origin: left center; transition: all .2s; }
+  .bot .say.show { opacity: 1; transform: none; }
+  .bot .say.confused { border-color: var(--warn); color: var(--warn); }
+  .heard { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .heard li { padding: 8px 12px; border-radius: 10px; background: var(--surface-2); display: flex; gap: 10px; align-items: center; animation: slidein .3s; font-size: 1.02rem; }
+  .heard li .role { font-family: var(--mono); font-size: .8rem; font-weight: 800; color: #fff; padding: 1px 7px; border-radius: 6px; flex: none; }
+  .heard li.confused { background: var(--warn-bg); color: var(--warn); }
+  .heard:empty::before { content: "Elegí una versión y apretá ▶ Leer la página."; color: var(--ink-2); }
+  @keyframes slidein { from { opacity: 0; transform: translateX(-10px); } }
+  .verdict { margin-top: 12px; font-size: 1.05rem; }
+
+  /* =========================================================== juego */
+  .game { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; margin-top: 16px; }
+  @media (max-width: 1000px) { .game { grid-template-columns: 1fr; } }
+  .spot { position: absolute; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(20, 18, 28, .55); transition: all .45s cubic-bezier(.3,.8,.3,1); pointer-events: none; z-index: 5; }
+  .spot::after { content: ""; position: absolute; inset: -6px; border: 3px solid #ffd666; border-radius: 14px; animation: pulse 1.1s ease-in-out infinite; }
+  @keyframes pulse { 50% { inset: -11px; opacity: .4; } }
+  .q-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
+  .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .answers button { --c: #555; font-family: var(--mono); font-size: 1.3rem; font-weight: 800; padding: 16px; border-radius: 14px; border: 3px solid color-mix(in srgb, var(--c) 35%, white); color: var(--c); background: #fff; cursor: pointer; transition: transform .12s, background .2s; }
+  .answers button:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--c); }
+  .answers button.right { background: var(--ok); border-color: var(--ok); color: #fff; animation: pop .4s; }
+  .answers button.wrong { background: var(--bad); border-color: var(--bad); color: #fff; animation: shakeb .4s; }
+  .answers button:disabled:not(.right):not(.wrong) { opacity: .45; }
+  @keyframes pop { 50% { transform: scale(1.08); } }
+  @keyframes shakeb { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .feedback { min-height: 3.2em; margin-top: 14px; font-size: 1.1rem; }
+  .scoreboard { display: flex; gap: 14px; align-items: center; font-weight: 700; font-size: 1.1rem; }
+  .progress { flex: 1; height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .progress i { display: block; height: 100%; background: var(--brand-2); transition: width .3s; }
+
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 12px; font-size: 1rem; transition: all .25s; pointer-events: none; z-index: 150; }
+  .toast.show { transform: translate(-50%, 0); opacity: 1; }
+  .confetti { position: fixed; top: -20px; width: 10px; height: 14px; z-index: 200; pointer-events: none; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › HTML y CSS › <strong>Etiquetas semánticas</strong></nav>
+</header>
+
+<main class="page-wrap" style="max-width:1400px;margin:0 auto;padding:22px 24px 60px">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="build" aria-pressed="true">🏗️ Armar la página</button>
+      <button data-v="reader">🤖 ¿Quién lee tu página?</button>
+      <button data-v="game">🔎 ¿Qué zona es?</button>
+    </div>
+    <div class="right" id="buildTools">
+      <label class="switch" id="xrayWrap" hidden><input type="checkbox" id="xray"> 🩻 Rayos X</label>
+      <button class="btn" id="solveBtn" title="Completa la página sola">🪄 Resolver</button>
+      <button class="btn" id="resetBtn">↺ Empezar de nuevo</button>
+    </div>
+  </div>
+
+  <!-- ===================================================== armar -->
+  <section class="build" id="build">
+    <aside>
+      <h3 class="col-title">Contenido para ubicar</h3>
+      <div class="tray" id="tray"></div>
+      <p style="color:var(--ink-2); font-size:.88rem; margin-top:12px">Arrastrá cada parte a su zona. También podés tocar una parte y después tocar la zona.</p>
+    </aside>
+    <section>
+      <h3 class="col-title">La página de la vinoteca <span id="countLabel" style="text-transform:none;letter-spacing:0"></span></h3>
+      <div class="browser">
+        <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="addr">vinoteca.html</div></div>
+        <div class="wire" id="page">
+          <div class="zone z-header" data-zone="header"><span class="zl">&lt;header&gt; <span class="ck">✓</span></span>
+            <div class="slot" data-slot="header"><span class="slot-hint">la cabecera del sitio</span></div>
+            <div class="zone z-nav" data-zone="nav"><span class="zl">&lt;nav&gt; <span class="ck">✓</span></span><div class="slot" data-slot="nav"><span class="slot-hint">el menú</span></div></div>
+          </div>
+          <div class="zone z-main" data-zone="main"><span class="zl">&lt;main&gt; <span class="ck">✓</span></span>
+            <div class="zone z-article" data-zone="article"><span class="zl">&lt;article&gt; <span class="ck">✓</span></span><div class="slot" data-slot="article"><span class="slot-hint">una nota completa</span></div></div>
+            <div class="zone z-article" data-zone="article"><span class="zl">&lt;article&gt; <span class="ck">✓</span></span><div class="slot" data-slot="article"><span class="slot-hint">otra nota completa</span></div></div>
+          </div>
+          <div class="zone z-aside" data-zone="aside"><span class="zl">&lt;aside&gt; <span class="ck">✓</span></span><div class="slot" data-slot="aside"><span class="slot-hint">algo complementario</span></div></div>
+          <div class="zone z-footer" data-zone="footer"><span class="zl">&lt;footer&gt; <span class="ck">✓</span></span><div class="slot" data-slot="footer"><span class="slot-hint">el pie de página</span></div></div>
+        </div>
+      </div>
+      <div class="status-bar"><div class="meter"><i id="meter"></i></div></div>
+      <div class="explain" id="explain">Cada zona tiene el nombre de una etiqueta semántica. El nombre dice <strong>qué es</strong> esa parte de la página, no cómo se ve.</div>
+    </section>
+  </section>
+
+  <!-- ===================================================== lector -->
+  <section class="reader" id="reader" hidden>
+    <section>
+      <div class="controls" style="margin-bottom:12px">
+        <div class="control">
+          <span class="label">La misma página, escrita con…</span>
+          <div class="seg mono" id="verSeg">
+            <button data-v="div">&lt;div&gt; en todos lados</button>
+            <button data-v="sem" aria-pressed="true">etiquetas semánticas</button>
+          </div>
+        </div>
+        <div class="control">
+          <span class="label">Lee</span>
+          <div class="seg" id="whoSeg">
+            <button data-v="sr" aria-pressed="true">🦯 Lector de pantalla</button>
+            <button data-v="bot">🕷️ Robot de Google</button>
+          </div>
+        </div>
+        <label class="switch" title="Usa la voz del navegador"><input type="checkbox" id="voice"> 🔊 En voz alta</label>
+        <button class="btn primary big" id="readBtn">▶ Leer la página</button>
+        <button class="btn big" id="pauseBtn" hidden title="Pausar o seguir (barra espaciadora)">⏸ Pausar</button>
+        <button class="btn big" id="stopBtn" hidden title="Detener (Esc)">⏹ Detener</button>
+      </div>
+      <div class="browser">
+        <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="addr">vinoteca.html</div></div>
+        <div class="viewport" id="readerVp"><div id="readerSite"></div><div class="bot" id="bot" hidden><span class="b-icon">🦯</span><span class="say" id="say"></span></div></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-title">Lo que entiende <span id="whoLabel">el lector de pantalla</span></div>
+      <ol class="heard" id="heard"></ol>
+      <div class="verdict" id="verdict"></div>
+    </section>
+  </section>
+
+  <!-- ===================================================== juego -->
+  <section class="game" id="game" hidden>
+    <section>
+      <div class="browser">
+        <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="addr" id="gameAddr"></div></div>
+        <div class="viewport" id="gameVp"><div id="gameSite"></div><div class="spot" id="spot"></div></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="scoreboard"><span id="gScore">⭐ 0</span><div class="progress"><i id="gProg"></i></div><span id="gRound"></span></div>
+      <div class="q-title" style="margin-top:16px">¿Qué etiqueta semántica le corresponde a la zona iluminada?</div>
+      <div style="color:var(--ink-2)">Voten entre todos y después toquen la respuesta.</div>
+      <div class="answers" id="answers"></div>
+      <div class="feedback" id="feedback"></div>
+      <button class="btn primary big" id="nextQ" hidden>Siguiente ▶</button>
+    </section>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const COLOR = { header: "var(--z-header)", nav: "var(--z-nav)", main: "var(--z-main)", article: "var(--z-article)", aside: "var(--z-aside)", footer: "var(--z-footer)", section: "var(--z-section)" };
+  const WHAT = {
+    header: "<code>&lt;header&gt;</code> es la cabecera: el nombre o logo del sitio. Suele repetirse en todas las páginas.",
+    nav: "<code>&lt;nav&gt;</code> agrupa los enlaces para moverse por el sitio: el menú.",
+    main: "<code>&lt;main&gt;</code> es el contenido principal, lo que hace única a esta página. Hay uno solo.",
+    article: "<code>&lt;article&gt;</code> es un contenido que tiene sentido solo: una nota, un producto, un posteo. Lo podrías compartir suelto.",
+    aside: "<code>&lt;aside&gt;</code> es contenido complementario: se relaciona con la página, pero si lo sacás, lo principal se entiende igual.",
+    footer: "<code>&lt;footer&gt;</code> es el pie: datos de contacto, redes, copyright.",
+    section: "<code>&lt;section&gt;</code> es una parte temática de la página, normalmente con su propio título.",
+  };
+  function toast(msg) { const t = $("#toast"); t.innerHTML = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600); }
+  function confetti() {
+    const colors = ["#e44d26", "#2a9d8f", "#1a5fb4", "#7b2cbf", "#d6336c", "#ffd166"];
+    for (let k = 0; k < 90; k++) {
+      const c = document.createElement("div"); c.className = "confetti";
+      c.style.cssText = `left:${Math.random() * 100}vw;background:${colors[k % 6]};animation-duration:${1.6 + Math.random() * 1.8}s;animation-delay:${Math.random() * .4}s`;
+      document.body.appendChild(c); setTimeout(() => c.remove(), 4000);
+    }
+  }
+
+  // ============================================================== MODO 1: armar
+  const PIECES = [
+    { id: "logo",   zone: "header",  html: `<div class="c-logo">🍷 Vinoteca del Valle</div>` },
+    { id: "menu",   zone: "nav",     html: `<div class="c-nav"><span>Inicio</span><span>Vinos</span><span>Ofertas</span><span>Contacto</span></div>` },
+    { id: "art1",   zone: "article", html: `<div class="c-art"><div class="row"><span class="pic">🍾</span><div><h4>Malbec del mes</h4><p>Un Malbec de altura con notas a frutos rojos.</p></div></div></div>` },
+    { id: "art2",   zone: "article", html: `<div class="c-art"><h4>Cómo guardar tus vinos</h4><p>Acostados, lejos de la luz y a temperatura pareja.</p></div>` },
+    { id: "promo",  zone: "aside",   html: `<div class="c-aside"><h4>🏷️ Promo</h4><p>20% off llevando 6 botellas.</p></div>` },
+    { id: "foot",   zone: "footer",  html: `<div class="c-foot"><span>© 2026 Vinoteca del Valle · Mendoza</span><span>Instagram · WhatsApp</span></div>` },
+  ];
+  const B = { placed: new Set(), selected: null };
+
+  function renderTray() {
+    const left = PIECES.filter(p => !B.placed.has(p.id));
+    $("#tray").innerHTML = left.length ? left.map(p => `<div class="piece" data-id="${p.id}">${p.html}</div>`).join("")
+      : `<div class="tray-done">🎉 ¡Página armada!</div>`;
+    $("#meter").style.width = (B.placed.size / PIECES.length) * 100 + "%";
+    $("#countLabel").textContent = `${B.placed.size} de ${PIECES.length} ubicadas`;
+  }
+  function shuffle(a) { return a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(x => x[1]); }
+
+  function resetBuild() {
+    B.placed.clear(); B.selected = null;
+    PIECES.splice(0, PIECES.length, ...shuffle(PIECES));
+    $$("#page .slot").forEach(s => { s.querySelectorAll(".piece").forEach(p => p.remove()); s.querySelector(".slot-hint").hidden = false; });
+    $$("#page .zone").forEach(z => z.classList.remove("filled"));
+    $("#page").classList.remove("done", "xray");
+    $("#xrayWrap").hidden = true; $("#xray").checked = false;
+    $("#explain").className = "explain";
+    $("#explain").innerHTML = "Cada zona tiene el nombre de una etiqueta semántica. El nombre dice <strong>qué es</strong> esa parte de la página, no cómo se ve.";
+    renderTray();
+  }
+
+  // --- arrastrar con el puntero (mouse, touch o lápiz) ---
+  let drag = null;
+  $("#tray").addEventListener("pointerdown", (e) => {
+    const p = e.target.closest(".piece"); if (!p) return;
+    drag = { el: p, id: p.dataset.id, x0: e.clientX, y0: e.clientY, moved: false, ghost: null };
+    p.setPointerCapture(e.pointerId);
+  });
+  $("#tray").addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 6) {
+      drag.moved = true;
+      const r = drag.el.getBoundingClientRect();
+      drag.dx = e.clientX - r.left; drag.dy = e.clientY - r.top;
+      drag.ghost = drag.el.cloneNode(true); drag.ghost.classList.add("drag-ghost"); drag.ghost.style.width = r.width + "px";
+      document.body.appendChild(drag.ghost); drag.el.classList.add("lifted");
+      select(null);
+    }
+    if (drag.moved) {
+      drag.ghost.style.left = e.clientX - drag.dx + "px"; drag.ghost.style.top = e.clientY - drag.dy + "px";
+      const z = zoneAt(e.clientX, e.clientY);
+      $$(".zone.over").forEach(x => x !== z && x.classList.remove("over"));
+      z?.classList.add("over");
+    }
+  });
+  $("#tray").addEventListener("pointerup", (e) => {
+    if (!drag) return;
+    const d = drag; drag = null;
+    $$(".zone.over").forEach(x => x.classList.remove("over"));
+    if (!d.moved) { select(B.selected === d.id ? null : d.id); return; }
+    const z = zoneAt(e.clientX, e.clientY);
+    if (z) tryPlace(d.id, z, d.ghost); else { d.ghost.remove(); d.el.classList.remove("lifted"); d.el.classList.add("back"); }
+  });
+  function zoneAt(x, y) { return document.elementsFromPoint(x, y).find(el => el.classList?.contains("zone") && el.closest("#page")); }
+  function select(id) {
+    B.selected = id;
+    $$("#tray .piece").forEach(p => p.classList.toggle("selected", p.dataset.id === id));
+  }
+  $("#page").addEventListener("click", (e) => {
+    if (!B.selected) return;
+    const z = e.target.closest(".zone"); if (!z) return;
+    const el = $(`#tray .piece[data-id="${B.selected}"]`);
+    const r = el.getBoundingClientRect();
+    const ghost = el.cloneNode(true); ghost.classList.add("drag-ghost"); ghost.classList.remove("selected");
+    ghost.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;transform:none`;
+    document.body.appendChild(ghost); el.classList.add("lifted");
+    const id = B.selected; select(null);
+    tryPlace(id, z, ghost);
+  });
+
+  function freeSlot(zone) {
+    const s = zone.querySelector(":scope > .slot");
+    return s && !s.querySelector(".piece") ? s : null;
+  }
+  function tryPlace(id, zone, ghost) {
+    const piece = PIECES.find(p => p.id === id);
+    const zt = zone.dataset.zone;
+    let target = null, why = "";
+    if (zt === piece.zone) {
+      target = freeSlot(zone);
+      if (!target && piece.zone === "article") target = $$('#page .zone[data-zone="article"]').map(freeSlot).find(Boolean);
+      if (!target) why = `Esa zona ya está ocupada.`;
+    } else if (piece.zone === "nav" && zt === "header") why = "¡Casi! El menú va <strong>dentro</strong> del header, pero en su propia zona: <code>&lt;nav&gt;</code>.";
+    else if (piece.zone === "article" && zt === "main") why = "¡Casi! Va dentro de <code>&lt;main&gt;</code>, pero en un <code>&lt;article&gt;</code>: es una nota que se entiende sola.";
+    else why = `Eso no va en <code>&lt;${zt}&gt;</code>. ${WHAT[zt]}`;
+
+    if (!target) {
+      zone.classList.remove("wrong"); void zone.offsetWidth; zone.classList.add("wrong");
+      $("#explain").className = "explain bad"; $("#explain").innerHTML = "🤔 " + why;
+      const src = $(`#tray .piece[data-id="${id}"]`);
+      ghost.remove(); src.classList.remove("lifted"); src.classList.add("back"); setTimeout(() => src.classList.remove("back"), 400);
+      return;
+    }
+    // vuela hasta la zona y se acomoda
+    const r = target.getBoundingClientRect();
+    ghost.classList.add("flying");
+    requestAnimationFrame(() => { ghost.style.left = r.left + "px"; ghost.style.top = r.top + "px"; ghost.style.width = r.width + "px"; ghost.style.opacity = ".6"; });
+    setTimeout(() => {
+      ghost.remove();
+      target.querySelector(".slot-hint").hidden = true;
+      const placed = document.createElement("div"); placed.className = "piece"; placed.innerHTML = piece.html;
+      target.appendChild(placed);
+      zone.classList.add("filled");
+      B.placed.add(id);
+      if (piece.zone === "article" || zt === "main") $('#page .z-main').classList.toggle("filled", $$('#page .zone[data-zone="article"]').every(z => z.classList.contains("filled")));
+      $("#explain").className = "explain ok"; $("#explain").innerHTML = "✅ " + WHAT[piece.zone];
+      renderTray();
+      if (B.placed.size === PIECES.length) finish();
+    }, 420);
+  }
+  function finish() {
+    $('#page .z-main').classList.add("filled");
+    setTimeout(() => {
+      $("#page").classList.add("done");
+      $("#xrayWrap").hidden = false;
+      $("#explain").className = "explain ok";
+      $("#explain").innerHTML = "🎉 <strong>¡Página armada!</strong> Mirá: al sacarle los recuadros se ve como un sitio común. Las etiquetas semánticas <strong>no cambian cómo se ve</strong>: le dicen al navegador qué es cada parte. Prendé 🩻 Rayos X para verlas.";
+      confetti();
+    }, 700);
+  }
+  $("#xray").addEventListener("change", (e) => $("#page").classList.toggle("xray", e.target.checked));
+  $("#resetBtn").onclick = resetBuild;
+  $("#solveBtn").onclick = async () => {
+    for (const p of PIECES.filter(p => !B.placed.has(p.id))) {
+      const el = $(`#tray .piece[data-id="${p.id}"]`); if (!el) continue;
+      const zone = p.zone === "article" ? $$('#page .zone[data-zone="article"]').find(z => !z.classList.contains("filled")) : $(`#page .zone[data-zone="${p.zone}"]`);
+      const r = el.getBoundingClientRect();
+      const ghost = el.cloneNode(true); ghost.classList.add("drag-ghost"); ghost.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;transform:none`;
+      document.body.appendChild(ghost); el.classList.add("lifted");
+      tryPlace(p.id, zone, ghost);
+      await new Promise(res => setTimeout(res, 650));
+    }
+  };
+
+  // ============================================================== sitios renderizados (lector + juego)
+  // Cada región guarda su etiqueta en data-z. Con semantic=false todas son <div>.
+  const SITES = {
+    vinoteca: { addr: "vinoteca.html", cls: "", html: (T) => `
+      ${T("header", `<div class="brand">🍷 Vinoteca del Valle</div>${T("nav", "<span>Inicio</span><span>Vinos</span><span>Ofertas</span><span>Contacto</span>", "Navegación, 4 enlaces")}`, "Vinoteca del Valle")}
+      ${T("main", `${T("article", "<h4>🍾 Malbec del mes</h4><p>Un Malbec de altura con notas a frutos rojos.</p>", "Malbec del mes")}${T("article", "<h4>Cómo guardar tus vinos</h4><p>Acostados, lejos de la luz y a temperatura pareja.</p>", "Cómo guardar tus vinos")}`, "")}
+      ${T("aside", "<h4>🏷️ Promo</h4><p>20% off llevando 6 botellas.</p>", "Promo")}
+      ${T("footer", "<span>© 2026 Vinoteca del Valle · Mendoza</span><span>Instagram · WhatsApp</span>", "")}` },
+    diario: { addr: "diario-del-valle.com", cls: "diario", html: (T) => `
+      ${T("header", `<div class="brand">El Diario del Valle</div>${T("nav", "<span>Política</span><span>Deportes</span><span>Cultura</span><span>Clima</span>", "")}`, "")}
+      ${T("main", `${T("article", "<h4>Se viene una semana de lluvias en Mendoza</h4><p>El servicio meteorológico anunció tormentas desde el martes.</p>", "")}${T("article", "<h4>Ganó el club local y sueña con el ascenso</h4><p>Con un gol en el último minuto, el equipo quedó puntero.</p>", "")}`, "")}
+      ${T("aside", "<h4>Lo más leído</h4><ol><li>Vendimia 2027: fechas</li><li>Cortes de luz el jueves</li><li>Nuevo horario del tren</li></ol>", "")}
+      ${T("footer", "<span>© 2026 El Diario del Valle</span><span>Contacto · Publicidad</span>", "")}` },
+    agenda: { addr: "localhost:4200/contacts", cls: "agenda side-nav", html: (T) => `
+      ${T("header", `<div class="brand">📇 Agenda de contactos</div><span>Karen ▾</span>`, "")}
+      ${T("nav", `<span class="on">👤 Contactos</span><span>⭐ Favoritos</span><span>🏷️ Grupos</span>`, "")}
+      ${T("main", `${T("section", `<h4>⭐ Favoritos</h4><div class="cards">${T("article", "<h4>Ana Torres</h4><p>11 4567-8901</p>", "")}${T("article", "<h4>Bruno Díaz</h4><p>11 2233-4455</p>", "")}</div>`, "")}${T("section", "<h4>Todos los contactos</h4><p>Carla Méndez · Diego Ruiz · Elena Paz</p>", "")}`, "")}
+      ${T("footer", "<span>Agenda TUP · 2026</span><span>Versión 1.0</span>", "")}` },
+  };
+  function tagger(semantic) {
+    let n = 0;
+    return (z, inner, name) => {
+      const tag = semantic ? z : "div";
+      return `<${tag} class="r r-${z}" data-z="${z}" data-k="${n++}" data-name="${name || ""}" style="--c:${semantic ? COLOR[z] : "#8a8590"}"><span class="rl">&lt;${tag}&gt;</span>${inner}</${tag}>`;
+    };
+  }
+  function renderSite(host, key, semantic) {
+    const s = SITES[key];
+    host.innerHTML = `<div class="site ${s.cls}">${s.html(tagger(semantic))}</div>`;
+    return host.firstElementChild;
+  }
+
+  // ============================================================== MODO 2: ¿quién lee tu página?
+  const R = { ver: "sem", who: "sr", running: false };
+  function bindSeg(id, fn) {
+    $(id).addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+      fn(b.dataset.v);
+    });
+  }
+  bindSeg("#verSeg", (v) => { if (R.running) return; R.ver = v; prepReader(); });
+  bindSeg("#whoSeg", (v) => { if (R.running) return; R.who = v; prepReader(); });
+  function prepReader() {
+    renderSite($("#readerSite"), "vinoteca", R.ver === "sem");
+    $("#heard").innerHTML = ""; $("#verdict").innerHTML = "";
+    $("#bot").hidden = true;
+    $("#whoLabel").textContent = R.who === "sr" ? "el lector de pantalla" : "el robot de Google";
+    $(".b-icon", $("#bot")).textContent = R.who === "sr" ? "🦯" : "🕷️";
+  }
+  // Lo que "dice" cada lector según la etiqueta (o según que sea un div)
+  function phrase(z, name, semantic) {
+    if (!semantic) return R.who === "sr" ? { t: "Grupo… (no sé qué es)", bad: true } : { t: "Un div. ¿Importante? Ni idea", bad: true };
+    if (R.who === "sr") return {
+      header: { t: `Encabezado del sitio${name ? ": " + name : ""}` },
+      nav: { t: name || "Navegación" },
+      main: { t: "Contenido principal ⏩ (puedo saltar directo acá)" },
+      article: { t: `Artículo: ${name}` },
+      aside: { t: `Complementario: ${name}` },
+      footer: { t: "Pie de página" },
+    }[z];
+    return {
+      header: { t: `Nombre del sitio: ${name}` },
+      nav: { t: "Menú: sigo estos enlaces para encontrar más páginas" },
+      main: { t: "Esto es lo importante de la página" },
+      article: { t: `Nota indexable: “${name}”` },
+      aside: { t: "Contenido secundario, le doy menos peso" },
+      footer: { t: "Datos de contacto y redes" },
+    }[z];
+  }
+  // ---------- reproducción con pausa y stop ----------
+  // R.paused congela el recorrido (y la voz); R.stopped lo corta.
+  R.paused = false; R.stopped = false;
+  const hasVoice = () => $("#voice").checked && "speechSynthesis" in window;
+  // espera "ms" milisegundos sin contar el tiempo en pausa; se corta si se detiene
+  function wait(ms) {
+    return new Promise(res => {
+      let left = ms, last = performance.now();
+      const tick = () => {
+        const now = performance.now();
+        if (!R.paused) left -= now - last;
+        last = now;
+        if (R.stopped || left <= 0) return res();
+        setTimeout(tick, 50);
+      };
+      tick();
+    });
+  }
+  function speak(text) {
+    if (!hasVoice() || R.stopped) return Promise.resolve();
+    return new Promise(res => {
+      let done = false; const end = () => { if (!done) { done = true; res(); } };
+      const u = new SpeechSynthesisUtterance(text.replace(/[⏩🍾🏷️]/g, ""));
+      u.lang = "es-AR"; u.rate = 1.05; u.onend = end; u.onerror = end;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+      wait(9000).then(end);                   // por si el navegador nunca avisa que terminó
+      const watch = setInterval(() => { if (R.stopped) { clearInterval(watch); end(); } if (done) clearInterval(watch); }, 100);
+    });
+  }
+  function setReadButtons() {
+    $("#readBtn").hidden = R.running;
+    $("#pauseBtn").hidden = !R.running;
+    $("#stopBtn").hidden = !R.running;
+    $("#pauseBtn").textContent = R.paused ? "▶ Seguir" : "⏸ Pausar";
+    $("#verSeg").style.opacity = $("#whoSeg").style.opacity = R.running ? ".5" : "1";
+  }
+  function pauseReading(on) {
+    R.paused = on;
+    if ("speechSynthesis" in window) on ? speechSynthesis.pause() : speechSynthesis.resume();
+    $("#bot").style.opacity = on ? ".55" : "1";
+    setReadButtons();
+  }
+  function stopReading() {
+    R.stopped = true; R.paused = false;
+    if ("speechSynthesis" in window) { speechSynthesis.resume(); speechSynthesis.cancel(); }
+  }
+  $("#pauseBtn").onclick = () => pauseReading(!R.paused);
+  $("#stopBtn").onclick = stopReading;
+  $("#voice").addEventListener("change", (e) => { if (!e.target.checked && "speechSynthesis" in window) speechSynthesis.cancel(); });
+  addEventListener("keydown", (e) => {
+    if ($("#reader").hidden || !R.running || e.target.closest("input, textarea")) return;
+    if (e.key === " ") { e.preventDefault(); pauseReading(!R.paused); }
+    if (e.key === "Escape") stopReading();
+  });
+
+  $("#readBtn").onclick = async () => {
+    if (R.running) return;
+    R.running = true; R.paused = false; R.stopped = false;
+    setReadButtons();
+    prepReader();
+    const semantic = R.ver === "sem";
+    const site = $("#readerSite .site"), vp = $("#readerVp"), bot = $("#bot"), say = $("#say");
+    bot.hidden = false; bot.style.opacity = "1"; bot.style.left = "-10px"; bot.style.top = "10px";
+    await wait(300);
+    const regions = $$(".r", site);
+    for (const r of regions) {
+      if (R.stopped) break;
+      const vr = vp.getBoundingClientRect(), rr = r.getBoundingClientRect();
+      bot.style.left = rr.left - vr.left - 18 + "px"; bot.style.top = rr.top - vr.top - 26 + "px";
+      await wait(650);
+      if (R.stopped) break;
+      $$(".r.reading", site).forEach(x => x.classList.remove("reading"));
+      r.classList.add("reading", "labeled");
+      const p = phrase(r.dataset.z, r.dataset.name, semantic);
+      say.textContent = p.t; say.className = "say show" + (p.bad ? " confused" : "");
+      const li = document.createElement("li");
+      if (p.bad) li.className = "confused";
+      li.innerHTML = `<span class="role" style="background:${semantic ? COLOR[r.dataset.z] : "#999"}">&lt;${semantic ? r.dataset.z : "div"}&gt;</span><span>${p.t}</span>`;
+      $("#heard").appendChild(li);
+      await Promise.all([wait(1300), speak(p.t)]);
+      say.className = "say";
+    }
+    $$(".r.reading", site).forEach(x => x.classList.remove("reading"));
+    bot.hidden = true;
+    if (R.stopped) {
+      $("#verdict").innerHTML = "⏹ Lectura detenida. Apretá ▶ para empezar de nuevo.";
+    } else {
+      $("#verdict").innerHTML = semantic
+        ? (R.who === "sr"
+          ? "✅ <strong>Entendió la página.</strong> Una persona ciega puede saltar directo al contenido principal o al menú sin escuchar todo."
+          : "✅ <strong>Entendió la página.</strong> Sabe cuál es el contenido importante y qué notas puede mostrar en los resultados de búsqueda.")
+        : `😵 <strong>No entendió nada.</strong> Para ${R.who === "sr" ? "el lector de pantalla" : "el robot"} son ${regions.length} cajas iguales. <em>Visualmente la página es idéntica</em>: la diferencia está en las etiquetas.`;
+      await speak(semantic ? "Listo, entendí la página" : "No pude entender la página");
+    }
+    R.running = false; R.paused = false;
+    setReadButtons();
+  };
+
+  // ============================================================== MODO 3: juego
+  const ROUNDS = 8;
+  const G = { round: 0, score: 0, target: null, answered: false, key: null };
+  const ORDER = ["vinoteca", "diario", "agenda"];
+  function startGame() { G.round = 0; G.score = 0; G.key = null; G.over = false; nextQuestion(); }
+  function nextQuestion() {
+    const key = ORDER[Math.floor(G.round / 3) % ORDER.length];
+    if (G.key !== key) { G.key = key; renderSite($("#gameSite"), key, true); $("#gameSite .site")?.classList.remove("xray"); $("#gameAddr").textContent = SITES[key].addr; }
+    const regions = $$("#gameSite .r");
+    let pick; do { pick = regions[Math.floor(Math.random() * regions.length)]; } while (G.target && pick === G.target && regions.length > 1);
+    $$("#gameSite .r").forEach(r => r.classList.remove("labeled"));
+    G.target = pick; G.answered = false; G.round++;
+    const right = pick.dataset.z;
+    const pool = ["header", "nav", "main", "article", "aside", "footer", "section"].filter(o => o !== right);
+    const opts = [right, ...pool.sort(() => Math.random() - .5).slice(0, 3)].sort(() => Math.random() - .5);
+    $("#answers").innerHTML = opts.map(o => `<button data-o="${o}" style="--c:${COLOR[o]}">&lt;${o}&gt;</button>`).join("");
+    $("#feedback").innerHTML = ""; $("#nextQ").hidden = true;
+    $("#gRound").textContent = `Ronda ${G.round} de ${ROUNDS}`;
+    $("#gProg").style.width = ((G.round - 1) / ROUNDS) * 100 + "%";
+    $("#gScore").textContent = `⭐ ${G.score}`;
+    $("#spot").hidden = false;
+    placeSpot();
+  }
+  function placeSpot() {
+    if (!G.target) return;
+    const vp = $("#gameVp"), vr = vp.getBoundingClientRect(), r = G.target.getBoundingClientRect();
+    Object.assign($("#spot").style, { left: r.left - vr.left - 5 + "px", top: r.top - vr.top - 5 + "px", width: r.width + 10 + "px", height: r.height + 10 + "px" });
+  }
+  addEventListener("resize", () => { if (!$("#game").hidden) placeSpot(); });
+  $("#answers").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-o]"); if (!b || G.answered) return;
+    G.answered = true;
+    const right = G.target.dataset.z, ok = b.dataset.o === right;
+    if (ok) G.score++;
+    $$("#answers button").forEach(x => { x.disabled = true; if (x.dataset.o === right) x.classList.add("right"); });
+    if (!ok) b.classList.add("wrong");
+    G.target.classList.add("labeled");
+    $("#feedback").innerHTML = (ok ? "🎯 <strong>¡Correcto!</strong> " : `😅 <strong>Era &lt;${right}&gt;.</strong> `) + WHAT[right];
+    $("#gScore").textContent = `⭐ ${G.score}`;
+    $("#gProg").style.width = (G.round / ROUNDS) * 100 + "%";
+    $("#nextQ").hidden = false; $("#nextQ").textContent = G.round >= ROUNDS ? "Ver resultado ▶" : "Siguiente ▶";
+  });
+  $("#nextQ").onclick = () => { if (G.over) startGame(); else if (G.round >= ROUNDS) endGame(); else nextQuestion(); };
+  function endGame() {
+    $("#spot").hidden = true;
+    $("#gameSite .site").classList.add("xray");
+    $("#answers").innerHTML = "";
+    $("#gRound").textContent = "¡Terminado!";
+    $("#feedback").innerHTML = `<div style="font-size:1.6rem;font-weight:800">${G.score} de ${ROUNDS} ${G.score >= ROUNDS - 1 ? "🏆" : G.score >= ROUNDS / 2 ? "👏" : "💪"}</div>Así se ve la página con rayos X: cada zona es una etiqueta semántica.`;
+    $("#nextQ").hidden = false; $("#nextQ").textContent = "Jugar de nuevo ↻";
+    G.over = true;
+    if (G.score >= ROUNDS / 2) confetti();
+  }
+
+  // ============================================================== modos
+  bindSeg("#modeSeg", (m) => {
+    $("#build").hidden = m !== "build";
+    $("#reader").hidden = m !== "reader";
+    $("#game").hidden = m !== "game";
+    $("#buildTools").style.visibility = m === "build" ? "visible" : "hidden";
+    if (m === "reader" && !R.running) prepReader();
+    if (m === "game") requestAnimationFrame(startGame);
+    if (m !== "reader" && R.running) stopReading();
+  });
+
+  resetBuild();
+})();
+</script>
+</body>
+</html>
