@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fetch y promesas · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; margin-top: 14px; align-items: start; }
+  @media (max-width: 1050px) { .layout { grid-template-columns: 1fr; } }
+  .ctrls { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+  .ctrls label.ck { display: flex; gap: 6px; align-items: center; font-weight: 700; }
+  #code .l { position: relative; }
+  #code.paused .l:not(.hl):not(.keep) { opacity: .35; }
+  #code .l.keep { opacity: 1; }
+  .waitlbl { position: absolute; right: 12px; background: #ffd666; color: #1d1b22; font-family: var(--sans); font-size: .78rem; font-weight: 800; border-radius: 999px; padding: 0 8px; animation: pulse 1.2s infinite; }
+  .world { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 90px; }
+  .side { border: 3px solid var(--c); border-radius: 18px; background: color-mix(in srgb, var(--c) 5%, #fff); padding: 12px; min-height: 160px; }
+  .side h3 { margin: 0 0 6px; color: var(--c); font-size: 1rem; }
+  .side .st { font-size: .92rem; color: var(--ink-2); min-height: 1.4em; }
+  .env { position: absolute; top: 60px; left: 0; z-index: 10; background: #fff; border: 2px solid var(--ink); border-radius: 10px; padding: 4px 9px; font-family: var(--mono); font-size: .8rem; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,.18); transform: translateX(-50%); transition-property: left; transition-timing-function: linear; }
+  .env.ok { border-color: var(--ok); color: var(--ok); } .env.bad { border-color: var(--bad); color: var(--bad); }
+  .boom { position: absolute; top: 50px; font-size: 34px; z-index: 11; transform: translateX(-50%); animation: pop .4s; }
+  .prom { margin-top: 14px; display: flex; align-items: center; gap: 12px; border: 3px dashed #b9a2e6; border-radius: 16px; padding: 10px 14px; background: #fff; }
+  .prom .ic { font-size: 30px; }
+  .prom .stt { font-family: var(--mono); font-weight: 800; font-size: 1.05rem; }
+  .prom.pending { border-color: #ffd666; } .prom.ok { border-color: var(--ok); border-style: solid; } .prom.bad { border-color: var(--bad); border-style: solid; }
+  .screen { margin-top: 14px; border: 1px solid var(--line); border-radius: 14px; background: #fff; overflow: hidden; }
+  .screen .tb { background: #3f2a73; color: #fff; font-weight: 800; padding: 8px 12px; }
+  .screen .bd { padding: 10px 12px; min-height: 70px; }
+  .screen .li { padding: 5px 8px; border: 1px solid #ece7f3; border-radius: 8px; margin: 4px 0; animation: slidein .25s; }
+  .console { margin-top: 10px; min-height: 120px; }
+  .game { max-width: 980px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › Angular › <strong>fetch y promesas</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="trip" aria-pressed="true">📨 El viaje del pedido</button>
+      <button data-v="game">🎲 ¿En qué orden?</button>
+    </div>
+  </div>
+
+  <section id="tripView">
+    <div class="ctrls">
+      <strong>El back:</strong>
+      <div class="seg" id="backSeg"><button data-v="ok" aria-pressed="true">✅ responde 200</button><button data-v="401">🚫 responde 401</button><button data-v="off">🔌 no hay conexión</button></div>
+      <strong>Demora:</strong>
+      <div class="seg" id="latSeg"><button data-v="900">rápido</button><button data-v="2200" aria-pressed="true">lento</button></div>
+      <label class="ck"><input type="checkbox" id="noAwait"> Me olvidé el <code>await</code></label>
+      <button class="btn primary big" id="runBtn">▶ Ejecutar</button>
+    </div>
+    <div class="layout">
+      <div>
+        <div id="code"></div>
+        <div class="console" id="console" data-empty="Consola"></div>
+      </div>
+      <div>
+        <div class="world" id="world">
+          <div class="side" style="--c:#c3002f" id="front"><h3>🅰️ El front</h3><div class="st" id="frontSt">Esperando que ejecutes.</div></div>
+          <div class="side" style="--c:#2a9d8f" id="back"><h3>🖥️ El back</h3><div class="st" id="backSt">Tranquilo.</div></div>
+        </div>
+        <div class="prom" id="prom"><span class="ic">📦</span><div><div style="font-size:.8rem;font-weight:800;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em">La promesa que devuelve fetch</div><div class="stt" id="promSt">todavía no existe</div></div></div>
+        <div class="screen"><div class="tb">Agenda · Contactos</div><div class="bd" id="screen"><span style="color:var(--ink-2)">(vacío)</span></div></div>
+        <div class="explain" id="why">Tocá <strong>▶ Ejecutar</strong> y mirá: ¿en qué orden salen los mensajes de la consola?</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, $$, sleep, esc, bindSeg, codeBox, consoleLog, quiz } = UI;
+  const S = { back: "ok", lat: 2200, run: 0 };
+  const CODE = (noAwait) => `async function cargarContactos() {\n  console.log("1. Pido los contactos");\n  const res = ${noAwait ? "" : "await "}fetch(API + "Contacts", { headers });\n  console.log("2. Llegó:", res.status);\n  if (!res.ok) return [];\n  const datos = await res.json();\n  console.log("3. Tengo", datos.length, "contactos");\n  return datos;\n}\n\ncargarContactos();\nconsole.log("4. Mientras tanto…");`;
+  let box;
+  function renderCode() { box = codeBox($("#code"), CODE($("#noAwait").checked)); }
+  const why = (t, k = "") => { $("#why").className = "explain " + k; $("#why").innerHTML = t; };
+  function prom(state, txt) { const p = $("#prom"); p.className = "prom " + state; $("#promSt").textContent = txt; $(".ic", p).textContent = state === "pending" ? "⏳" : state === "ok" ? "✅" : state === "bad" ? "❌" : "📦"; }
+  function pause(on) {
+    $("#code").classList.toggle("paused", on);
+    $$("#code .waitlbl").forEach(x => x.remove());
+    $$("#code .l").forEach(l => l.classList.remove("keep"));
+    if (on) { const l3 = $$("#code .l")[2]; l3.classList.add("keep"); l3.insertAdjacentHTML("beforeend", '<span class="waitlbl">⏸ esperando…</span>'); }
+  }
+  function reset() {
+    S.run++; renderCode(); $("#console").innerHTML = ""; prom("", "todavía no existe"); pause(false);
+    $("#frontSt").textContent = "Esperando que ejecutes."; $("#backSt").textContent = "Tranquilo.";
+    $("#screen").innerHTML = '<span style="color:var(--ink-2)">(vacío)</span>';
+    $$("#world .env, #world .boom").forEach(x => x.remove());
+  }
+  // un sobre que viaja entre el front y el back
+  function envelope(dir, html, kind, ms) {
+    const w = $("#world"), wr = w.getBoundingClientRect(), f = $("#front").getBoundingClientRect(), b = $("#back").getBoundingClientRect();
+    const fx = f.right - wr.left - 20, bx = b.left - wr.left + 20;
+    const e = document.createElement("div"); e.className = "env " + (kind || ""); e.innerHTML = html;
+    e.style.left = (dir === "go" ? fx : bx) + "px"; e.style.transitionDuration = ms + "ms"; w.appendChild(e);
+    requestAnimationFrame(() => requestAnimationFrame(() => { e.style.left = (dir === "go" ? bx : fx) + "px"; }));
+    return { el: e, mid: (fx + bx) / 2, done: sleep(ms + 40).then(() => e.remove()) };
+  }
+  const log = (t, k) => consoleLog($("#console"), t, k);
+
+  async function run() {
+    reset();
+    const my = S.run, alive = () => my === S.run, noAwait = $("#noAwait").checked, L = S.lat;
+    const step = async (n, ms = 650, kind) => { box.mark([n], kind); await sleep(ms); return alive(); };
+    if (!await step(11)) return;
+    $("#frontSt").textContent = "Llama a cargarContactos()";
+    if (!await step(2, 450)) return; log("1. Pido los contactos");
+    if (!await step(3, 500)) return;
+    prom("pending", "pending ⏳ (pendiente)");
+    $("#frontSt").textContent = "fetch mandó el pedido";
+    const go = envelope("go", "GET /Contacts", "", L);
+    if (noAwait) {
+      // no espera: sigue de largo con la promesa en la mano
+      if (!await step(4, 500)) return; log("2. Llegó: undefined", "warn");
+      if (!await step(5, 500, "bad")) return;
+      $("#frontSt").textContent = "res.ok es undefined → return []";
+      if (!await step(12, 500)) return; log("4. Mientras tanto…");
+      box.mark([]);
+      await go.done; if (!alive()) return;
+      if (S.back === "off") { prom("bad", "rejected ❌ (y nadie la estaba mirando)"); log("Uncaught (in promise) TypeError: Failed to fetch", "err"); }
+      else {
+        $("#backSt").textContent = "Arma la respuesta…"; await sleep(400); if (!alive()) return;
+        const ret = envelope("back", S.back === "ok" ? "200 [ … ]" : "401", S.back === "ok" ? "ok" : "bad", L);
+        $("#backSt").textContent = "Respondió… a una función que ya terminó."; await ret.done; if (!alive()) return;
+        prom("ok", "fulfilled ✅ … pero ya nadie la esperaba");
+      }
+      $("#frontSt").textContent = "Se quedó sin los datos";
+      why("Sin <code>await</code>, <code>res</code> no es la respuesta: es <strong>la promesa</strong> (todavía pendiente). <code>res.status</code> da <code>undefined</code>, <code>res.ok</code> también, y la función devuelve <code>[]</code> antes de que el back conteste. La respuesta llega después… y nadie la usa.", "bad");
+      return;
+    }
+    // con await: la función se pausa y el resto del programa sigue
+    pause(true);
+    $("#frontSt").textContent = "cargarContactos() está en pausa en el await";
+    await sleep(350); if (!alive()) return;
+    box.mark([3, 12]); log("4. Mientras tanto…");
+    $$("#code .l")[11].classList.add("keep");
+    why("¡Ojo! El <strong>4</strong> salió antes que el <strong>2</strong>: mientras <code>cargarContactos</code> espera en el <code>await</code>, el resto del programa <strong>sigue</strong>. La página no se congela.", "warn");
+    if (S.back === "off") {
+      await sleep(L / 2); if (!alive()) return;
+      go.el.remove(); const bm = document.createElement("div"); bm.className = "boom"; bm.textContent = "💥"; bm.style.left = go.mid + "px"; $("#world").appendChild(bm);
+      prom("bad", "rejected ❌ (rechazada)"); pause(false); box.mark([3], "bad");
+      log("Uncaught (in promise) TypeError: Failed to fetch", "err");
+      $("#frontSt").textContent = "El pedido nunca llegó";
+      why("Sin conexión el pedido <strong>no llega</strong>: la promesa se <strong>rechaza</strong> y el <code>await</code> tira un error. Si nadie lo atrapa con <code>try/catch</code>, la función se corta ahí. Por eso el <code>ApiService</code> de la Agenda tiene un <code>try/catch</code> que devuelve <code>null</code>.", "bad");
+      return;
+    }
+    await go.done; if (!alive()) return;
+    $("#backSt").textContent = S.back === "ok" ? "Busca los contactos en la base…" : "¿Token? No es válido.";
+    await sleep(600); if (!alive()) return;
+    const ret = envelope("back", S.back === "ok" ? "200 [ Ana, Leo, Sofi ]" : "401 Unauthorized", S.back === "ok" ? "ok" : "bad", L);
+    $("#backSt").textContent = S.back === "ok" ? "Respondió 200 con los contactos." : "Respondió 401.";
+    await ret.done; if (!alive()) return;
+    prom("ok", `fulfilled ✅ (cumplida) → Response ${S.back === "ok" ? 200 : 401}`);
+    pause(false);
+    $("#frontSt").textContent = "Llegó la respuesta: la función sigue";
+    if (!await step(4, 550)) return; log(`2. Llegó: ${S.back === "ok" ? 200 : 401}`);
+    if (S.back === "401") {
+      if (!await step(5, 600, "bad")) return;
+      $("#screen").innerHTML = '<span style="color:var(--ink-2)">No hay contactos para mostrar</span>';
+      why("Un 401 <strong>no es un error de fetch</strong>: el back contestó, así que la promesa se <strong>cumple</strong>. El que avisa que algo salió mal es <code>res.ok</code> (que es <code>false</code> fuera del rango 200–299). Por eso siempre se revisa <code>res.ok</code>.", "ok");
+      return;
+    }
+    if (!await step(5, 500, "ok")) return;
+    if (!await step(6, 700)) return;
+    $("#frontSt").textContent = "res.json() lee el cuerpo (otra promesa)";
+    if (!await step(7, 550)) return; log("3. Tengo 3 contactos");
+    if (!await step(8, 450, "ok")) return;
+    $("#screen").innerHTML = ["Ana Gómez", "Leo Pérez", "Sofi Ruiz"].map(n => `<div class="li">${n}</div>`).join("");
+    $("#frontSt").textContent = "Listo: los datos están en pantalla";
+    why("Orden final: <strong>1, 4, 2, 3</strong>. <code>fetch</code> devuelve una <strong>promesa</strong>; <code>await</code> pausa sólo esa función hasta que se cumple. <code>res.json()</code> también es una promesa: por eso lleva otro <code>await</code>.", "ok");
+  }
+  $("#runBtn").addEventListener("click", run);
+  bindSeg("#backSeg", (v) => { S.back = v; reset(); });
+  bindSeg("#latSeg", (v) => { S.lat = +v; });
+  $("#noAwait").addEventListener("change", reset);
+
+  /* ---------- quiz ---------- */
+  const QUESTIONS = [
+    { prompt: "¿En qué orden sale la consola?", code: `async function cargar() {\n  console.log("A");\n  await fetch(URL);\n  console.log("B");\n}\ncargar();\nconsole.log("C");`, options: ["A, B, C", "A, C, B", "C, A, B", "B, A, C"], right: 1, why: "<code>cargar</code> imprime A y se pausa en el <code>await</code>; mientras tanto sigue el resto (C). Cuando llega la respuesta, B." },
+    { prompt: "¿Qué muestra la consola?", code: `const res = fetch(URL + "Contacts");\nconsole.log(res);`, options: ["La respuesta del back", "Promise {<pending>}", "Los contactos", "undefined"], right: 1, why: "Sin <code>await</code> tenés la <strong>promesa</strong>, no la respuesta." },
+    { prompt: "El back responde <strong>404</strong>. ¿Qué pasa con la promesa de <code>fetch</code>?", options: ["Se rechaza (va al catch)", "Se cumple: res.ok es false", "Queda pendiente para siempre", "Recarga la página"], right: 1, why: "Si el back <strong>contesta</strong>, fetch se cumple, sea 200 o 404. Sólo se rechaza si no hay respuesta (sin conexión, CORS…)." },
+    { prompt: "¿Cuándo se rechaza la promesa de <code>fetch</code>?", options: ["Con un 401", "Con un 500", "Cuando no se puede conectar con el back", "Nunca"], right: 2, why: "Errores de red: el back no contestó. Los códigos de error HTTP se revisan con <code>res.ok</code>/<code>res.status</code>." },
+    { prompt: "¿Qué falta?", code: `const res = await fetch(URL + "Contacts");\nconst datos = res.json();\nconsole.log(datos.length);`, options: ["Nada", "Un await antes de res.json()", "Un JSON.parse", "Un .then()"], right: 1, why: "<code>res.json()</code> también devuelve una promesa: <code>const datos = await res.json()</code>." },
+    { prompt: "¿Se puede usar <code>await</code> en cualquier función?", options: ["Sí", "Sólo dentro de una función async (o en el nivel de arriba de un módulo)", "Sólo en servicios", "Sólo con fetch"], right: 1, why: "La función tiene que ser <code>async</code>. Y una función <code>async</code> siempre devuelve una promesa." },
+    { prompt: "Estos dos, ¿hacen lo mismo?", code: `// A\nconst res = await fetch(URL);\nconsole.log(res.status);\n\n// B\nfetch(URL).then(res => console.log(res.status));`, options: ["Sí, son dos formas de esperar la promesa", "No, B no espera"], right: 0, why: "<code>.then()</code> es la forma «vieja» de decir qué hacer cuando se cumple. <code>await</code> hace lo mismo y se lee de arriba hacia abajo." },
+    { prompt: "En la Agenda, <code>ApiService.get()</code> tiene un <code>try/catch</code> que devuelve <code>null</code>. ¿Para qué?", options: ["Para los 401", "Para que un error de red no rompa la app y el servicio pueda decir «Error de conexión»", "Para que sea más rápido", "Porque fetch lo exige"], right: 1, why: "Si no hay conexión, fetch <strong>tira</strong> un error. El catch lo convierte en <code>null</code> y después se muestra un mensaje." },
+  ];
+  quiz($("#quiz"), { questions: QUESTIONS, shuffle: false, summary: "Para llevarse: <code>fetch</code> devuelve una <strong>promesa</strong> (pendiente → cumplida o rechazada) · <code>await</code> pausa sólo esa función, el resto sigue · sin <code>await</code> tenés la promesa, no la respuesta · un 401/404 cumple la promesa: revisá <code>res.ok</code> · sin conexión se rechaza: <code>try/catch</code> · <code>res.json()</code> también se espera." });
+
+  bindSeg("#modeSeg", (m) => { $("#tripView").hidden = m !== "trip"; $("#gameView").hidden = m !== "game"; });
+  reset();
+})();
+</script>
+<script src="../assets/js/videos.js"></script>
+</body>
+</html>

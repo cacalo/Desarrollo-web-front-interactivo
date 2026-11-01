@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token JWT desde el front · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1050px) { .layout { grid-template-columns: 1fr; } }
+  .tok { font-family: var(--mono); font-size: 1.02rem; line-height: 1.6; background: #19181e; border-radius: 14px; padding: 14px 16px; word-break: break-all; }
+  .tok .h { color: #ff6b8b; } .tok .p { color: #c79bff; } .tok .s { color: #5cc8ff; } .tok .dot { color: #fff; font-weight: 800; }
+  .tok .p.changed { background: rgba(255, 214, 102, .2); border-radius: 4px; }
+  .parts { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
+  .pt { border: 2px solid var(--c); border-radius: 14px; background: #fff; padding: 10px 12px; }
+  .pt h4 { margin: 0 0 6px; color: var(--c); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .pt h4 small { color: var(--ink-2); font-weight: 400; }
+  .pt pre { margin: 0; font-family: var(--mono); font-size: .9rem; background: var(--surface-2); border-radius: 10px; padding: 8px 10px; white-space: pre-wrap; }
+  .claims { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: .95rem; align-items: center; }
+  .claims .k { font-family: var(--mono); font-weight: 700; color: #7b2cbf; }
+  .claims input { font: inherit; font-family: var(--mono); border: 1px solid var(--line); border-radius: 7px; padding: 3px 7px; width: 100%; }
+  .claims .hint { grid-column: 2; font-size: .8rem; color: var(--ink-2); margin-top: -2px; }
+  .verify { border: 3px solid var(--line); border-radius: 16px; padding: 12px 14px; background: #fff; transition: all .3s; }
+  .verify.ok { border-color: var(--ok); background: var(--ok-bg); } .verify.bad { border-color: var(--bad); background: var(--bad-bg); animation: shakeb .4s; }
+  .verify .big { font-size: 1.3rem; font-weight: 800; margin-top: 4px; }
+  .sigs { font-family: var(--mono); font-size: .85rem; display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin-top: 8px; word-break: break-all; }
+
+  /* viaje */
+  .trip { position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .lane { min-height: 220px; }
+  .lane { border: 3px solid var(--c); border-radius: 18px; background: color-mix(in srgb, var(--c) 5%, #fff); padding: 12px; position: relative; }
+  .lane h3 { margin: 0 0 8px; color: var(--c); font-size: 1.05rem; }
+  .lane .st { font-family: var(--mono); font-size: .85rem; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px; margin-top: 6px; word-break: break-all; transition: all .3s; }
+  .lane .st.hl { border-color: var(--c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 20%, transparent); }
+  .lane .tag { font-family: var(--sans); font-size: .75rem; font-weight: 800; color: var(--ink-2); text-transform: uppercase; letter-spacing: .05em; display: block; margin-bottom: 2px; }
+  .env { position: absolute; z-index: 20; background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 6px 10px; font-family: var(--mono); font-size: .8rem; box-shadow: 0 6px 16px rgba(0,0,0,.2); max-width: 280px; transition: left .9s ease-in-out, top .9s ease-in-out; transform: translate(-50%, -50%); pointer-events: none; }
+  .env b { font-family: var(--sans); }
+  .env.ok { border-color: var(--ok); } .env.bad { border-color: var(--bad); }
+  .steps { display: flex; gap: 6px; flex-wrap: wrap; }
+  .steps .chip { font-family: var(--sans); font-weight: 700; }
+  .steps .chip.done { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); opacity: 1; }
+  .steps .chip:not(:disabled) { background: var(--brand-2); color: #fff; border-color: var(--brand-2); animation: pulse 1.4s infinite; }
+  .narr { font-size: 1.05rem; }
+  .game { max-width: 980px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › Angular › <strong>Token JWT desde el front</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="anat" aria-pressed="true">🔬 Anatomía del token</button>
+      <button data-v="trip">✈️ El viaje del token</button>
+      <button data-v="game">🎲 ¿Verdadero o falso?</button>
+    </div>
+  </div>
+
+  <!-- ====================================================== anatomía -->
+  <section class="layout" id="anatView">
+    <div>
+      <div class="col-title">El token que devuelve el back al loguearte <small>tres partes separadas por puntos</small></div>
+      <div class="tok" id="tok"></div>
+      <div class="bar"><button class="btn primary" id="decBtn">🔓 Decodificar (sin ninguna clave)</button><button class="btn" id="resetTok">↺ Token original</button></div>
+      <div class="parts" id="parts" hidden>
+        <div class="pt" style="--c:#e0315b"><h4>1 · Header <small>qué algoritmo firmó</small></h4><pre id="pH"></pre></div>
+        <div class="pt" style="--c:#7b2cbf"><h4>2 · Payload <small>los datos (claims) · ¡probá cambiarlos!</small></h4><div class="claims" id="claims"></div></div>
+        <div class="pt" style="--c:#1a8fd6"><h4>3 · Firma <small>la calcula el back con su clave secreta</small></h4><pre id="pS"></pre></div>
+      </div>
+    </div>
+    <div>
+      <div class="verify" id="verify">
+        <div class="col-title" style="margin:0">El back recibe el token y lo verifica</div>
+        <div class="big" id="vBig">—</div>
+        <div class="sigs" id="sigs"></div>
+      </div>
+      <div class="explain" id="anatWhy">Un JWT <strong>no está encriptado</strong>: cualquiera puede leer lo que dice, sin clave. Tocá <strong>🔓 Decodificar</strong>.</div>
+    </div>
+  </section>
+
+  <!-- ====================================================== viaje -->
+  <section id="tripView" hidden style="margin-top:16px">
+    <div class="bar" style="margin-top:0"><div class="steps" id="steps"></div></div>
+    <div class="trip" id="trip" style="margin-top:12px">
+      <div class="lane" style="--c:#c3002f"><h3>🅰️ El front (Angular)</h3>
+        <div class="st" id="fMem"><span class="tag">AuthService · token()</span><span class="v"></span></div>
+        <div class="st" id="fScreen"><span class="tag">pantalla</span><span class="v"></span></div>
+      </div>
+      <div class="lane" style="--c:#57525f"><h3>💾 localStorage</h3>
+        <div class="st" id="ls"><span class="tag">"token"</span><span class="v"></span></div>
+        <p style="font-size:.88rem;color:var(--ink-2)">Queda guardado en el navegador aunque cierres la pestaña o recargues.</p>
+      </div>
+      <div class="lane" style="--c:#2a9d8f"><h3>🖥️ El back</h3>
+        <div class="st" id="bBox"><span class="tag">recibe</span><span class="v">…</span></div>
+        <div class="st" id="bRes"><span class="tag">responde</span><span class="v">…</span></div>
+      </div>
+    </div>
+    <div class="explain narr" id="tripWhy">Seguí el token desde que te logueás hasta que se vence. Tocá el primer paso.</div>
+  </section>
+
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, $$, sleep, esc, bindSeg, quiz } = UI;
+  const b64u = (s) => btoa(unescape(encodeURIComponent(s))).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
+  // firma de mentira (la real es HMAC-SHA256 con la clave del back): sirve para ver que cambia si cambia el payload
+  const SECRET = "clave-secreta-del-back";
+  function sign(data) {
+    let h1 = 0x811c9dc5, h2 = 0x1234567, out = "";
+    const s = data + SECRET;
+    for (let r = 0; r < 4; r++) {
+      for (let i = 0; i < s.length; i++) { h1 ^= s.charCodeAt(i) + r; h1 = Math.imul(h1, 16777619) >>> 0; h2 = Math.imul(h2 ^ s.charCodeAt(i), 2654435761) >>> 0; }
+      out += h1.toString(16).padStart(8, "0") + h2.toString(16).padStart(8, "0");
+    }
+    return b64u(out).slice(0, 43);
+  }
+  const HEADER = { alg: "HS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1000);
+  const ORIG = { sub: "15", given_name: "Ana", family_name: "Gómez", exp: now + 3600, iss: "agenda-api", aud: "agenda-front" };
+  const T = { claims: { ...ORIG }, sig: "", decoded: false };
+  function enc() { return { h: b64u(JSON.stringify(HEADER)), p: b64u(JSON.stringify(T.claims)) }; }
+  function resetTok() { T.claims = { ...ORIG }; const e = enc(); T.sig = sign(e.h + "." + e.p); paintTok(); renderClaims(); verify(); }
+  function paintTok(changed) {
+    const e = enc();
+    $("#tok").innerHTML = `<span class="h">${e.h}</span><span class="dot">.</span><span class="p ${changed ? "changed" : ""}">${e.p}</span><span class="dot">.</span><span class="s">${T.sig}</span>`;
+    $("#pH").textContent = JSON.stringify(HEADER, null, 2);
+    $("#pS").textContent = T.sig;
+  }
+  const HINT = { sub: "el id del usuario en la base de datos", given_name: "nombre", family_name: "apellido", exp: "", iss: "quién lo emitió", aud: "para quién es" };
+  function renderClaims() {
+    $("#claims").innerHTML = Object.entries(T.claims).map(([k, v]) => `<span class="k">${k}</span><input data-k="${k}" value="${esc(v)}">${k === "exp" ? `<span class="hint" id="expH"></span>` : HINT[k] ? `<span class="hint">${HINT[k]}</span>` : ""}`).join("");
+    expHint();
+  }
+  function expHint() {
+    const el = $("#expH"); if (!el) return;
+    const d = new Date(T.claims.exp * 1000), left = Math.round((T.claims.exp * 1000 - Date.now()) / 60000);
+    el.textContent = `vence el ${d.toLocaleString("es-AR")} (${left > 0 ? `en ${left} min` : "¡vencido!"}) · segundos desde 1970`;
+  }
+  function verify() {
+    const e = enc(), expected = sign(e.h + "." + e.p), sigOk = expected === T.sig, expOk = T.claims.exp * 1000 > Date.now();
+    const v = $("#verify"); v.className = "verify " + (sigOk && expOk ? "ok" : "bad");
+    $("#vBig").textContent = !sigOk ? "❌ 401 · firma inválida" : !expOk ? "❌ 401 · token vencido" : "✅ 200 · token válido";
+    $("#sigs").innerHTML = `<span>firma que vino:</span><span>${T.sig}</span><span>firma que calcula:</span><span style="color:${sigOk ? "var(--ok)" : "var(--bad)"}">${expected}</span>`;
+    return { sigOk, expOk };
+  }
+  $("#decBtn").addEventListener("click", () => {
+    $("#parts").hidden = false; T.decoded = true;
+    $("#anatWhy").className = "explain ok";
+    $("#anatWhy").innerHTML = "Lo leímos sin ninguna clave: es texto en <strong>base64</strong>. Por eso el front puede sacar el nombre del usuario del token (<code>decodeToken</code> en la Agenda) y por eso <strong>nunca</strong> hay que guardar contraseñas ahí. Ahora cambiá un dato del payload, por ejemplo <code>sub</code>.";
+  });
+  $("#claims").addEventListener("input", (e) => {
+    const inp = e.target.closest("input"); if (!inp) return;
+    const k = inp.dataset.k; T.claims[k] = k === "exp" ? (+inp.value || 0) : inp.value;
+    paintTok(true); expHint();
+    const { sigOk, expOk } = verify();
+    $("#anatWhy").className = "explain " + (sigOk ? "warn" : "bad");
+    $("#anatWhy").innerHTML = !sigOk ? `Cambiaste el payload, pero la firma es la vieja. El back vuelve a calcular la firma con <strong>su clave secreta</strong> y no coincide: <strong>rechaza el token</strong>. Podés <em>leer</em> un JWT, pero no <em>falsificarlo</em> sin la clave.`
+      : "Todo coincide.";
+  });
+  $("#resetTok").addEventListener("click", () => { resetTok(); $("#anatWhy").className = "explain"; $("#anatWhy").innerHTML = "Token original de nuevo."; });
+  resetTok();
+
+  /* =========================================================== VIAJE */
+  const TOKEN = (() => { const e = enc(); return `${e.h}.${e.p}.${sign(e.h + "." + e.p)}`; })();
+  const shortT = TOKEN.slice(0, 18) + "…";
+  const STEPS = [
+    ["1 · Login", step1], ["2 · Guardarlo", step2], ["3 · Pedir contactos", step3], ["4 · Recargar (F5)", step4], ["5 · Se vence", step5], ["6 · Pedir sin token", step6],
+  ];
+  const TR = { i: 0, busy: false };
+  function setV(id, html) { const el = $(id); $(".v", el).innerHTML = html; el.classList.add("hl"); setTimeout(() => el.classList.remove("hl"), 900); }
+  async function envelope(from, to, html, kind = "") {
+    const box = $("#trip").getBoundingClientRect(), a = $(from).getBoundingClientRect(), b = $(to).getBoundingClientRect();
+    const e = document.createElement("div"); e.className = "env " + kind; e.innerHTML = html;
+    e.style.left = (a.left + a.width / 2 - box.left) + "px"; e.style.top = (a.top + a.height / 2 - box.top) + "px";
+    $("#trip").appendChild(e); await sleep(40);
+    e.style.left = (b.left + b.width / 2 - box.left) + "px"; e.style.top = (b.top + b.height / 2 - box.top) + "px";
+    await sleep(1000); e.remove();
+  }
+  const why = (t, k = "") => { $("#tripWhy").className = "explain narr " + k; $("#tripWhy").innerHTML = t; };
+  function tripReset() {
+    TR.i = 0;
+    $("#fMem .v").textContent = "null"; $("#fScreen .v").textContent = "Login"; $("#ls .v").textContent = "(vacío)"; $("#bBox .v").textContent = "…"; $("#bRes .v").textContent = "…";
+    renderSteps();
+  }
+  function renderSteps() {
+    $("#steps").innerHTML = STEPS.map(([n], i) => `<button class="chip ${i < TR.i ? "done" : ""}" data-i="${i}" ${i !== TR.i ? "disabled" : ""}>${i < TR.i ? "✓ " : ""}${n}</button>`).join("") + `<button class="btn" id="tripReset">↺ Desde el principio</button>`;
+  }
+  async function step1() {
+    why("El usuario manda correo y contraseña. El back los revisa y, si están bien, <strong>arma un token firmado</strong> y lo devuelve.");
+    await envelope("#fScreen", "#bBox", "<b>POST</b> /authentication/authenticate<br>{ email, password }");
+    setV("#bBox", "POST /authenticate { email: \"ana@mail.com\", password: \"••••••••\" }");
+    await sleep(500); setV("#bRes", "200 · " + shortT);
+    await envelope("#bRes", "#fMem", "<b>200</b> " + shortT, "ok");
+  }
+  async function step2() {
+    setV("#fMem", shortT); await sleep(500);
+    await envelope("#fMem", "#ls", "effect → setItem(\"token\", …)");
+    setV("#ls", shortT); setV("#fScreen", "Hola, Ana 👋 (sale del payload del token)");
+    why("El front lo guarda en una <strong>señal</strong> (<code>token.set(...)</code>) y un <code>effect</code> lo copia a <strong>localStorage</strong>. El nombre del saludo lo saca del payload, sin preguntarle al back.", "ok");
+  }
+  async function step3() {
+    why("Para cada pedido, el <code>ApiService</code> agrega el token en un <strong>header</strong>: así el back sabe quién pide.");
+    await envelope("#fMem", "#bBox", "<b>GET</b> /Contacts<br>Authorization: Bearer " + shortT);
+    setV("#bBox", "GET /Contacts · Authorization: Bearer " + shortT);
+    await sleep(500); setV("#bRes", "firma ✓ · no vencido ✓ · sub = 15 → 200 · contactos de Ana");
+    await envelope("#bRes", "#fScreen", "<b>200</b> [ Leo, Sofi, Mati… ]", "ok");
+    setV("#fScreen", "📇 Lista con los contactos de Ana");
+    why("El back verifica la firma y el vencimiento, y con el <code>sub</code> sabe <strong>de quién</strong> son los contactos. El front no le dice «soy Ana»: lo dice el token firmado.", "ok");
+  }
+  async function step4() {
+    $("#fMem .v").textContent = "null"; $("#fScreen .v").textContent = "(recargando…)"; await sleep(700);
+    why("Al recargar, la memoria de la app se borra… pero localStorage no.");
+    await envelope("#ls", "#fMem", "constructor: getItem(\"token\")");
+    setV("#fMem", shortT); setV("#fScreen", "Hola, Ana 👋 · sigue logueada");
+    why("El constructor del <code>AuthService</code> lee el token de localStorage y la sesión sigue. Por eso se guarda ahí y no sólo en una variable.", "ok");
+  }
+  async function step5() {
+    why("Pasa el tiempo… el payload dice <code>exp</code>: el momento en que vence.");
+    await sleep(900);
+    setV("#fMem", "null"); setV("#fScreen", "⏰ Sesión vencida → Login");
+    await envelope("#fMem", "#ls", "effect → removeItem(\"token\")", "bad");
+    setV("#ls", "(vacío)");
+    why("El <code>effect vencimientoToken</code> programó un timer con <code>exp</code>: al llegar, hace <code>logout()</code>. El token pasa a <code>null</code>, otro effect lo borra de localStorage y el guard te manda al login.", "ok");
+  }
+  async function step6() {
+    why("¿Y si alguien pide contactos sin token (o con uno vencido o trucho)?");
+    await envelope("#fMem", "#bBox", "<b>GET</b> /Contacts<br>(sin Authorization)", "bad");
+    setV("#bBox", "GET /Contacts · sin token");
+    await sleep(500); setV("#bRes", "❌ 401 Unauthorized");
+    await envelope("#bRes", "#fScreen", "<b>401</b>", "bad");
+    why("El back responde <strong>401</strong>. Los guards del front sólo cuidan qué pantallas ves; <strong>la seguridad real está en el back</strong>, que revisa el token en cada pedido.", "ok");
+  }
+  $("#steps").addEventListener("click", async (e) => {
+    if (e.target.id === "tripReset") return tripReset();
+    const b = e.target.closest("[data-i]"); if (!b || TR.busy) return;
+    TR.busy = true; $$("#steps .chip").forEach(c => c.disabled = true);
+    try { await STEPS[+b.dataset.i][1](); TR.i++; } finally { TR.busy = false; renderSteps(); }
+  });
+  tripReset();
+
+  /* =========================================================== QUIZ */
+  const VF = ["Verdadero", "Falso"];
+  const QUESTIONS = [
+    { prompt: "«El payload de un JWT está encriptado: sin la clave nadie lo puede leer.»", options: VF, right: 1, why: "Está en <strong>base64</strong>, que se decodifica sin clave. Cualquiera lo puede leer (probá en jwt.io)." },
+    { prompt: "«Si cambio <code>sub</code> en el payload, el back me deja ver los contactos de otro usuario.»", options: VF, right: 1, why: "La firma ya no coincide y el back responde 401. Sin la clave secreta no se puede volver a firmar." },
+    { prompt: "«Está bien guardar la contraseña del usuario en el payload.»", options: VF, right: 1, why: "¡Nunca! Cualquiera que tenga el token la puede leer." },
+    { prompt: "«El front puede sacar el nombre del usuario leyendo el token, sin pedírselo al back.»", options: VF, right: 0, why: "Es lo que hace el <code>computed user</code> de la Agenda con <code>decodeToken</code>." },
+    { prompt: "¿Cómo viaja el token en cada pedido al back?", options: ["En la URL: /Contacts?token=…", "En el header Authorization: Bearer …", "En una cookie que inventa Angular", "No viaja: el back lo recuerda"], right: 1, why: "El <code>ApiService</code> agrega <code>Authorization: \"Bearer \" + token</code> en los headers." },
+    { prompt: "¿Para qué sirve <code>exp</code>?", options: ["Es la fecha de creación", "Es el momento en que el token vence", "Es la experiencia del usuario", "Es el id del usuario"], right: 1, why: "Es el vencimiento, en segundos desde 1970. Por eso en la Agenda se multiplica por 1000 para compararlo con <code>new Date()</code>." },
+    { prompt: "«Con los guards del front ya está protegida la información.»", options: VF, right: 1, why: "Los guards sólo deciden qué pantalla ves. Alguien puede pedir datos al back directo (con Postman, por ejemplo): el que protege es el back revisando el token." },
+    { prompt: "¿Por qué se guarda el token en localStorage y no sólo en una señal?", options: ["Porque es más rápido", "Para que la sesión siga después de recargar la página", "Porque el back lo lee de ahí", "Para que esté encriptado"], right: 1, why: "La señal vive en memoria y se borra al recargar; localStorage queda guardado en el navegador." },
+  ];
+  quiz($("#quiz"), { questions: QUESTIONS, shuffle: false, summary: "Para llevarse: un JWT tiene header, payload y firma · se puede <strong>leer</strong> sin clave pero no <strong>falsificar</strong> · viaja en <code>Authorization: Bearer …</code> · <code>exp</code> marca el vencimiento · se guarda en localStorage para sobrevivir al F5 · la seguridad real la pone el back." });
+
+  bindSeg("#modeSeg", (m) => { $("#anatView").hidden = m !== "anat"; $("#tripView").hidden = m !== "trip"; $("#gameView").hidden = m !== "game"; });
+})();
+</script>
+</body>
+</html>

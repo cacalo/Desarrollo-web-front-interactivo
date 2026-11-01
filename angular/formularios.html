@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Formularios · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1fr); gap: 10px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1050px) { .layout { grid-template-columns: 1fr; } .mid { display: none !important; } }
+  .card { background: #fff; border-radius: 16px; box-shadow: var(--shadow); border: 1px solid var(--line); padding: 20px; max-width: 420px; margin: 0 auto; }
+  .card h2 { margin: 0 0 14px; text-align: center; }
+  .ff { position: relative; margin-bottom: 18px; }
+  .ff label { position: absolute; left: 12px; top: -9px; background: #fff; padding: 0 5px; font-size: .8rem; color: #6b5e86; font-weight: 700; }
+  .ff input { width: 100%; font: inherit; font-size: 1.05rem; padding: 12px; border: 2px solid #cfc6dd; border-radius: 10px; outline: 0; transition: border-color .2s, box-shadow .2s; }
+  .ff input:focus { border-color: #7b2cbf; box-shadow: 0 0 0 4px rgba(123,44,191,.15); }
+  .ff.err input { border-color: var(--bad); }
+  .ff .msg { font-size: .85rem; color: var(--bad); min-height: 1.2em; margin-top: 3px; }
+  .ff .state { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .pill.s { font-size: .72rem; padding: 1px 8px; font-family: var(--mono); }
+  .loginbtn { width: 100%; font-size: 1.05rem; }
+  .loginbtn:disabled { opacity: .45; cursor: not-allowed; }
+  .snack { margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-weight: 700; display: none; animation: slidein .25s; }
+  .snack.show { display: block; } .snack.ok { background: var(--ok-bg); color: #1d6b3a; } .snack.bad { background: #2b2a33; color: #fff; }
+  .mid { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 70px; padding-top: 80px; }
+  .arrow { font-size: 30px; opacity: .2; transition: opacity .2s, transform .2s; }
+  .arrow.on { opacity: 1; transform: scale(1.25); }
+  .model { white-space: pre; background: #19181e; color: #e8e6ef; border-radius: 14px; padding: 14px 16px; font-family: var(--mono); font-size: 1rem; line-height: 1.7; }
+  .model .k { color: #82cfff; } .model .v { color: #ffd479; } .model .c { color: #7f8c98; }
+  .model .flash { background: rgba(255,214,102,.25); border-radius: 4px; }
+  .rules { margin-top: 12px; }
+  .rule { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 2px solid var(--line); border-radius: 10px; margin: 5px 0; background: #fff; font-family: var(--mono); font-size: .9rem; transition: all .2s; }
+  .rule input { width: 17px; height: 17px; accent-color: #7b2cbf; }
+  .rule .r { margin-left: auto; font-family: var(--sans); font-weight: 800; }
+  .rule.ok { border-color: #bfe5cc; } .rule.ok .r { color: var(--ok); }
+  .rule.bad { border-color: #f3c0c0; background: #fffafa; } .rule.bad .r { color: var(--bad); }
+  .rule.off { opacity: .45; } .rule.off .r { color: var(--ink-2); }
+  .fill { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .fill .btn { font-family: var(--mono); font-size: .85rem; justify-content: flex-start; }
+  .formstate { margin-top: 10px; font-family: var(--mono); font-size: .92rem; }
+  .game { max-width: 980px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › Angular › <strong>Formularios</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="form" aria-pressed="true">🔗 El modelo y la pantalla</button>
+      <button data-v="game">🎲 ¿Se puede enviar?</button>
+    </div>
+  </div>
+
+  <section id="formView">
+    <div class="layout">
+      <div>
+        <div class="col-title">La pantalla <small>el formulario de login de la Agenda</small></div>
+        <div class="card">
+          <h2>Agenda de contactos</h2>
+          <div class="ff" id="ffEmail"><label>Correo electrónico</label><input id="email" type="email" autocomplete="off" data-f="email"><div class="msg"></div><div class="state"></div></div>
+          <div class="ff" id="ffPassword"><label>Contraseña</label><input id="password" type="password" autocomplete="off" data-f="password"><div class="msg"></div><div class="state"></div></div>
+          <button class="btn primary big loginbtn" id="loginBtn">Login</button>
+          <div class="snack" id="snack"></div>
+          <p style="text-align:center;color:var(--ink-2);font-size:.85rem;margin:12px 0 0">Para entrar: <code>ana@mail.com</code> / <code>12345678</code></p>
+        </div>
+      </div>
+      <div class="mid"><div class="arrow" id="arUp" title="de la pantalla al modelo">➡️</div><div class="arrow" id="arDown" title="del modelo a la pantalla">⬅️</div></div>
+      <div>
+        <div class="col-title">El modelo <small>una señal con los datos del formulario</small></div>
+        <div class="model" id="model"></div>
+        <div class="fill">
+          <button class="btn" id="fillBtn">loginModel.set({ email: "ana@mail.com", password: "12345678" })</button>
+          <button class="btn" id="clearBtn">loginModel.set({ email: "", password: "" })</button>
+        </div>
+        <div class="col-title" style="margin-top:14px">Las reglas <small>form(loginModel, …) · se pueden apagar</small></div>
+        <div class="rules" id="rules"></div>
+        <div class="formstate" id="formState"></div>
+      </div>
+    </div>
+    <div class="explain" id="why">Escribí en el formulario y mirá el modelo: <code>[formField]</code> conecta cada input con su dato, <strong>en las dos direcciones</strong>.</div>
+  </section>
+
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, $$, sleep, esc, bindSeg, quiz } = UI;
+  const M = { email: "", password: "" };
+  const T = { email: false, password: false };
+  const RULES = [
+    { f: "email", t: "required(schemaPath.email)", on: true, test: v => v.trim() !== "", msg: "El correo es obligatorio" },
+    { f: "email", t: "minLength(schemaPath.email, 4)", on: true, test: v => v.length >= 4, msg: "Mínimo 4 caracteres" },
+    { f: "password", t: "required(schemaPath.password)", on: true, test: v => v !== "", msg: "La contraseña es obligatoria" },
+    { f: "password", t: "minLength(schemaPath.password, 8)", on: true, test: v => v.length >= 8, msg: "Mínimo 8 caracteres" },
+  ];
+  const errorsOf = (f) => RULES.filter(r => r.f === f && r.on && !r.test(M[f]));
+  function renderModel(flashKey) {
+    const line = (k) => `  <span class="k">${k}</span>: <span class="v ${flashKey === k ? "flash" : ""}">"${esc(k === "password" ? M[k] : M[k])}"</span>`;
+    $("#model").innerHTML = `<span class="c">// loginModel()</span>\n{\n${line("email")},\n${line("password")}\n}`;
+  }
+  function renderRules() {
+    $("#rules").innerHTML = RULES.map((r, i) => {
+      const ok = r.test(M[r.f]);
+      return `<label class="rule ${!r.on ? "off" : ok ? "ok" : "bad"}"><input type="checkbox" data-i="${i}" ${r.on ? "checked" : ""}>${r.t}<span class="r">${!r.on ? "apagada" : ok ? "✓" : "✗"}</span></label>`;
+    }).join("");
+  }
+  function renderFields() {
+    for (const f of ["email", "password"]) {
+      const ff = f === "email" ? $("#ffEmail") : $("#ffPassword"), errs = errorsOf(f), show = T[f] && errs.length;
+      ff.classList.toggle("err", !!show);
+      $(".msg", ff).textContent = show ? errs[0].msg : "";
+      $(".state", ff).innerHTML = `<span class="pill s ${errs.length ? "bad" : "ok"}">${errs.length ? "invalid" : "valid"}</span><span class="pill s ${T[f] ? "info" : "muted"}">${T[f] ? "touched" : "untouched"}</span>`;
+    }
+    const invalid = errorsOf("email").length + errorsOf("password").length > 0;
+    $("#loginBtn").disabled = invalid;
+    $("#formState").innerHTML = `loginForm().invalid() → <strong style="color:${invalid ? "var(--bad)" : "var(--ok)"}">${invalid}</strong> ${invalid ? "→ el botón queda deshabilitado" : "→ se puede enviar"}`;
+  }
+  function renderAll(flashKey) { renderModel(flashKey); renderRules(); renderFields(); }
+  function arrow(id) { const a = $(id); a.classList.add("on"); clearTimeout(a._t); a._t = setTimeout(() => a.classList.remove("on"), 450); }
+  const why = (t, k = "") => { $("#why").className = "explain " + k; $("#why").innerHTML = t; };
+
+  $$(".ff input").forEach(inp => {
+    inp.addEventListener("input", () => {
+      M[inp.dataset.f] = inp.value; arrow("#arUp"); renderAll(inp.dataset.f);
+      $("#snack").className = "snack";
+      const errs = errorsOf(inp.dataset.f);
+      why(`Escribiste en la pantalla y el <strong>modelo</strong> cambió solo (➡️). ${errs.length ? `Todavía no cumple: <em>${errs[0].msg.toLowerCase()}</em>.` : "Este campo ya cumple sus reglas."} ${!T[inp.dataset.f] ? "El error no se muestra todavía porque el campo no está <code>touched</code>: no queremos retar a alguien que recién empieza a escribir." : ""}`);
+    });
+    inp.addEventListener("blur", () => { if (!T[inp.dataset.f]) { T[inp.dataset.f] = true; renderFields(); why(`Saliste del campo: ahora está <code>touched</code> y, si tiene errores, se muestran.`); } });
+  });
+  function setModel(v) {
+    M.email = v.email; M.password = v.password; $("#email").value = M.email; $("#password").value = M.password;
+    arrow("#arDown"); renderAll("email");
+  }
+  $("#fillBtn").addEventListener("click", () => { setModel({ email: "ana@mail.com", password: "12345678" }); why("Cambiaste el <strong>modelo</strong> desde el código y los inputs se llenaron solos (⬅️). Sirve, por ejemplo, para cargar los datos de un contacto que vas a editar.", "ok"); });
+  $("#clearBtn").addEventListener("click", () => { setModel({ email: "", password: "" }); why("Vaciar el modelo vacía el formulario. Así se «resetea» después de guardar."); });
+  $("#rules").addEventListener("change", (e) => {
+    const c = e.target.closest("input[data-i]"); if (!c) return;
+    RULES[+c.dataset.i].on = c.checked; renderAll();
+    why(c.checked ? "Regla prendida de nuevo." : "Sin esa regla, el formulario acepta cosas que antes rechazaba. <strong>Ojo:</strong> estas reglas son para ayudar al usuario; el back igual tiene que validar todo.", c.checked ? "" : "warn");
+  });
+  $("#loginBtn").addEventListener("click", async () => {
+    const sn = $("#snack");
+    sn.className = "snack show ok"; sn.textContent = "⏳ authService.login(loginModel())…";
+    $("#loginBtn").disabled = true;
+    await sleep(900);
+    if (M.email === "ana@mail.com" && M.password === "12345678") { sn.className = "snack show ok"; sn.textContent = "✅ Sesión iniciada → router.navigate([\"contacts\"])"; why("<code>submit(loginForm, …)</code> sólo llama a la función si el formulario es válido. Le pasa al servicio <code>loginModel()</code>: el objeto con los datos, listo para mandar al back.", "ok"); }
+    else { sn.className = "snack show bad"; sn.textContent = "Usuario o contraseña incorrectos"; why("El formulario era <strong>válido</strong> (cumplía las reglas), pero el back dijo que no. Validar el formato en el front no reemplaza a la verificación del back.", "warn"); }
+    renderFields();
+  });
+  renderAll();
+
+  /* ---------- quiz ---------- */
+  const YN = ["✅ Sí, se puede enviar", "❌ No, el botón está deshabilitado"];
+  const SCH = `required(schemaPath.email);\nminLength(schemaPath.email, 4);\nrequired(schemaPath.password);\nminLength(schemaPath.password, 8);`;
+  const QUESTIONS = [
+    { prompt: "Con estas reglas, ¿se puede enviar <code>{ email: \"a@b.c\", password: \"1234\" }</code>?", code: SCH, options: YN, right: 1, why: "La contraseña tiene 4 caracteres y pide mínimo 8." },
+    { prompt: "¿Y <code>{ email: \"ana@mail.com\", password: \"12345678\" }</code>?", code: SCH, options: YN, right: 0, why: "Cumple las cuatro reglas: <code>loginForm().invalid()</code> es <code>false</code>." },
+    { prompt: "¿Y <code>{ email: \"\", password: \"supersecreta\" }</code>?", code: SCH, options: YN, right: 1, why: "El correo está vacío: falla <code>required</code>." },
+    { prompt: "El usuario escribe en el input del correo. ¿Qué pasa con <code>loginModel()</code>?", options: ["Nada hasta que toca Login", "Se actualiza solo con cada tecla", "Se actualiza al salir del campo", "Hay que llamar a loginModel.set() a mano"], right: 1, why: "<code>[formField]</code> conecta el input con el modelo: cada cambio en la pantalla se escribe en la señal." },
+    { prompt: "Hacés <code>loginModel.set({ email: \"leo@mail.com\", password: \"\" })</code>. ¿Qué pasa en la pantalla?", options: ["Nada: el modelo sólo se lee", "El input del correo muestra leo@mail.com", "Se envía el formulario", "Error"], right: 1, why: "Funciona en las dos direcciones: cambiar el modelo cambia los inputs." },
+    { prompt: "¿Por qué el mensaje «Mínimo 8 caracteres» no aparece apenas empezás a escribir?", options: ["Porque la regla todavía no corre", "Porque se muestra sólo si el campo está touched (ya saliste de él)", "Porque es un bug", "Porque las reglas sólo corren al enviar"], right: 1, why: "La regla corre siempre (el campo ya es <code>invalid</code>), pero mostrar el error recién cuando está <code>touched</code> es más amable." },
+    { prompt: "«Si el formulario del front valida el correo, el back no necesita validarlo.»", options: ["Verdadero", "Falso"], right: 1, why: "Cualquiera puede mandar datos al back sin pasar por tu formulario. Las reglas del front son para ayudar al usuario; las del back, para proteger los datos." },
+    { prompt: "¿Qué le llega al <code>authService.login(...)</code>?", code: `submit(this.loginForm, async () => {\n  await this.authService.login(this.loginModel());\n});`, options: ["Los inputs del HTML", "Un objeto { email, password } con lo que escribió el usuario", "El formulario entero con sus reglas", "Un string"], right: 1, why: "<code>loginModel()</code> lee la señal: es el objeto con los datos, listo para mandar al back." },
+  ];
+  quiz($("#quiz"), { questions: QUESTIONS, shuffle: false, summary: "Para llevarse: los datos del formulario viven en una <strong>señal</strong> (el modelo) · <code>[formField]</code> la conecta con cada input en las dos direcciones · <code>form(modelo, reglas)</code> agrega <code>required</code>, <code>minLength</code>… · <code>invalid()</code> deshabilita el botón · los errores se muestran cuando el campo está <code>touched</code> · el back valida igual." });
+
+  bindSeg("#modeSeg", (m) => { $("#formView").hidden = m !== "form"; $("#gameView").hidden = m !== "game"; });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Servicios e inyección · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<style>
+  .top { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+  .top .seg button { font-family: var(--mono); }
+  .stage { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+  @media (max-width: 950px) { .stage { grid-template-columns: 1fr; } }
+  .cmp { border: 3px solid var(--c); border-radius: 18px; background: #fff; padding: 12px; min-height: 210px; position: relative; transition: box-shadow .3s; }
+  .cmp > .bt { font-family: var(--mono); font-weight: 800; font-size: .88rem; color: var(--c); margin-bottom: 8px; display: flex; justify-content: space-between; gap: 6px; }
+  .cmp.flash { box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 25%, transparent); }
+  .cmp .stale { display: none; position: absolute; right: 10px; bottom: 10px; background: var(--bad); color: #fff; font-size: .78rem; font-weight: 800; border-radius: 999px; padding: 2px 10px; animation: pop .4s; }
+  .cmp.isstale { border-style: dashed; } .cmp.isstale .stale { display: block; }
+  .hdr { background: #3f2a73; color: #fff; border-radius: 12px; padding: 12px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
+  .hdr .n { background: rgba(255,255,255,.18); border-radius: 999px; padding: 2px 10px; font-size: .9rem; }
+  .li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid #ece7f3; border-radius: 10px; margin: 5px 0; animation: slidein .25s; }
+  .li .nm { flex: 1; font-weight: 700; }
+  .li button { border: 0; background: transparent; cursor: pointer; font-size: 1rem; padding: 2px 4px; border-radius: 6px; }
+  .li button:hover { background: var(--surface-2); }
+  .addb { width: 100%; margin-top: 6px; }
+  .wires { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .wire { text-align: center; position: relative; padding: 16px 0; font-family: var(--mono); font-size: .82rem; }
+  .wire::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; border-left: 3px dashed #c9c2d6; transition: border-color .3s; }
+  .wire.hot::before { border-left: 3px solid #7b2cbf; }
+  .wire span { position: relative; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 2px 8px; }
+  .svcs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .svc { border: 3px solid #7b2cbf; border-radius: 18px; background: #f4efff; padding: 12px 14px; position: relative; transition: box-shadow .3s; }
+  .svc.shared { grid-column: 1 / -1; }
+  .svc.flash { box-shadow: 0 0 0 7px rgba(123,44,191,.25); }
+  .svc h3 { margin: 0 0 6px; font-family: var(--mono); color: #5b2aa6; font-size: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .svc h3 small { font-family: var(--sans); color: var(--ink-2); font-weight: 600; }
+  .svc .mem { font-family: var(--mono); font-size: .85rem; background: #fff; border-radius: 10px; padding: 6px 8px; word-break: break-word; }
+  .svc .meth { font-family: var(--mono); font-size: .8rem; color: #7b2cbf; margin-top: 6px; }
+  .back { margin-top: 14px; display: flex; align-items: center; gap: 12px; border: 3px solid #2a9d8f; border-radius: 18px; background: #eef8f6; padding: 10px 14px; }
+  .back .cnt { font-family: var(--mono); font-weight: 800; font-size: 1.15rem; }
+  .game { max-width: 980px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › Angular › <strong>Servicios e inyección</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="scene" aria-pressed="true">🏬 Un servicio compartido</button>
+      <button data-v="game">🎲 ¿Componente o servicio?</button>
+    </div>
+  </div>
+
+  <section id="sceneView">
+    <div class="top">
+      <strong>Cada componente consigue el servicio con:</strong>
+      <div class="seg" id="howSeg">
+        <button data-v="inject" aria-pressed="true">inject(ContactsService)</button>
+        <button data-v="new">new ContactsService()</button>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="cmp" id="cH" style="--c:#e8590c"><div class="bt">HeaderComponent</div><div class="body"></div><span class="stale">⚠️ desactualizado</span></div>
+      <div class="cmp" id="cL" style="--c:#1a5fb4"><div class="bt">ContactsComponent <small style="font-family:var(--sans);color:var(--ink-2)">acá se toca</small></div><div class="body"></div></div>
+      <div class="cmp" id="cF" style="--c:#d6336c"><div class="bt">FavoritosComponent</div><div class="body"></div><span class="stale">⚠️ desactualizado</span></div>
+    </div>
+    <div class="wires" id="wires"></div>
+    <div class="svcs" id="svcs"></div>
+    <div class="back"><span style="font-size:1.6rem">🖥️</span><div><strong>El back</strong><div style="color:var(--ink-2);font-size:.9rem">pedidos que recibió</div></div><span class="cnt" id="gets"></span></div>
+    <div class="explain" id="why"></div>
+  </section>
+
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, $$, sleep, esc, bindSeg, quiz } = UI;
+  const START = [{ n: "Ana Gómez", fav: true }, { n: "Leo Pérez", fav: false }, { n: "Sofi Ruiz", fav: false }];
+  const POOL = ["Mati Díaz", "Caro Sosa", "Juan Paz", "Vale Ríos", "Tomi Luna"];
+  const clone = (l) => l.map(c => ({ ...c }));
+  const S = { how: "inject", stores: [], gets: 0, pool: 0 };
+  // un "store" por instancia del servicio: con inject hay una sola; con new, una por componente
+  function setup() {
+    S.pool = 0;
+    if (S.how === "inject") { const one = { list: clone(START) }; S.stores = [one, one, one]; S.gets = 1; }
+    else { S.stores = [0, 1, 2].map(() => ({ list: clone(START) })); S.gets = 3; }
+    renderAll();
+    const w = S.how === "inject"
+      ? "Con <code>inject(ContactsService)</code> Angular le da <strong>la misma instancia</strong> a los tres componentes. Agregá, borrá o marcá un favorito en la lista del medio y mirá los otros dos."
+      : "Con <code>new ContactsService()</code> cada componente se arma <strong>su propia copia</strong> del servicio: tres listas distintas y tres pedidos al back. Ahora tocá algo en la lista del medio…";
+    why(w, S.how === "inject" ? "" : "warn");
+  }
+  const why = (t, k = "") => { $("#why").className = "explain " + k; $("#why").innerHTML = t; };
+  function renderAll() {
+    const [h, l, f] = S.stores;
+    $("#cH .body").innerHTML = `<div class="hdr">Agenda <span class="n">👥 ${h.list.length} contactos</span></div><p style="color:var(--ink-2);font-size:.9rem;margin:10px 0 0">Muestra cuántos contactos hay.</p>`;
+    $("#cL .body").innerHTML = l.list.map((c, i) => `<div class="li"><span class="nm">${esc(c.n)}</span><button data-a="fav" data-i="${i}" title="favorito">${c.fav ? "⭐" : "☆"}</button><button data-a="del" data-i="${i}" title="borrar">🗑️</button></div>`).join("") + `<button class="btn primary addb" data-a="add" ${S.pool >= POOL.length ? "disabled" : ""}>➕ Agregar contacto</button>`;
+    const favs = f.list.filter(c => c.fav);
+    $("#cF .body").innerHTML = `<div style="font-weight:800;margin-bottom:4px">⭐ Favoritos (${favs.length})</div>` + (favs.map(c => `<div class="li"><span class="nm">${esc(c.n)}</span></div>`).join("") || `<p style="color:var(--ink-2)">Ninguno</p>`);
+    const sig = (st) => JSON.stringify(st.list);
+    $("#cH").classList.toggle("isstale", sig(h) !== sig(l));
+    $("#cF").classList.toggle("isstale", sig(f) !== sig(l));
+    $("#wires").innerHTML = ["cH", "cL", "cF"].map(() => `<div class="wire"><span>${S.how === "inject" ? "inject(ContactsService)" : "new ContactsService()"}</span></div>`).join("");
+    const svc = (st, cls, label) => `<div class="svc ${cls}"><h3>ContactsService <small>${label}</small></h3><div class="mem">contacts = [ ${st.list.map(c => `"${esc(c.n.split(" ")[0])}"${c.fav ? "⭐" : ""}`).join(", ")} ]</div><div class="meth">getAll() · create() · delete() · toggleFavorite()</div></div>`;
+    $("#svcs").innerHTML = S.how === "inject" ? svc(h, "shared", "una sola instancia para toda la app") : S.stores.map((st, i) => svc(st, "", `copia ${["del header", "de la lista", "de favoritos"][i]}`)).join("");
+    $("#gets").textContent = `GET /Contacts × ${S.gets}`;
+  }
+  async function pulse() {
+    const wires = $$("#wires .wire"), svcs = $$("#svcs .svc");
+    if (S.how === "inject") {
+      wires[1].classList.add("hot"); svcs[0].classList.add("flash"); await sleep(350);
+      wires[0].classList.add("hot"); wires[2].classList.add("hot");
+      ["#cH", "#cL", "#cF"].forEach(c => { $(c).classList.add("flash"); setTimeout(() => $(c).classList.remove("flash"), 500); });
+      await sleep(400); wires.forEach(w => w.classList.remove("hot")); svcs[0].classList.remove("flash");
+    } else {
+      wires[1].classList.add("hot"); svcs[1].classList.add("flash"); $("#cL").classList.add("flash");
+      await sleep(500); wires[1].classList.remove("hot"); svcs[1].classList.remove("flash"); $("#cL").classList.remove("flash");
+    }
+  }
+  $("#cL").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-a]"); if (!b) return;
+    const st = S.stores[1], a = b.dataset.a, i = +b.dataset.i;
+    let what = "";
+    if (a === "add") { if (S.pool >= POOL.length) return; st.list.push({ n: POOL[S.pool++], fav: false }); what = "agregó un contacto"; }
+    if (a === "del") { what = `borró a ${st.list[i].n}`; st.list.splice(i, 1); }
+    if (a === "fav") { st.list[i].fav = !st.list[i].fav; what = `${st.list[i].fav ? "marcó" : "desmarcó"} a ${st.list[i].n} como favorito`; }
+    renderAll(); await pulse();
+    if (S.how === "inject") why(`La lista ${what} <strong>en el servicio</strong>, y como los tres usan la misma instancia, el header y los favoritos se enteraron solos. Los datos viven en <strong>un solo lugar</strong>.`, "ok");
+    else why(`La lista ${what} en <strong>su copia</strong> del servicio. El header y favoritos tienen otra copia que no se enteró: ahora la app muestra datos distintos en cada lado. Por eso los servicios se <strong>inyectan</strong>, no se crean con <code>new</code>.`, "bad");
+  });
+  bindSeg("#howSeg", (v) => { S.how = v; setup(); });
+
+  /* ---------- quiz ---------- */
+  const CS = ["🧩 En un componente", "🏬 En un servicio"];
+  const QUESTIONS = [
+    { prompt: "¿Dónde va <strong>pedir los contactos al back</strong>?", options: CS, right: 1, why: "Lo usan varias pantallas y conviene tenerlo en un solo lugar: <code>ContactsService</code>." },
+    { prompt: "¿Dónde va <strong>el color y el tamaño del botón ➕</strong>?", options: CS, right: 0, why: "Es cómo se ve una pieza de la pantalla: va en el .scss de su componente." },
+    { prompt: "¿Dónde va <strong>el token del usuario logueado</strong>?", options: CS, right: 1, why: "Lo necesitan el header, los guards, los pedidos al back…: <code>AuthService</code>." },
+    { prompt: "¿Dónde va <strong>qué pasa cuando hacés clic en ✏️ de una fila</strong>?", options: CS, right: 0, why: "Es una reacción de esa pieza de la pantalla (abrir el diálogo). Si después hay que guardar algo, el componente le pide al servicio." },
+    { prompt: "¿Dónde va <strong>«hay algo cargando»</strong> para mostrar una barra de carga en toda la app?", options: CS, right: 1, why: "Es un dato compartido: en la Agenda lo maneja <code>LoadingService</code>." },
+    { prompt: "Dos componentes hacen <code>inject(ContactsService)</code>. ¿Cuántas instancias hay?", options: ["Dos, una por componente", "Una sola, compartida", "Ninguna hasta que se llama a un método", "Depende del orden"], right: 1, why: "Un servicio de la app (<code>@Service()</code>, antes <code>@Injectable({ providedIn: 'root' })</code>) es <strong>uno solo</strong> para todos." },
+    { prompt: "¿Qué pasa si un componente hace <code>new ContactsService()</code>?", options: ["Lo mismo que inject", "Tiene su propia copia: sus datos no se comparten con los demás", "No compila nunca", "Angular lo convierte en inject"], right: 1, why: "Con <code>new</code> te salteás a Angular: es otra instancia, con otros datos (y además sus propios <code>inject</code> adentro pueden fallar)." },
+    { prompt: "<code>AuthService extends ApiService</code> en la Agenda. ¿Para qué?", options: ["Para heredar get/post/put/delete con el token ya puesto", "Porque Angular lo obliga", "Para que haya dos AuthService", "Para que sea un componente"], right: 0, why: "<code>ApiService</code> tiene los pedidos con el header <code>Authorization</code>; los demás servicios lo heredan y no repiten código." },
+  ];
+  quiz($("#quiz"), { questions: QUESTIONS, shuffle: false, summary: "Para llevarse: un <strong>servicio</strong> guarda datos y lógica que comparten varios componentes (pedidos al back, el token, la carga) · se consigue con <code>inject(...)</code> y es <strong>una sola instancia</strong> para toda la app · nunca con <code>new</code> · los componentes se ocupan de la pantalla y le piden cosas al servicio." });
+
+  bindSeg("#modeSeg", (m) => { $("#sceneView").hidden = m !== "scene"; $("#gameView").hidden = m !== "game"; });
+  setup();
+})();
+</script>
+</body>
+</html>
