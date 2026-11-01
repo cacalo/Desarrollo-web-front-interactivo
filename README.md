@@ -15,6 +15,8 @@ html-css/etiquetas-semanticas.html Armar la página por zonas, "¿Quién lee tu 
 html-css/selectores.html         Apuntar con selectores, "¿Qué se pinta?" y desafíos de escribir el selector
 html-css/propiedades.html       Perillas de propiedades (con herencia), "Igualá el diseño" y "¿Qué propiedad cambió?"
 html-css/modelo-caja.html       Capas de la caja, "El misterio del ancho" (box-sizing) y "¿Qué espacio es?"
+js-ts/dom.html                  Buscar en el árbol del DOM, buscar y cambiar, y juego "¿Qué devuelve?"
+js-ts/laboratorio.html          20 retos de JavaScript con editor, vista en vivo, pruebas y progreso guardado (ex practica-js-basica)
 angular/guards.html             La escena animada de los guards, con modo predicción
 ```
 

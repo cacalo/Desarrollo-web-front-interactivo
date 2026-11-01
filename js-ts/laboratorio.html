@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laboratorio de JavaScript · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+  [hidden] { display: none !important; }
+  body { font-size: 16px; }
+  .lab { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: calc(100vh - 59px); }
+  @media (max-width: 1000px) { .lab { grid-template-columns: 1fr; } }
+
+  /* ---------------- lista de retos ---------------- */
+  .side { background: #fff; border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 59px; height: calc(100vh - 59px); overflow: auto; }
+  .prog { padding: 4px 6px 8px; }
+  .prog .big { font-size: 1.5rem; font-weight: 800; }
+  .prog .bar { height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; margin-top: 6px; }
+  .prog .bar i { display: block; height: 100%; background: var(--ok); transition: width .4s; }
+  .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .list button { width: 100%; display: flex; align-items: center; gap: 8px; text-align: left; border: 0; background: transparent; font: inherit; font-size: .92rem; padding: 7px 8px; border-radius: 9px; cursor: pointer; color: var(--ink); }
+  .list button:hover { background: var(--surface-2); }
+  .list button.on { background: #f1e8fb; font-weight: 700; }
+  .list .st { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: .75rem; font-weight: 800; background: var(--surface-2); color: var(--ink-2); flex: none; }
+  .list .st.ok { background: var(--ok); color: #fff; }
+  .list .st.bad { background: var(--bad-bg); color: var(--bad); }
+  .side .tools { margin-top: auto; display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .side .tools .btn { justify-content: center; font-size: .9rem; text-decoration: none; color: var(--ink); }
+  /* pantallas angostas: la lista de retos pasa a ser una tira arriba del editor */
+  @media (max-width: 1000px) {
+    .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    .list { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+    .list button { width: auto; padding: 5px 8px; font-size: .85rem; }
+    .side .tools { flex-direction: row; margin-top: 0; }
+  }
+
+  /* ---------------- reto ---------------- */
+  .main { padding: 20px 24px 40px; min-width: 0; }
+  .head { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .head h1 { font-size: 1.7rem; margin: 0; }
+  .head .num { background: var(--brand-2); color: #fff; font-weight: 800; border-radius: 12px; padding: 4px 12px; font-size: 1.2rem; }
+  .head .desc { font-size: 1.1rem; color: var(--ink-2); margin: 6px 0 0; }
+  .tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .tags span { font-size: .78rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); }
+  .nav-arrows { margin-left: auto; display: flex; gap: 6px; }
+  .work { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1150px) { .work { grid-template-columns: 1fr; } }
+  .pane-title { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); font-weight: 700; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .pane-title small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+
+  /* editor: textarea transparente encima de un <pre> resaltado */
+  .editor { position: relative; display: grid; grid-template-columns: auto 1fr; background: #1e1d24; border-radius: 14px; overflow: hidden; font-family: var(--mono); font-size: 15px; line-height: 1.6; min-height: 340px; box-shadow: var(--shadow); }
+  .gutter { padding: 14px 10px 14px 14px; color: #6d6879; text-align: right; user-select: none; white-space: pre; background: #19181e; }
+  .code-wrap { position: relative; overflow: auto; }
+  .code-wrap pre, .code-wrap textarea { margin: 0; padding: 14px 16px; font: inherit; line-height: inherit; white-space: pre; tab-size: 2; border: 0; min-height: 340px; box-sizing: border-box; width: 100%; }
+  .code-wrap pre { color: #e8e6ef; pointer-events: none; position: absolute; inset: 0; overflow: hidden; }
+  .code-wrap textarea { position: relative; background: transparent; color: transparent; caret-color: #ffd666; resize: none; outline: none; overflow: hidden; display: block; }
+  .code-wrap textarea::selection { background: rgba(130, 207, 255, .3); color: transparent; }
+  .tk-k { color: #ff7ab2; } .tk-s { color: #ffd479; } .tk-c { color: #7f8c98; font-style: italic; } .tk-n { color: #a8e6a3; } .tk-f { color: #82cfff; } .tk-b { color: #d5b6ff; }
+  .ed-bar { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+  .ed-bar .kbd { font-family: var(--mono); font-size: .75rem; border: 1px solid var(--line); border-bottom-width: 2px; padding: 0 5px; border-radius: 5px; background: #fff; }
+
+  /* vista */
+  .view { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+  .view .chrome { background: #e8e4de; padding: 8px 12px; display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
+  .view .chrome .lights { display: flex; gap: 6px; } .view .chrome .lights i { width: 11px; height: 11px; border-radius: 50%; background: #f26b5b; } .view .chrome .lights i:nth-child(2) { background: #f6bf4f; } .view .chrome .lights i:nth-child(3) { background: #5ec860; }
+  .view iframe { width: 100%; height: 230px; border: 0; display: block; }
+  .console { background: #19181e; color: #e8e6ef; font-family: var(--mono); font-size: 13px; padding: 8px 12px; max-height: 140px; min-height: 40px; overflow: auto; }
+  .console div { padding: 2px 0; border-bottom: 1px solid #2a2930; white-space: pre-wrap; }
+  .console .err { color: #ff8a8a; } .console .warn { color: #fdd663; }
+  .console:empty::before { content: "Consola: lo que escribas con console.log aparece acá."; color: #6d6879; }
+
+  /* HTML de la escena */
+  .htmlbox { margin-top: 12px; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .htmlbox summary { cursor: pointer; padding: 10px 14px; font-weight: 700; font-family: var(--mono); font-size: .9rem; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .htmlbox summary small { font-family: var(--sans); font-weight: 400; color: var(--ink-2); }
+  .html-view { background: #1e1d24; color: #e8e6ef; font-family: var(--mono); font-size: 14px; line-height: 1.65; padding: 8px 0; max-height: 260px; overflow: auto; }
+  .h-line { padding-right: 12px; white-space: pre; border-left: 3px solid transparent; }
+  .h-line[data-i] { cursor: default; } .h-line[data-sel] { cursor: copy; }
+  .h-line.hot { background: rgba(255, 214, 102, .15); border-left-color: #ffd666; }
+  .h-tg { color: #ff7ab2; } .h-at { color: #82cfff; } .h-v { color: #ffd479; } .h-tx { color: #e8e6ef; }
+  .h-id { background: rgba(255, 212, 121, .15); border-radius: 4px; font-weight: 700; }
+  .copied { position: fixed; z-index: 300; background: var(--ink); color: #fff; font-family: var(--mono); font-size: 13px; padding: 4px 10px; border-radius: 8px; pointer-events: none; animation: fadeUp 1.2s forwards; }
+  @keyframes fadeUp { 0% { opacity: 0; transform: translateY(4px); } 15% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
+
+  /* resultado de las pruebas */
+  .results { margin-top: 16px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .results h3 { margin: 0 0 8px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+  .checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .checks li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); animation: slidein .3s backwards; }
+  .checks li.ok { background: var(--ok-bg); color: #145c33; } .checks li.bad { background: var(--bad-bg); color: #8c1d1d; }
+  .checks li .ic { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff; background: var(--ink-2); }
+  .checks li.ok .ic { background: var(--ok); } .checks li.bad .ic { background: var(--bad); }
+  @keyframes slidein { from { opacity: 0; transform: translateX(-8px); } }
+  .hint { margin-top: 12px; padding: 10px 14px; border-radius: 12px; background: #fff8d6; border: 1px solid #f3e1a0; }
+  .confetti { position: fixed; top: -20px; width: 10px; height: 14px; z-index: 200; pointer-events: none; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+  .welcome { background: #f3ecfb; border-radius: 14px; padding: 12px 16px; margin-bottom: 16px; color: #3e2a57; font-size: .98rem; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › JavaScript › <strong>Laboratorio de retos</strong></nav>
+</header>
+
+<div class="lab">
+  <aside class="side">
+    <div class="prog"><div><span class="big" id="progNum">0</span> / 20 retos</div><div class="bar"><i id="progBar"></i></div></div>
+    <ol class="list" id="list"></ol>
+    <div class="tools">
+      <button class="btn" id="downloadBtn">⬇️ Descargar mi script.js</button>
+      <a class="btn" href="https://github.com/cacalo/practica-js-basica" target="_blank" rel="noopener" title="Los mismos retos para descargar y resolver en tu editor (VS Code)">💻 Hacerlo en tu compu (repo)</a>
+      <button class="btn" id="resetAllBtn">🗑️ Borrar mi progreso</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="welcome" id="welcome">👋 Escribí el código de cada reto en el editor y apretá <strong>▶ Probar</strong>. Tu código se guarda solo en este navegador. Si algo no te sale podés googlearlo: buscar es parte del trabajo, pero asegurate de entender lo que copiás. ¿Preferís tu editor con autocompletado? Los mismos retos están en el <a href="https://github.com/cacalo/practica-js-basica" target="_blank" rel="noopener">repositorio original</a> para descargar. <button class="btn" style="margin-left:6px;padding:3px 10px" id="hideWelcome">Entendido</button></div>
+    <div class="head">
+      <span class="num" id="cNum"></span>
+      <div style="flex:1; min-width:260px">
+        <h1 id="cTitle"></h1>
+        <p class="desc" id="cDesc"></p>
+        <div class="tags" id="cTags"></div>
+      </div>
+      <div class="nav-arrows"><button class="btn" id="prevBtn" title="Reto anterior">◀</button><button class="btn" id="nextBtn" title="Reto siguiente">▶</button></div>
+    </div>
+
+    <div class="work">
+      <section>
+        <div class="pane-title">Tu código <small id="cWhen"></small></div>
+        <div class="editor">
+          <div class="gutter" id="gutter">1</div>
+          <div class="code-wrap" id="codeWrap"><pre aria-hidden="true" id="hl"></pre><textarea id="code" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Editor de código"></textarea></div>
+        </div>
+        <div class="ed-bar">
+          <button class="btn primary big" id="testBtn">▶ Probar</button>
+          <span style="color:var(--ink-2); font-size:.85rem"><span class="kbd">Ctrl</span> + <span class="kbd">Enter</span></span>
+          <span style="flex:1"></span>
+          <button class="btn" id="hintBtn">💡 Pista</button>
+          <button class="btn" id="resetBtn" title="Vuelve al código inicial de este reto">↺ Empezar de nuevo</button>
+        </div>
+        <div class="hint" id="hint" hidden></div>
+      </section>
+
+      <section>
+        <div class="pane-title">Así funciona tu código <small>probalo con el mouse</small></div>
+        <div class="view">
+          <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><span id="viewName">reto.html</span><span style="flex:1"></span><button class="btn" id="reloadBtn" style="padding:2px 10px;font-size:.8rem" title="Recargar la vista con el código actual">⟳</button></div>
+          <iframe id="view" sandbox="allow-scripts" title="Vista del reto"></iframe>
+          <div class="console" id="console"></div>
+        </div>
+        <details class="htmlbox" id="htmlBox" open>
+          <summary>&lt;/&gt; El HTML de esta escena <small>pasá el mouse para ubicar · clic para copiar cómo buscarlo</small></summary>
+          <div class="html-view" id="htmlView"></div>
+        </details>
+        <div class="results" id="results" hidden>
+          <h3 id="resTitle"></h3>
+          <ul class="checks" id="checks"></ul>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  // =====================================================================
+  // RETOS
+  // Cada reto tiene: el HTML de su tarjeta, las funciones a completar,
+  // qué evento las dispara, el código inicial, una pista y su prueba.
+  // La prueba corre DENTRO del iframe y devuelve una lista de chequeos.
+  // =====================================================================
+  const C = (o) => o;
+  const RETOS = [
+    C({ title: "Duplicar un elemento", desc: "Al hacer clic, duplicá el cuadro de color y agregalo al final.", tags: ["DOM"],
+      html: `<div class="box-container" id="duplicateBoxContainer"><div class="box"></div></div><button id="duplicateBtn">Duplicar caja</button>`,
+      fns: [["reto1Duplicar", "click", "duplicateBtn"]],
+      hint: "Buscá cómo clonar un elemento (<code>cloneNode</code>) y cómo agregar un hijo a un contenedor (<code>appendChild</code>).",
+      test: () => {
+        const c = document.getElementById("duplicateBoxContainer"), b = document.getElementById("duplicateBtn");
+        const n0 = c.children.length; b.click(); const n1 = c.children.length; b.click(); const n2 = c.children.length;
+        const last = c.lastElementChild && c.lastElementChild.classList.contains("box");
+        return [
+          [n1 === n0 + 1, `Con un clic hay una caja más (había ${n0}, quedaron ${n1})`],
+          [n2 === n0 + 2, `Con otro clic hay otra más (quedaron ${n2})`],
+          [last && n1 > n0, "La caja nueva también tiene la clase box"],
+        ];
+      } }),
+    C({ title: "Modo oscuro", desc: "Alterná la clase dark en el <body> y cambiá el texto del botón.", tags: ["DOM", "if"],
+      html: `<p>Un texto cualquiera para ver el cambio.</p><button id="darkModeBtn">Modo Oscuro</button>`,
+      fns: [["reto2ModoOscuro", "click", "darkModeBtn"]],
+      hint: "<code>document.body.classList</code> tiene un método para agregar o sacar una clase en un solo paso. Para el texto: si ahora tiene la clase, el botón debería decir «Modo Claro».",
+      test: () => {
+        const b = document.getElementById("darkModeBtn"), ok = ["Dark Mode", "Light Mode", "Modo Oscuro", "Modo Claro"];
+        const d0 = document.body.classList.contains("dark"), t0 = b.textContent.trim();
+        b.click(); const d1 = document.body.classList.contains("dark"), t1 = b.textContent.trim();
+        b.click(); const d2 = document.body.classList.contains("dark"), t2 = b.textContent.trim();
+        return [
+          [d1 !== d0, "Con un clic el body cambia de modo"],
+          [ok.includes(t1) && t1 !== t0, `El botón cambia su texto (dice «${t1}»)`],
+          [d2 === d0 && t2 === t0, "Con otro clic vuelve todo a como estaba"],
+        ];
+      } }),
+    C({ title: "Habilitar botón", desc: "El botón se habilita sólo si la casilla está marcada.", tags: ["DOM", "eventos"],
+      html: `<label><input type="checkbox" id="termsChk"> Acepto los términos</label><button id="acceptBtn" disabled>Aceptar</button>`,
+      fns: [["reto3Habilitar", "change", "termsChk"]],
+      hint: "Los botones tienen la propiedad <code>disabled</code> (true/false) y los checkbox la propiedad <code>checked</code>. ¿Cómo se relacionan?",
+      test: () => {
+        const c = document.getElementById("termsChk"), b = document.getElementById("acceptBtn");
+        c.checked = true; c.dispatchEvent(new Event("change")); const en = b.disabled === false;
+        c.checked = false; c.dispatchEvent(new Event("change")); const dis = b.disabled === true;
+        return [[en, "Al marcar la casilla, el botón se habilita"], [dis, "Al desmarcarla, se deshabilita de nuevo"]];
+      } }),
+    C({ title: "Número aleatorio 1-10", desc: "Generá y mostrá un número entero entre 1 y 10.", tags: ["DOM"],
+      html: `<button id="randomNumberBtn">Generar</button> <span id="randomNumberSpan" style="font-size:2rem;font-weight:800;margin-left:10px"></span>`,
+      fns: [["reto4NumeroAleatorio", "click", "randomNumberBtn"]],
+      hint: "<code>Math.random()</code> da un número entre 0 y 1 (sin llegar a 1). Multiplicalo, redondealo para abajo con <code>Math.floor</code> y sumale lo que haga falta.",
+      test: () => {
+        const b = document.getElementById("randomNumberBtn"), s = document.getElementById("randomNumberSpan");
+        let ok = true, bad = null; const seen = new Set();
+        for (let i = 0; i < 200; i++) { b.click(); const n = Number(s.textContent); seen.add(n); if (!Number.isInteger(n) || n < 1 || n > 10) { ok = false; bad = s.textContent; break; } }
+        return [
+          [s.textContent.trim() !== "", "Se muestra un número"],
+          [ok, ok ? "Siempre es un entero entre 1 y 10" : `Apareció un valor inválido: «${bad}»`],
+          [ok && seen.has(1) && seen.has(10), "Pueden salir el 1 y el 10 (probamos 200 veces)"],
+        ];
+      } }),
+    C({ title: "Contador", desc: "Los botones suman y restan. El contador nunca baja de 0.", tags: ["DOM", "if"],
+      html: `<div style="display:flex;align-items:center;gap:14px"><button id="decrementBtn">−</button><span id="counterValue" style="font-size:2rem;font-weight:800">0</span><button id="incrementBtn">+</button></div>`,
+      fns: [["reto5Incrementar", "click", "incrementBtn"], ["reto5Decrementar", "click", "decrementBtn"]],
+      hint: "Leé el número que se muestra con <code>Number(...textContent)</code>, cambialo y volvé a escribirlo. Para no bajar de 0, un <code>if</code>.",
+      test: () => {
+        const inc = document.getElementById("incrementBtn"), dec = document.getElementById("decrementBtn"), v = document.getElementById("counterValue");
+        dec.click(); const zero = Number(v.textContent) === 0;
+        inc.click(); inc.click(); const two = Number(v.textContent);
+        dec.click(); dec.click(); dec.click(); const end = Number(v.textContent);
+        return [[two === 2, `Dos clics en + llevan a 2 (dio ${two})`], [zero, "Desde 0, el − no baja a negativo"], [end === 0, `Restando de más queda en 0 (quedó en ${end})`]];
+      } }),
+    C({ title: "Mostrar / Ocultar", desc: "El botón alterna la visibilidad del texto (con la clase hidden).", tags: ["DOM"],
+      html: `<p id="toggleTextP">Este texto se puede ocultar.</p><button id="toggleTextBtn">Ocultar</button>`,
+      fns: [["reto6MostrarOcultar", "click", "toggleTextBtn"]],
+      hint: "La clase <code>hidden</code> ya existe en el CSS. Sólo hay que ponerla y sacarla. Extra: cambiá el texto del botón entre «Ocultar» y «Mostrar».",
+      test: () => {
+        const p = document.getElementById("toggleTextP"), b = document.getElementById("toggleTextBtn");
+        const h0 = p.classList.contains("hidden"); b.click(); const h1 = p.classList.contains("hidden"); b.click(); const h2 = p.classList.contains("hidden");
+        return [[h1 !== h0, "Con un clic el texto se oculta"], [h2 === h0, "Con otro clic vuelve a aparecer"]];
+      } }),
+    C({ title: "Mayúsculas", desc: "Convertí todos los elementos de la lista a MAYÚSCULAS.", tags: ["DOM", "bucles"],
+      html: `<ul id="fruitList"><li>Naranja</li><li>banana</li><li>Manzana</li><li>uva</li><li>Kiwi</li></ul><button id="toUpperBtn">A mayúsculas</button>`,
+      fns: [["reto7Mayusculas", "click", "toUpperBtn"]],
+      hint: "Recorré los <code>li</code> de la lista (con un <code>for...of</code> o <code>forEach</code>) y a cada uno cambiale el texto por <code>.toUpperCase()</code>.",
+      test: () => {
+        const l = document.getElementById("fruitList"), b = document.getElementById("toUpperBtn");
+        const before = [...l.children].map(li => li.textContent); b.click(); const after = [...l.children].map(li => li.textContent);
+        return [[after.length === before.length, "La lista tiene la misma cantidad de elementos"], [after.every((t, i) => t === (before[i] || "").toUpperCase()), "Cada elemento quedó en mayúsculas y en el mismo orden"]];
+      } }),
+    C({ title: "Invertir texto", desc: "Al apretar el botón, mostrá el texto escrito al revés.", tags: ["DOM"],
+      html: `<input id="reverseInput" placeholder="Escribí algo"> <button id="reverseBtn">Invertir</button><p>Resultado: <strong id="reverseOutput"></strong></p>`,
+      fns: [["reto8Invertir", "click", "reverseBtn"]],
+      hint: "Un texto se puede convertir en arreglo de letras con <code>split('')</code>; los arreglos tienen <code>reverse()</code> y se vuelven a unir con <code>join('')</code>.",
+      test: () => {
+        const i = document.getElementById("reverseInput"), b = document.getElementById("reverseBtn"), o = document.getElementById("reverseOutput");
+        i.value = "hola"; b.click(); const a = o.textContent; i.value = "Javascript 2024"; b.click(); const c = o.textContent;
+        return [[a === "aloh", `«hola» → «aloh» (dio «${a}»)`], [c === "4202 tpircsavaJ", `«Javascript 2024» → «4202 tpircsavaJ» (dio «${c}»)`]];
+      } }),
+    C({ title: "Filtrar lista", desc: "Mostrá sólo los animales que contienen el texto. «Limpiar» vuelve a mostrar todos.", tags: ["DOM", "bucles", "if"],
+      html: `<input id="filterInput" placeholder="Texto a filtrar"> <button id="filterBtn">Filtrar</button> <button id="clearFilterBtn">Limpiar</button><ul id="animalList"><li>Perro</li><li>Gato</li><li>Caballo</li><li>León</li><li>elefante</li></ul>`,
+      fns: [["reto9Filtrar", "click", "filterBtn"], ["reto9Limpiar", "click", "clearFilterBtn"]],
+      hint: "Recorré los <code>li</code>. Si el texto (en minúsculas) <code>includes</code> lo buscado, <code>style.display = ''</code>; si no, <code>'none'</code>.",
+      test: () => {
+        const i = document.getElementById("filterInput"), f = document.getElementById("filterBtn"), c = document.getElementById("clearFilterBtn"), items = [...document.getElementById("animalList").children];
+        i.value = "o"; f.click();
+        const vis = items.filter(li => li.style.display !== "none"), hid = items.filter(li => li.style.display === "none");
+        const a = vis.length > 0 && vis.every(li => li.textContent.toLowerCase().includes("o")), b2 = hid.length > 0 && hid.every(li => !li.textContent.toLowerCase().includes("o"));
+        i.value = "GA"; f.click(); const upper = items.filter(li => li.style.display !== "none").length === 1 && items[1].style.display !== "none";
+        c.click(); const back = items.every(li => li.style.display !== "none");
+        return [[a, "Filtrando «o» se ven sólo los que tienen «o»"], [b2, "Los que no tienen «o» se ocultan (con display none)"], [upper, "No distingue mayúsculas: «GA» encuentra a Gato"], [back, "Limpiar vuelve a mostrar todos"]];
+      } }),
+    C({ title: "Sumar números", desc: "Sumá los dos campos y mostrá el resultado.", tags: ["DOM"],
+      html: `<input id="sumA" type="number" value="0" style="width:80px"> + <input id="sumB" type="number" value="0" style="width:80px"> <button id="sumBtn">Sumar</button> = <strong id="sumResult">0</strong>`,
+      fns: [["reto10Sumar", "click", "sumBtn"]],
+      hint: "Ojo: <code>.value</code> siempre devuelve texto, y \"7\" + \"5\" es \"75\". Convertí con <code>Number()</code> antes de sumar.",
+      test: () => {
+        const a = document.getElementById("sumA"), b = document.getElementById("sumB"), btn = document.getElementById("sumBtn"), r = document.getElementById("sumResult");
+        a.value = "7"; b.value = "5"; btn.click(); const x = r.textContent; a.value = "-3"; b.value = "1.5"; btn.click(); const y = r.textContent;
+        return [[x === "12", `7 + 5 = 12 (dio «${x}»${x === "75" ? ": ¡se pegaron como texto!" : ""})`], [Number(y) === -1.5, `-3 + 1.5 = -1.5 (dio «${y}»)`]];
+      } }),
+    C({ title: "Contar caracteres", desc: "Mostrá cuántos caracteres tiene el texto mientras se escribe.", tags: ["DOM", "eventos"],
+      html: `<textarea id="charTextarea" rows="3" cols="26" placeholder="Escribí..."></textarea><p><strong id="charCountSpan">0</strong> caracteres</p>`,
+      fns: [["reto11Contar", "input", "charTextarea"]],
+      hint: "Esta función se ejecuta con el evento <code>input</code>, cada vez que se escribe. El largo de un texto es <code>.length</code>.",
+      test: () => {
+        const t = document.getElementById("charTextarea"), s = document.getElementById("charCountSpan");
+        t.value = "abcd"; t.dispatchEvent(new Event("input")); const a = s.textContent; t.value = ""; t.dispatchEvent(new Event("input")); const b = s.textContent;
+        return [[a === "4", `«abcd» tiene 4 (mostró «${a}»)`], [b === "0", `Vacío muestra 0 (mostró «${b}»)`]];
+      } }),
+    C({ title: "Ciclar color", desc: "Cada clic cambia el color de la caja al siguiente de la lista. Después del último, vuelve al primero.", tags: ["DOM"],
+      html: `<div id="colorCycleBox" style="width:60px;height:60px;background:#ff595e;border-radius:8px;margin-bottom:10px"></div><button id="colorCycleBtn">Cambiar color</button>`,
+      fns: [["reto12CiclarColor", "click", "colorCycleBtn"]],
+      starterTop: `let cicloIndex = 0;\nconst cicloColores = ["#ff595e", "#1982c4", "#6a4c93", "#8ac926"];\n\n`,
+      hint: "Usá <code>cicloIndex</code> para saber en qué color vas. Sumale 1 y, si se pasa del largo de la lista, volvé a 0 (o usá el operador <code>%</code>).",
+      test: () => {
+        const box = document.getElementById("colorCycleBox"), b = document.getElementById("colorCycleBtn"), seen = [];
+        for (let i = 0; i < 5; i++) { b.click(); seen.push(box.style.backgroundColor); }
+        return [[seen.every(Boolean), "Cada clic pone un color"], [new Set(seen.slice(0, 4)).size === 4, "Pasa por los 4 colores distintos"], [seen[0] === seen[4], "Después del último vuelve a empezar"]];
+      } }),
+    C({ title: "Alternar forma", desc: "Alterná entre cuadrado y círculo cambiando el border-radius.", tags: ["DOM", "if"],
+      html: `<div id="shapeBox" style="width:60px;height:60px;background:#444;border-radius:6px;transition:.2s;margin-bottom:10px"></div><button id="shapeBtn">Cambiar forma</button> <span id="shapeState">Cuadrado</span>`,
+      fns: [["reto13AlternarForma", "click", "shapeBtn"]],
+      hint: "Cuadrado = <code>border-radius: 6px</code>, círculo = <code>50%</code>. Mirá cuál tiene ahora (<code>style.borderRadius</code>) y poné el otro. Extra: actualizá el texto «Cuadrado/Círculo».",
+      test: () => {
+        const box = document.getElementById("shapeBox"), b = document.getElementById("shapeBtn");
+        const r0 = box.style.borderRadius; b.click(); const r1 = box.style.borderRadius; b.click(); const r2 = box.style.borderRadius;
+        return [[r1 === "50%", `Con un clic pasa a círculo, 50% (quedó «${r1}»)`], [r2 === r0, "Con otro clic vuelve a cuadrado"]];
+      } }),
+    C({ title: "Agregar elemento a lista", desc: "Agregá un <li> con el texto escrito.", tags: ["DOM"],
+      html: `<input id="addItemInput" placeholder="Elemento"> <button id="addItemBtn">Agregar</button><ul id="addItemList"><li>Uno</li><li>Dos</li></ul>`,
+      fns: [["reto14Agregar", "click", "addItemBtn"]],
+      hint: "<code>document.createElement('li')</code> crea un elemento nuevo. Ponele el texto y agregalo a la lista con <code>appendChild</code>.",
+      test: () => {
+        const i = document.getElementById("addItemInput"), b = document.getElementById("addItemBtn"), l = document.getElementById("addItemList");
+        const n0 = l.children.length; i.value = "Nuevo"; b.click(); const t = l.lastElementChild && l.lastElementChild.textContent; i.value = "Otro"; b.click();
+        return [[l.children.length === n0 + 2, `Dos clics agregan dos elementos (quedaron ${l.children.length})`], [t === "Nuevo", `El nuevo dice lo que se escribió (dice «${t}»)`], [l.lastElementChild.tagName === "LI", "Lo nuevo es un <li>"]];
+      } }),
+    C({ title: "Eliminar último", desc: "Eliminá el último elemento de la lista, sin errores cuando ya está vacía.", tags: ["DOM", "if"],
+      html: `<ul id="removeList"><li>A</li><li>B</li><li>C</li></ul><button id="removeLastBtn">Eliminar último</button>`,
+      fns: [["reto15EliminarUltimo", "click", "removeLastBtn"]],
+      hint: "<code>lastElementChild</code> te da el último hijo. Si existe, se puede borrar con <code>.remove()</code>. Si la lista está vacía es <code>null</code>: chequealo con un <code>if</code>.",
+      test: () => {
+        const l = document.getElementById("removeList"), b = document.getElementById("removeLastBtn");
+        b.click(); const after = [...l.children].map(li => li.textContent).join("");
+        let safe = true; for (let i = 0; i < 5; i++) { try { b.click(); } catch (e) { safe = false; } }
+        return [[after === "AB", `Borra el último: quedan A y B (quedó «${after}»)`], [l.children.length === 0, "Se puede vaciar del todo"], [safe && !window.__errors.length, "Con la lista vacía no tira error"]];
+      } }),
+    C({ title: "No vacío", desc: "El campo es válido sólo si no está vacío. Usá las clases valido e invalido.", tags: ["DOM", "if"],
+      html: `<input id="emailInput" placeholder="Escribí algo"> <button id="validateBtn">Comprobar</button>`,
+      fns: [["reto16Validar", "click", "validateBtn"]],
+      hint: "Si <code>input.value.trim()</code> está vacío: agregá <code>invalido</code> y sacá <code>valido</code>. Si no, al revés.",
+      test: () => {
+        const i = document.getElementById("emailInput"), b = document.getElementById("validateBtn");
+        const is = (a, n) => i.classList.contains(a) && !i.classList.contains(n);
+        i.value = ""; b.click(); const x = is("invalido", "valido"); i.value = "algo"; b.click(); const y = is("valido", "invalido"); i.value = ""; b.click(); const z = is("invalido", "valido");
+        return [[x, "Vacío → clase invalido"], [y, "Con texto → clase valido (y sin invalido)"], [z, "Si lo vaciás de nuevo, vuelve a invalido"]];
+      } }),
+    C({ title: "Celsius → Fahrenheit", desc: "Convertí y mostrá el resultado con un decimal.", tags: ["DOM"],
+      html: `<input id="celsiusInput" type="number" value="0" style="width:90px"> °C <button id="convertBtn">Convertir</button> = <strong id="fahrenheitResult">32.0</strong> °F`,
+      fns: [["reto17Convertir", "click", "convertBtn"]],
+      hint: "F = C × 9 / 5 + 32. Para mostrar un decimal, <code>.toFixed(1)</code>.",
+      test: () => {
+        const i = document.getElementById("celsiusInput"), b = document.getElementById("convertBtn"), o = document.getElementById("fahrenheitResult");
+        i.value = "100"; b.click(); const a = o.textContent; i.value = "0"; b.click(); const c = o.textContent; i.value = "37"; b.click(); const d = o.textContent;
+        return [[a === "212.0", `100 °C = 212.0 °F (dio «${a}»)`], [c === "32.0", `0 °C = 32.0 °F (dio «${c}»)`], [d === "98.6", `37 °C = 98.6 °F (dio «${d}»)`]];
+      } }),
+    C({ title: "Divisible", desc: "Indicá si el numerador es divisible por el denominador: SI, NO o Error (si el denominador es 0).", tags: ["DOM", "if"],
+      html: `<input id="divNum" type="number" value="14" style="width:80px"> / <input id="divDen" type="number" value="7" style="width:80px"> <button id="divideBtn">Comprobar</button> = <strong id="divideResult">?</strong>`,
+      fns: [["reto18Divisible", "click", "divideBtn"]],
+      hint: "El operador <code>%</code> da el resto de una división. Si el resto es 0, es divisible. Primero chequeá el caso del 0 (¿un <code>if</code>/<code>else if</code> o un <code>switch</code>?).",
+      test: () => {
+        const n = document.getElementById("divNum"), d = document.getElementById("divDen"), b = document.getElementById("divideBtn"), r = document.getElementById("divideResult");
+        n.value = "10"; d.value = "2"; b.click(); const a = r.textContent; n.value = "7"; d.value = "2"; b.click(); const c = r.textContent; d.value = "0"; b.click(); const e = r.textContent;
+        return [[a === "SI", `10 / 2 → SI (dio «${a}»)`], [c === "NO", `7 / 2 → NO (dio «${c}»)`], [e === "Error", `Denominador 0 → Error (dio «${e}»)`]];
+      } }),
+    C({ title: "Ordenar números", desc: "Ordená los números de la lista de menor a mayor.", tags: ["DOM", "bucles"],
+      html: `<ul id="numberList"><li>5</li><li>2</li><li>9</li><li>1</li><li>14</li><li>4</li></ul><button id="sortNumbersBtn">Ordenar números</button>`,
+      fns: [["reto19OrdenarNumeros", "click", "sortNumbersBtn"]],
+      hint: "Pasá los <code>li</code> a un arreglo de números, ordenalo con <code>sort((a, b) => a - b)</code> y volvé a escribir la lista. Ojo: sin esa función, <code>sort</code> pone el 14 antes que el 2.",
+      test: () => {
+        const l = document.getElementById("numberList"), b = document.getElementById("sortNumbersBtn");
+        const before = [...l.children].map(li => Number(li.textContent)); b.click(); const after = [...l.children].map(li => Number(li.textContent));
+        const exp = [...before].sort((x, y) => x - y);
+        return [[after.length === before.length, "Siguen estando todos los números"], [JSON.stringify(after) === JSON.stringify(exp), `Quedan en orden: ${exp.join(", ")} (quedó ${after.join(", ")})`]];
+      } }),
+    C({ title: "Rotar lista", desc: "Mové el último elemento al principio.", tags: ["DOM"],
+      html: `<ul id="rotateList"><li>A</li><li>B</li><li>C</li><li>D</li><li>E</li></ul><button id="rotateBtn">Rotar</button>`,
+      fns: [["reto20Rotar", "click", "rotateBtn"]],
+      hint: "Un elemento que ya está en la página se puede mover: si lo insertás en otro lado, se saca de donde estaba. Mirá <code>prepend</code>.",
+      test: () => {
+        const l = document.getElementById("rotateList"), b = document.getElementById("rotateBtn");
+        b.click(); const a = [...l.children].map(li => li.textContent).join(""); b.click(); const c = [...l.children].map(li => li.textContent).join("");
+        return [[a === "EABCD", `Una vez: EABCD (quedó ${a})`], [c === "DEABC", `Dos veces: DEABC (quedó ${c})`]];
+      } }),
+  ];
+  RETOS.forEach((r, i) => { r.n = i + 1; });
+  const starter = (r) => (r.starterTop || "") + r.fns.map(([name, ev, id]) => `// Se ejecuta con el evento "${ev}" de #${id}\nfunction ${name}() {\n  \n}\n`).join("\n");
+
+  // CSS que tiene cada vista (el mismo para todos los retos)
+  const VIEW_CSS = `body{font-family:"Segoe UI",system-ui,sans-serif;padding:16px 20px;margin:0;font-size:16px;color:#222;background:#fff;transition:background .3s,color .3s}
+    body.dark{background:#1b1f24;color:#e8eaed} button{font:inherit;padding:7px 14px;border-radius:8px;border:1px solid #bbb;background:#f4f4f4;cursor:pointer;margin:2px}
+    body.dark button{background:#2a323a;color:#e8eaed;border-color:#444} button:disabled{opacity:.45;cursor:not-allowed}
+    input,textarea{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid #bbb} .box-container{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+    .box{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#7b2cbf,#c3002f)} .hidden{display:none}
+    .valido{border:2px solid #1f8a4c;background:#e3f5ea} .invalido{border:2px solid #c62828;background:#fde7e7} ul{padding-left:20px} li{margin:2px 0}`;
+
+  // =====================================================================
+  // HTML DE LA ESCENA: cada elemento lleva data-lab-i para poder
+  // iluminarlo en la vista desde el panel de HTML
+  // =====================================================================
+  function markedHtml(r) {
+    const t = document.createElement("template"); t.innerHTML = r.html;
+    t.content.querySelectorAll("*").forEach((el, i) => el.setAttribute("data-lab-i", i));
+    return t.innerHTML;
+  }
+  const HL_SCRIPT = `<script>
+    addEventListener("message", function (e) {
+      if (!e.data || e.data.labHl === undefined) return;
+      document.querySelectorAll("[data-lab-hl]").forEach(function (x) { x.style.outline = x.dataset.labOutline || ""; x.style.outlineOffset = ""; x.removeAttribute("data-lab-hl"); });
+      var el = document.querySelector('[data-lab-i="' + e.data.labHl + '"]');
+      if (el) { el.dataset.labOutline = el.style.outline; el.setAttribute("data-lab-hl", ""); el.style.outline = "3px solid #ffd666"; el.style.outlineOffset = "3px"; }
+    });
+  <\/script>`;
+  // arma las líneas del HTML con sangría, y recuerda qué elemento es cada línea
+  function prettyLines(r) {
+    const t = document.createElement("template"); t.innerHTML = r.html;
+    const lines = []; let idx = 0;
+    const attrs = (el) => [...el.attributes].map(a => a.value === "" ? ` <span class="h-at">${a.name}</span>` : ` <span class="h-at">${a.name}</span>=<span class="h-v ${a.name === "id" ? "h-id" : ""}">"${esc(a.value)}"</span>`).join("");
+    const VOID = ["input", "br", "img", "hr"];
+    function walk(node, depth) {
+      for (const n of node.childNodes) {
+        if (n.nodeType === 3) { const txt = n.textContent.trim(); if (txt) lines.push({ depth, html: `<span class="h-tx">${esc(txt)}</span>` }); continue; }
+        if (n.nodeType !== 1) continue;
+        const i = idx++, tag = n.tagName.toLowerCase(), sel = n.id ? "#" + n.id : n.classList.length ? "." + n.classList[0] : null;
+        const open = `<span class="h-tg">&lt;${tag}</span>${attrs(n)}<span class="h-tg">&gt;</span>`;
+        if (VOID.includes(tag)) { lines.push({ depth, html: open, i, sel }); continue; }
+        const onlyText = [...n.childNodes].every(c => c.nodeType === 3) ;
+        if (onlyText) { lines.push({ depth, html: `${open}<span class="h-tx">${esc(n.textContent.trim())}</span><span class="h-tg">&lt;/${tag}&gt;</span>`, i, sel }); idx += 0; continue; }
+        lines.push({ depth, html: open, i, sel });
+        walk(n, depth + 1);
+        lines.push({ depth, html: `<span class="h-tg">&lt;/${tag}&gt;</span>`, i, sel });
+      }
+    }
+    walk(t.content, 0);
+    return lines;
+  }
+  function renderHtmlPanel(r) {
+    $("#htmlView").innerHTML = prettyLines(r).map(l => `<div class="h-line" ${l.i !== undefined ? `data-i="${l.i}"` : ""} ${l.sel ? `data-sel="${l.sel}" title="Clic para copiar cómo buscar ${l.sel}"` : ""} style="padding-left:${12 + l.depth * 18}px">${l.html}</div>`).join("");
+  }
+
+  // =====================================================================
+  // IFRAME: arma la página del reto con el código del alumno
+  // =====================================================================
+  function buildDoc(r, code, mode, token) {
+    const listeners = r.fns.map(([name, ev, id]) => `
+      (function(){ var el = document.getElementById(${JSON.stringify(id)});
+        if (typeof ${name} === "function") el.addEventListener(${JSON.stringify(ev)}, ${name});
+        else __report("warn", "No encontré la función ${name}. ¿Le cambiaste el nombre?"); })();`).join("");
+    const tester = mode === "test" ? `<script>
+      try { var checks = (${r.test.toString()})(); parent.postMessage({ token: ${JSON.stringify(token)}, type: "result", checks: checks, errors: window.__errors }, "*"); }
+      catch (e) { parent.postMessage({ token: ${JSON.stringify(token)}, type: "result", crash: e.message, errors: window.__errors }, "*"); }
+    <\/script>` : "";
+    const head = (offset) => `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${VIEW_CSS}</style>
+      <script>
+        window.__errors = [];
+        function __report(kind, text) { if (kind === "error") window.__errors.push(text); parent.postMessage({ token: ${JSON.stringify(token)}, type: "console", kind: kind, text: String(text) }, "*"); }
+        window.onerror = function (msg, src, line) { var l = line - ${offset}; __report("error", msg + (l > 0 ? " (línea " + l + " de tu código)" : "")); };
+        ["log", "warn", "error"].forEach(function (k) { var o = console[k]; console[k] = function () { var a = [].slice.call(arguments).map(function (x) { try { return typeof x === "object" ? JSON.stringify(x) : String(x); } catch (e) { return String(x); } }); __report(k === "log" ? "log" : k, a.join(" ")); o.apply(console, arguments); }; });
+      <\/script><\/head><body>${markedHtml(r)}
+      <script>\n`;
+    const offset = head(0).split("\n").length - 1;
+    return head(offset) + `${code}\n<\/script>
+      <script>${listeners}<\/script>${tester}${HL_SCRIPT}<\/body><\/html>`;
+  }
+
+  // =====================================================================
+  // ESTADO + GUARDADO
+  // =====================================================================
+  const KEY = "lab-js-v1";
+  const store = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } })();
+  store.code = store.code || {}; store.status = store.status || {};
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch {} };
+  let cur = Math.min(Math.max(store.cur || 0, 0), RETOS.length - 1);
+  const codeOf = (i) => store.code[i] ?? starter(RETOS[i]);
+
+  // =====================================================================
+  // EDITOR con resaltado
+  // =====================================================================
+  const ta = $("#code"), hl = $("#hl"), gutter = $("#gutter");
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  function highlight(src) {
+    const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?|`(?:[^`\\]|\\.)*`?)|\b(function|return|if|else|for|of|in|while|let|const|var|new|true|false|null|undefined|switch|case|break|default|this|typeof|do|continue)\b|\b(document|window|console|Math|Number|String|Array|JSON)\b|\b(\d+(?:\.\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()/g;
+    let out = "", last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      const [t, com, str, kw, bi, num, fn] = m;
+      out += com ? `<span class="tk-c">${esc(t)}</span>` : str ? `<span class="tk-s">${esc(t)}</span>` : kw ? `<span class="tk-k">${t}</span>` : bi ? `<span class="tk-b">${t}</span>` : num ? `<span class="tk-n">${t}</span>` : `<span class="tk-f">${esc(t)}</span>`;
+      last = m.index + t.length;
+    }
+    return out + esc(src.slice(last)) + "\n";
+  }
+  function refreshEditor() {
+    hl.innerHTML = highlight(ta.value);
+    const lines = ta.value.split("\n").length;
+    gutter.textContent = Array.from({ length: lines }, (_, i) => i + 1).join("\n");
+    ta.style.height = "auto"; ta.style.height = Math.max(340, ta.scrollHeight) + "px";
+    ta.style.width = "auto"; ta.style.width = Math.max(ta.parentElement.clientWidth, ta.scrollWidth) + "px";
+    hl.style.width = ta.style.width; hl.style.height = ta.style.height;
+  }
+  let saveT, viewT;
+  ta.addEventListener("input", () => {
+    refreshEditor();
+    clearTimeout(saveT); saveT = setTimeout(() => { keepCode(); save(); }, 300);
+    clearTimeout(viewT); viewT = setTimeout(loadView, 900);   // la vista se actualiza sola al dejar de escribir
+  });
+  ta.addEventListener("keydown", (e) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const s = ta.selectionStart, en = ta.selectionEnd;
+      ta.setRangeText("  ", s, en, "end"); ta.dispatchEvent(new Event("input"));
+    } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault(); runTest();
+    } else if (e.key === "Enter") {
+      // mantiene la sangría de la línea anterior (y suma 2 espacios después de "{")
+      e.preventDefault();
+      const s = ta.selectionStart, before = ta.value.slice(0, s), line = before.slice(before.lastIndexOf("\n") + 1);
+      let ind = (line.match(/^\s*/) || [""])[0];
+      if (/[{(\[]\s*$/.test(line)) ind += "  ";
+      ta.setRangeText("\n" + ind, s, ta.selectionEnd, "end"); ta.dispatchEvent(new Event("input"));
+    } else if (e.key === "}" ) {
+      const s = ta.selectionStart, before = ta.value.slice(0, s), line = before.slice(before.lastIndexOf("\n") + 1);
+      if (/^\s+$/.test(line) && line.length >= 2) { e.preventDefault(); ta.setRangeText("}", s - 2, ta.selectionEnd, "end"); ta.dispatchEvent(new Event("input")); }
+    }
+  });
+
+  // =====================================================================
+  // VISTA y PRUEBAS
+  // =====================================================================
+  let viewToken = "";
+  function loadView() {
+    viewToken = "v" + Math.random();
+    $("#console").innerHTML = "";
+    $("#view").srcdoc = buildDoc(RETOS[cur], ta.value, "view", viewToken);
+  }
+  function logLine(kind, text) {
+    const d = document.createElement("div");
+    d.className = kind === "error" ? "err" : kind === "warn" ? "warn" : "";
+    d.textContent = (kind === "error" ? "❌ " : kind === "warn" ? "⚠️ " : "› ") + text;
+    $("#console").appendChild(d); $("#console").scrollTop = 1e9;
+  }
+  let testToken = "", testFrame = null, testTimer = null;
+  function runTest() {
+    store.code[cur] = ta.value; save();
+    loadView();
+    testToken = "t" + Math.random();
+    testFrame?.remove();
+    testFrame = document.createElement("iframe");
+    testFrame.setAttribute("sandbox", "allow-scripts"); testFrame.style.display = "none";
+    testFrame.srcdoc = buildDoc(RETOS[cur], ta.value, "test", testToken);
+    document.body.appendChild(testFrame);
+    $("#results").hidden = false; $("#resTitle").innerHTML = "⏳ Probando…"; $("#checks").innerHTML = "";
+    clearTimeout(testTimer);
+    testTimer = setTimeout(() => showResult({ crash: "La prueba tardó demasiado. ¿Puede haber un bucle que nunca termina?" }), 4000);
+  }
+  addEventListener("message", (e) => {
+    const d = e.data || {};
+    if (d.token === viewToken && d.type === "console") logLine(d.kind, d.text);
+    if (d.token === testToken && d.type === "result") { clearTimeout(testTimer); showResult(d); }
+  });
+  function showResult(d) {
+    testToken = "";
+    testFrame?.remove(); testFrame = null;
+    const checks = d.checks || [];
+    const extra = [];
+    if (d.crash) extra.push([false, `La prueba no pudo terminar: ${d.crash}`]);
+    [...new Set(d.errors || [])].slice(0, 2).forEach(er => extra.push([false, `Tu código tiró un error: ${er}`]));
+    const all = [...extra, ...checks];
+    const pass = !d.crash && checks.length && checks.every(c => c[0]) && !(d.errors || []).length;
+    const was = store.status[cur];
+    store.status[cur] = pass ? "ok" : "bad"; save();
+    $("#resTitle").innerHTML = pass ? "✅ ¡Reto superado!" : `❌ Pasaron ${checks.filter(c => c[0]).length} de ${checks.length} pruebas`;
+    $("#checks").innerHTML = all.map(([ok, text], i) => `<li class="${ok ? "ok" : "bad"}" style="animation-delay:${i * 80}ms"><span class="ic">${ok ? "✓" : "✗"}</span><span>${esc(text)}</span></li>`).join("");
+    renderList();
+    if (pass && was !== "ok") { confetti(Object.values(store.status).filter(s => s === "ok").length === RETOS.length ? 160 : 60); }
+  }
+  function confetti(n) {
+    const colors = ["#e44d26", "#2a9d8f", "#1a5fb4", "#7b2cbf", "#d6336c", "#ffd166"];
+    for (let k = 0; k < n; k++) {
+      const c = document.createElement("div"); c.className = "confetti";
+      c.style.cssText = `left:${Math.random() * 100}vw;background:${colors[k % 6]};animation-duration:${1.6 + Math.random() * 1.8}s;animation-delay:${Math.random() * .4}s`;
+      document.body.appendChild(c); setTimeout(() => c.remove(), 4000);
+    }
+  }
+
+  // =====================================================================
+  // NAVEGACIÓN
+  // =====================================================================
+  function renderList() {
+    $("#list").innerHTML = RETOS.map((r, i) => {
+      const st = store.status[i];
+      return `<li><button data-i="${i}" class="${i === cur ? "on" : ""}"><span class="st ${st || ""}">${st === "ok" ? "✓" : r.n}</span>${r.title}</button></li>`;
+    }).join("");
+    const done = Object.values(store.status).filter(s => s === "ok").length;
+    $("#progNum").textContent = done; $("#progBar").style.width = (done / RETOS.length) * 100 + "%";
+  }
+  function keepCode() { if (ta.value && ta.value !== starter(RETOS[cur])) store.code[cur] = ta.value; else delete store.code[cur]; }
+  function open(i) {
+    keepCode();
+    cur = i; store.cur = i; save();
+    const r = RETOS[i];
+    $("#cNum").textContent = r.n;
+    $("#cTitle").textContent = r.title;
+    $("#cDesc").textContent = r.desc;
+    $("#cTags").innerHTML = r.tags.map(t => `<span>${t}</span>`).join("");
+    $("#cWhen").textContent = r.fns.map(([n, ev, id]) => `${n} ← "${ev}" en #${id}`).join(" · ");
+    $("#viewName").textContent = `reto-${r.n}.html`;
+    renderHtmlPanel(r);
+    ta.value = codeOf(i); refreshEditor();
+    $("#hint").hidden = true; $("#hint").innerHTML = "💡 " + r.hint;
+    $("#results").hidden = true;
+    $("#prevBtn").disabled = i === 0; $("#nextBtn").disabled = i === RETOS.length - 1;
+    renderList(); loadView();
+    // pone el cursor dentro de la primera función vacía
+    const p = ta.value.indexOf("{\n  \n}");
+    if (p >= 0) { ta.focus({ preventScroll: true }); ta.setSelectionRange(p + 4, p + 4); }
+  }
+  // panel HTML: iluminar en la vista y copiar el id
+  function hlView(i) { $("#view").contentWindow?.postMessage({ labHl: i ?? -1 }, "*"); }
+  $("#htmlView").addEventListener("mouseover", (e) => {
+    const l = e.target.closest(".h-line[data-i]");
+    $$("#htmlView .h-line.hot").forEach(x => x.classList.remove("hot"));
+    if (!l) return hlView(-1);
+    $$(`#htmlView .h-line[data-i="${l.dataset.i}"]`).forEach(x => x.classList.add("hot"));
+    hlView(+l.dataset.i);
+  });
+  $("#htmlView").addEventListener("mouseleave", () => { $$("#htmlView .h-line.hot").forEach(x => x.classList.remove("hot")); hlView(-1); });
+  $("#htmlView").addEventListener("click", async (e) => {
+    const l = e.target.closest(".h-line[data-sel]"); if (!l) return;
+    const sel = l.dataset.sel;
+    const text = sel.startsWith("#") ? `document.getElementById("${sel.slice(1)}")` : `document.querySelector("${sel}")`;
+    try { await navigator.clipboard.writeText(text); } catch {}
+    const tip = document.createElement("div"); tip.className = "copied"; tip.textContent = "Copiado: " + text;
+    tip.style.left = e.clientX + 10 + "px"; tip.style.top = e.clientY - 30 + "px";
+    document.body.appendChild(tip); setTimeout(() => tip.remove(), 1200);
+  });
+  $("#list").addEventListener("click", (e) => { const b = e.target.closest("button[data-i]"); if (b) open(+b.dataset.i); });
+  $("#prevBtn").onclick = () => open(Math.max(0, cur - 1));
+  $("#nextBtn").onclick = () => open(Math.min(RETOS.length - 1, cur + 1));
+  $("#testBtn").onclick = runTest;
+  $("#reloadBtn").onclick = loadView;
+  $("#hintBtn").onclick = () => { $("#hint").hidden = !$("#hint").hidden; };
+  $("#resetBtn").onclick = () => {
+    if (ta.value !== starter(RETOS[cur]) && !window.confirm("¿Volver al código inicial de este reto? Se borra lo que escribiste.")) return;
+    ta.value = starter(RETOS[cur]); delete store.code[cur]; delete store.status[cur]; save(); refreshEditor(); loadView(); renderList(); $("#results").hidden = true;
+  };
+  $("#resetAllBtn").onclick = () => {
+    if (!window.confirm("¿Borrar todo tu código y tu progreso de los 20 retos?")) return;
+    store.code = {}; store.status = {}; ta.value = starter(RETOS[cur]); save(); open(0);
+  };
+  $("#downloadBtn").onclick = () => {
+    store.code[cur] = ta.value; save();
+    const parts = RETOS.map((r, i) => `// ${r.n}. ${r.title}\n${codeOf(i).trim()}\n`);
+    const listeners = RETOS.flatMap(r => r.fns.map(([n, ev, id]) => `document.getElementById("${id}").addEventListener("${ev}", ${n}); // ${r.n}`));
+    const file = `/*\n  Laboratorio de Retos de JavaScript (20)\n  Descargado el ${new Date().toLocaleString("es-AR")}\n  Retos superados: ${Object.values(store.status).filter(s => s === "ok").length} de 20\n*/\n\n${parts.join("\n")}\n// =============================\n// Listeners (uno por ejercicio)\n// =============================\n${listeners.join("\n")}\n`;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([file], { type: "text/javascript" }));
+    a.download = "script.js"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  if (store.hideWelcome) $("#welcome").hidden = true;
+  $("#hideWelcome").onclick = () => { $("#welcome").hidden = true; store.hideWelcome = true; save(); };
+  addEventListener("resize", refreshEditor);
+
+  ta.value = codeOf(cur);
+  open(cur);
+})();
+</script>
+</body>
+</html>

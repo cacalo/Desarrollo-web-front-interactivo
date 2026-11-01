@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El DOM con JavaScript · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+  [hidden] { display: none !important; }
+  .wrap { max-width: 1440px; margin: 0 auto; padding: 22px 24px 60px; }
+  .modes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .modes .seg button { font-size: 1.02rem; padding: 9px 16px; }
+  .modes .right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .col-title { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); font-weight: 700; margin: 0 0 10px; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+  .explain { margin-top: 12px; min-height: 3em; padding: 12px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 1.05rem; }
+  .explain.ok { background: var(--ok-bg); border-color: #bfe5cc; }
+  .explain.bad { background: var(--bad-bg); border-color: #f3c0c0; }
+  .confetti { position: fixed; top: -20px; width: 10px; height: 14px; z-index: 200; pointer-events: none; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  .grid3 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, .95fr); gap: 16px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1200px) { .grid3 { grid-template-columns: 1fr 1fr; } .grid3 > :first-child { grid-column: 1 / -1; } }
+  @media (max-width: 800px) { .grid3 { grid-template-columns: 1fr; } }
+
+  /* ---------------- la línea de JavaScript ---------------- */
+  .jsline { font-family: var(--mono); font-size: 1.25rem; background: #1e1d24; color: #e8e6ef; border-radius: 14px; padding: 14px 18px; line-height: 1.5; word-break: break-word; }
+  .jsline .o { color: #d5b6ff; } .jsline .m { color: #82cfff; font-weight: 700; } .jsline .s { color: #ffd479; } .jsline .p { color: #ff7ab2; } .jsline .c { color: #7f8c98; font-style: italic; }
+  .pick { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .pick h4 { margin: 0; font-size: .85rem; color: var(--ink-2); text-transform: uppercase; letter-spacing: .06em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-family: var(--mono); font-size: .88rem; padding: 6px 11px; border-radius: 10px; border: 2px solid var(--line); background: #fff; cursor: pointer; transition: all .15s; text-align: left; }
+  .chip:hover { border-color: var(--brand-2); }
+  .chip[aria-pressed="true"] { background: var(--brand-2); color: #fff; border-color: var(--brand-2); }
+  .chip .m { color: var(--info); font-weight: 700; } .chip[aria-pressed="true"] .m { color: #fff; }
+  .free { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .free select, .free input { font-family: var(--mono); font-size: .95rem; padding: 7px 9px; border-radius: 10px; border: 2px solid var(--line); }
+  .free input { flex: 1; min-width: 120px; }
+  .speed { display: flex; gap: 6px; align-items: center; font-size: .9rem; color: var(--ink-2); }
+
+  /* ---------------- la página ---------------- */
+  .browser { background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .chrome { background: #e8e4de; padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
+  .lights { display: flex; gap: 6px; } .lights i { width: 11px; height: 11px; border-radius: 50%; background: #f26b5b; } .lights i:nth-child(2) { background: #f6bf4f; } .lights i:nth-child(3) { background: #5ec860; }
+  .addr { flex: 1; background: #fff; border-radius: 999px; padding: 4px 12px; font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
+  .page { padding: 14px 18px 18px; font-family: "Segoe UI", system-ui, sans-serif; font-size: 15px; color: #222; }
+  .page header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+  .page h1 { font-family: Georgia, serif; font-size: 1.3rem; margin: 4px 0; }
+  .page nav { display: flex; gap: 10px; } .page nav a { color: #5a1e33; cursor: pointer; }
+  .page h2 { font-size: 1.05rem; margin: 12px 0 6px; }
+  .page ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+  .page li { padding: 5px 10px; border: 1px solid #eee; border-radius: 8px; }
+  .page p { margin: 8px 0; } .page .nota { font-size: .85rem; color: #777; }
+  .page button { font: inherit; padding: 6px 12px; border-radius: 8px; border: 1px solid #ccc; background: #f5f5f5; margin-right: 6px; }
+  .page footer { margin-top: 10px; border-top: 2px solid #eee; font-size: .85rem; color: #888; }
+  .page [data-k] { transition: background .3s, outline-color .3s, color .3s, opacity .4s, transform .4s; outline: 3px solid transparent; outline-offset: 2px; border-radius: 6px; }
+  .page .found { outline-color: var(--ok) !important; background: #e3f5ea; }
+  .page .visiting { outline-color: #ffd666; }
+  .page .destacado { background: #fff3a6 !important; font-weight: 800; }
+  .page .bye { opacity: 0; transform: scale(.8); }
+  .page .born { animation: born .6s; }
+  @keyframes born { from { opacity: 0; transform: translateY(-8px); background: #fff3a6; } }
+  .page .changed { animation: changed .8s; }
+  @keyframes changed { 0% { box-shadow: 0 0 0 0 rgba(123,44,191,.6); } 100% { box-shadow: 0 0 0 14px rgba(123,44,191,0); } }
+
+  /* ---------------- el árbol ---------------- */
+  .treebox { background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 12px 14px; position: relative; max-height: 720px; overflow: auto; }
+  .tree, .tree ul { list-style: none; margin: 0; padding: 0; }
+  .tree ul { padding-left: 18px; border-left: 2px solid var(--surface-2); margin-left: 8px; }
+  .tree li { margin: 2px 0; }
+  .node { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 13px; padding: 2px 8px; border-radius: 7px; border: 2px solid transparent; background: var(--surface-2); transition: background .2s, border-color .2s, transform .2s; position: relative; }
+  .node .tg { font-weight: 800; color: #b0004a; } .node .id { color: #7b2cbf; font-weight: 700; } .node .cl { color: #1a5fb4; }
+  .node .tx { color: var(--ink-2); font-family: var(--sans); font-size: 12px; margin-left: 4px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .node.root { background: var(--ink); } .node.root .tg { color: #fff; }
+  .node.visiting { background: #fff1b8; border-color: #e0a800; transform: scale(1.06); }
+  .node.found { background: var(--ok-bg); border-color: var(--ok); }
+  .node.born { animation: born .6s; }
+  .node.hover { border-color: var(--brand-2); }
+  .lupa { position: absolute; font-size: 22px; transition: top .14s linear, left .14s linear; pointer-events: none; z-index: 5; filter: drop-shadow(0 2px 2px rgba(0,0,0,.25)); }
+
+  /* ---------------- resultado ---------------- */
+  .result { margin-top: 12px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; box-shadow: var(--shadow); }
+  .result .ret { font-family: var(--mono); font-size: 1.05rem; margin-top: 6px; }
+  .ret .el { display: inline-block; background: var(--ok-bg); border: 2px solid var(--ok); color: #145c33; border-radius: 7px; padding: 1px 7px; margin: 2px; font-weight: 700; animation: born .4s backwards; }
+  .ret .null { color: var(--bad); font-weight: 800; font-size: 1.2rem; }
+  .ret .list { color: var(--info); font-weight: 700; }
+
+  /* ---------------- acciones ---------------- */
+  .actions { display: flex; flex-direction: column; gap: 6px; }
+  .act { text-align: left; font-family: var(--mono); font-size: .9rem; padding: 8px 10px; border-radius: 10px; border: 2px solid var(--line); background: #fff; cursor: pointer; }
+  .act:hover { border-color: var(--brand-2); }
+  .act[aria-pressed="true"] { border-color: var(--brand-2); background: #f3ecfb; }
+  .act small { display: block; font-family: var(--sans); color: var(--ink-2); }
+  .bar { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+
+  /* ---------------- juego ---------------- */
+  .scoreboard { display: flex; gap: 14px; align-items: center; font-weight: 700; font-size: 1.1rem; }
+  .progress { flex: 1; height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .progress i { display: block; height: 100%; background: var(--brand-2); transition: width .3s; }
+  .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .answers button { font: inherit; font-weight: 700; font-size: 1rem; padding: 12px; border-radius: 12px; border: 3px solid var(--line); background: #fff; cursor: pointer; text-align: left; transition: transform .12s, background .2s; }
+  .answers button:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--brand-2); }
+  .answers button.right { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .answers button.wrong { background: var(--bad); border-color: var(--bad); color: #fff; }
+  .answers button:disabled:not(.right):not(.wrong) { opacity: .45; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › JavaScript › <strong>El DOM con JavaScript</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="find" aria-pressed="true">🔍 Buscar</button>
+      <button data-v="change">✏️ Buscar y cambiar</button>
+      <button data-v="game">🎲 ¿Qué devuelve?</button>
+    </div>
+    <div class="right">
+      <span class="speed">Velocidad <span class="seg" id="speedSeg"><button data-v="320">🐢</button><button data-v="160" aria-pressed="true">1×</button><button data-v="60">🐇</button></span></span>
+      <button class="btn" id="resetBtn">↺ Restaurar la página</button>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <!-- ===================== panel izquierdo (cambia según el modo) ===================== -->
+    <section id="leftPanel">
+      <!-- buscar / buscar y cambiar -->
+      <div id="finderPanel">
+        <h3 class="col-title">1 · Buscar en el documento</h3>
+        <div class="chips" id="finders"></div>
+        <div class="free" style="margin-top:10px">
+          <select id="freeMethod"><option>getElementById</option><option selected>querySelector</option><option>querySelectorAll</option></select>
+          <input id="freeArg" placeholder='".nota"' spellcheck="false">
+          <button class="btn" id="freeBtn">Usar</button>
+        </div>
+        <div id="actionPanel" hidden>
+          <h3 class="col-title" style="margin-top:16px">2 · Qué hacer con lo encontrado</h3>
+          <div class="actions" id="actions"></div>
+        </div>
+        <div class="jsline" id="jsline" style="margin-top:14px"></div>
+        <div class="bar">
+          <button class="btn primary big" id="runBtn">▶ Ejecutar</button>
+          <button class="btn" id="forEachBtn" hidden>🔁 Probar con forEach</button>
+        </div>
+        <div class="explain" id="explain">El DOM es el árbol de todos los elementos de la página. Con JavaScript lo recorremos para <strong>encontrar</strong> elementos y después <strong>cambiarlos</strong>.</div>
+      </div>
+      <!-- juego -->
+      <div id="gamePanel" hidden>
+        <div class="scoreboard"><span id="gScore">⭐ 0</span><div class="progress"><i id="gProg"></i></div><span id="gRound"></span></div>
+        <div style="margin-top:14px; color:var(--ink-2)">¿Qué devuelve esta línea?</div>
+        <div class="jsline" id="gLine" style="margin-top:6px"></div>
+        <div class="answers" id="answers"></div>
+        <div class="explain" id="gExplain" hidden></div>
+        <button class="btn primary big" id="nextBtn" hidden style="margin-top:10px">Siguiente ▶</button>
+      </div>
+    </section>
+
+    <!-- ===================== la página ===================== -->
+    <section>
+      <h3 class="col-title">La página</h3>
+      <div class="browser">
+        <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="addr">vinoteca.html</div></div>
+        <div class="page" id="page"></div>
+      </div>
+      <div class="result" id="result" hidden>
+        <div style="font-weight:700">Devuelve:</div>
+        <div class="ret" id="ret"></div>
+      </div>
+    </section>
+
+    <!-- ===================== el árbol ===================== -->
+    <section>
+      <h3 class="col-title">El árbol del DOM <small style="text-transform:none;letter-spacing:0;font-weight:400">lo que «ve» JavaScript</small></h3>
+      <div class="treebox" id="treebox"><ul class="tree" id="tree"></ul><div class="lupa" id="lupa" hidden>🔍</div></div>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  let SPEED = 160;
+  function confetti() {
+    const colors = ["#e44d26", "#2a9d8f", "#1a5fb4", "#7b2cbf", "#d6336c", "#ffd166"];
+    for (let k = 0; k < 80; k++) {
+      const c = document.createElement("div"); c.className = "confetti";
+      c.style.cssText = `left:${Math.random() * 100}vw;background:${colors[k % 6]};animation-duration:${1.6 + Math.random() * 1.8}s;animation-delay:${Math.random() * .4}s`;
+      document.body.appendChild(c); setTimeout(() => c.remove(), 4000);
+    }
+  }
+
+  // ===================================================================== la página
+  const PAGE_HTML = `
+    <header><h1 id="titulo">🍷 Vinoteca del Valle</h1><nav><a class="activo">Inicio</a><a>Vinos</a><a>Contacto</a></nav></header>
+    <main>
+      <h2>Vinos destacados</h2>
+      <ul id="lista"><li class="vino">Malbec · $12.500</li><li class="vino oferta">Cabernet · $11.900</li><li class="vino">Torrontés · $8.200</li><li class="vino oferta">Bonarda · $6.900</li></ul>
+      <p class="nota">Precios con IVA incluido.</p>
+      <button id="carrito">🛒 Carrito (0)</button><button class="oferta">Ver ofertas</button>
+    </main>
+    <footer><p>© 2026 Vinoteca del Valle</p></footer>`;
+  const page = $("#page");
+  let kseq = 0;
+  function resetPage() {
+    page.innerHTML = PAGE_HTML;
+    kseq = 0;
+    $$("*", page).forEach(el => el.dataset.k = ++kseq);
+    renderTree();
+  }
+
+  // ===================================================================== el árbol
+  const label = (el) => `<span class="tg">${el.tagName.toLowerCase()}</span>${el.id ? `<span class="id">#${el.id}</span>` : ""}${[...el.classList].filter(c => !["found", "visiting", "changed", "born", "bye"].includes(c)).map(c => `<span class="cl">.${c}</span>`).join("")}`;
+  function nodeHtml(el) {
+    const kids = [...el.children];
+    const txt = kids.length ? "" : `<span class="tx">${el.textContent.trim()}</span>`;
+    return `<li><span class="node" data-k="${el.dataset.k}">${label(el)}${txt}</span>${kids.length ? `<ul>${kids.map(nodeHtml).join("")}</ul>` : ""}</li>`;
+  }
+  function renderTree(bornK) {
+    $("#tree").innerHTML = `<li><span class="node root" data-k="root"><span class="tg">document</span></span><ul><li><span class="node root" data-k="body"><span class="tg">body</span></span><ul>${[...page.children].map(nodeHtml).join("")}</ul></li></ul></li>`;
+    if (bornK) $(`.node[data-k="${bornK}"]`)?.classList.add("born");
+  }
+  const treeNode = (el) => $(`#tree .node[data-k="${el.dataset.k}"]`);
+  // pasar el mouse por el árbol ilumina el elemento en la página
+  $("#tree").addEventListener("mouseover", (e) => {
+    const n = e.target.closest(".node[data-k]"); $$(".page .visiting").forEach(x => x.classList.remove("visiting"));
+    if (!n || isNaN(+n.dataset.k)) return;
+    page.querySelector(`[data-k="${n.dataset.k}"]`)?.classList.add("visiting");
+  });
+  $("#tree").addEventListener("mouseleave", () => $$(".page .visiting").forEach(x => x.classList.remove("visiting")));
+
+  function clearMarks() {
+    $$(".found, .visiting", page).forEach(x => x.classList.remove("found", "visiting"));
+    $$("#tree .node").forEach(x => x.classList.remove("found", "visiting"));
+    $("#lupa").hidden = true;
+  }
+  function moveLupa(node) {
+    const box = $("#treebox"), b = box.getBoundingClientRect(), r = node.getBoundingClientRect();
+    const lupa = $("#lupa");
+    lupa.hidden = false;
+    lupa.style.left = r.right - b.left + box.scrollLeft + 4 + "px";
+    lupa.style.top = r.top - b.top + box.scrollTop - 4 + "px";
+    if (r.top < b.top + 20 || r.bottom > b.bottom - 20) box.scrollTop += r.top - b.top - b.height / 2;
+  }
+
+  // ===================================================================== búsquedas
+  // Cada búsqueda se resuelve dentro de la página de ejemplo, como si fuera el documento
+  function find(method, arg) {
+    try {
+      if (method === "getElementById") return { kind: "one", value: page.querySelector(`[id="${CSS.escape(arg)}"]`) };
+      if (method === "querySelector") return { kind: "one", value: page.querySelector(arg) };
+      return { kind: "list", value: [...page.querySelectorAll(arg)] };
+    } catch (e) { return { kind: "error", error: `"${arg}" no es un selector válido` }; }
+  }
+  const allEls = () => $$("*", page);
+  async function animateSearch(method, arg, res) {
+    clearMarks();
+    $("#treebox").scrollTop = 0;
+    const matches = res.kind === "list" ? res.value : res.value ? [res.value] : [];
+    if (method === "getElementById") {
+      // los id son únicos: el navegador tiene un índice y va directo
+      moveLupa($('#tree .node[data-k="root"]')); await sleep(SPEED * 3);
+      if (res.value) { const n = treeNode(res.value); moveLupa(n); n.classList.add("found"); res.value.classList.add("found"); }
+      return;
+    }
+    for (const el of allEls()) {
+      const n = treeNode(el); if (!n) continue;
+      n.classList.add("visiting"); el.classList.add("visiting"); moveLupa(n);
+      await sleep(SPEED);
+      n.classList.remove("visiting"); el.classList.remove("visiting");
+      if (matches.includes(el)) {
+        n.classList.add("found"); el.classList.add("found");
+        if (method === "querySelector") { await sleep(SPEED * 2); return; }   // encontró el primero y se detiene
+        await sleep(SPEED);
+      }
+    }
+  }
+  const short = (el) => `${el.tagName.toLowerCase()}${el.id ? "#" + el.id : ""}${[...el.classList].filter(c => !["found", "visiting", "changed", "born", "bye"].includes(c)).map(c => "." + c).join("")}`;
+  function showReturn(res) {
+    $("#result").hidden = false;
+    if (res.kind === "error") { $("#ret").innerHTML = `<span class="null">SyntaxError</span>`; return; }
+    if (res.kind === "list") {
+      $("#ret").innerHTML = `<span class="list">NodeList(${res.value.length})</span> [ ${res.value.map((el, i) => `<span class="el" style="animation-delay:${i * 80}ms">${short(el)}</span>`).join(", ") || "<em style='color:var(--ink-2)'>vacía</em>"} ]`;
+    } else {
+      $("#ret").innerHTML = res.value ? `<span class="el">${short(res.value)}</span> <small style="color:var(--ink-2);font-family:var(--sans)">un elemento</small>` : `<span class="null">null</span> <small style="color:var(--ink-2);font-family:var(--sans)">no encontró nada</small>`;
+    }
+  }
+
+  // ===================================================================== modo buscar / buscar y cambiar
+  const FINDERS = [
+    ["getElementById", "titulo"], ["querySelector", "li"], ["querySelectorAll", "li"],
+    ["querySelector", ".oferta"], ["querySelectorAll", ".oferta"], ["querySelector", "#carrito"],
+    ["querySelector", "nav a"], ["getElementById", "noExiste"],
+  ];
+  const ACTIONS = [
+    { k: "text", code: `.textContent = "¡Oferta!"`, hint: "cambia el texto", apply: (el) => { el.textContent = "¡Oferta!"; } },
+    { k: "class", code: `.classList.add("destacado")`, hint: "le agrega una clase (con estilo amarillo)", apply: (el) => el.classList.add("destacado") },
+    { k: "style", code: `.style.color = "crimson"`, hint: "cambia un estilo directo", apply: (el) => { el.style.color = "crimson"; } },
+    { k: "remove", code: `.remove()`, hint: "lo saca de la página", apply: (el) => { el.classList.add("bye"); return new Promise(r => setTimeout(() => { el.remove(); r(); }, 400)); } },
+    { k: "append", code: `.appendChild(nuevoLi)`, hint: "le agrega un hijo nuevo (antes: const nuevoLi = document.createElement(\"li\"))", apply: (el) => { const li = document.createElement("li"); li.textContent = "Syrah · $9.800"; li.dataset.k = ++kseq; li.className = "born"; el.appendChild(li); return li; } },
+  ];
+  const S = { method: "querySelector", arg: ".oferta", action: null, mode: "find", running: false };
+  function argLit(method, arg) { return `"${arg}"`; }
+  function lineHtml(method, arg, action, forEach) {
+    const base = `<span class="o">document</span>.<span class="m">${method}</span>(<span class="s">${argLit(method, arg).replace(/</g, "&lt;")}</span>)`;
+    if (!action) return base + ";";
+    const pre = action.k === "append" ? `<span class="p">const</span> nuevoLi = <span class="o">document</span>.<span class="m">createElement</span>(<span class="s">"li"</span>);<br>` : "";
+    if (forEach) return pre + `${base}<br>&nbsp;&nbsp;.<span class="m">forEach</span>(el =&gt; el${action.code.replace(/"([^"]*)"/g, '<span class="s">"$1"</span>')});`;
+    return pre + `${base}${action.code.replace(/"([^"]*)"/g, '<span class="s">"$1"</span>')};`;
+  }
+  function renderFinders() {
+    $("#finders").innerHTML = FINDERS.map(([m, a], i) => `<button class="chip" data-i="${i}" aria-pressed="${m === S.method && a === S.arg}"><span class="m">${m}</span>("${a}")</button>`).join("");
+    $("#actions").innerHTML = ACTIONS.map(a => `<button class="act" data-k="${a.k}" aria-pressed="${S.action?.k === a.k}">${a.code}<small>${a.hint}</small></button>`).join("");
+    $("#jsline").innerHTML = lineHtml(S.method, S.arg, S.mode === "change" ? S.action : null);
+  }
+  $("#finders").addEventListener("click", (e) => { const b = e.target.closest(".chip"); if (!b || S.running) return; [S.method, S.arg] = FINDERS[+b.dataset.i]; $("#forEachBtn").hidden = true; renderFinders(); });
+  $("#actions").addEventListener("click", (e) => { const b = e.target.closest(".act"); if (!b || S.running) return; S.action = ACTIONS.find(a => a.k === b.dataset.k); $("#forEachBtn").hidden = true; renderFinders(); });
+  $("#freeBtn").onclick = () => {
+    if (S.running) return;
+    let a = $("#freeArg").value.trim().replace(/^["']|["']$/g, ""); if (!a) return;
+    S.method = $("#freeMethod").value; S.arg = a; $("#forEachBtn").hidden = true; renderFinders();
+  };
+  $("#freeArg").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#freeBtn").click(); });
+
+  function say(kind, html) { $("#explain").className = "explain " + (kind || ""); $("#explain").innerHTML = html; }
+  async function run(forEach = false) {
+    if (S.running) return;
+    if (S.mode === "change" && !S.action) { say("bad", "Elegí primero qué hacer con lo encontrado (paso 2)."); return; }
+    S.running = true; $("#runBtn").disabled = true; $("#forEachBtn").hidden = true;
+    $("#jsline").innerHTML = lineHtml(S.method, S.arg, S.mode === "change" ? S.action : null, forEach);
+    const res = find(S.method, S.arg);
+    if (res.kind === "error") { showReturn(res); say("bad", `💥 ${res.error}.`); S.running = false; $("#runBtn").disabled = false; return; }
+    say("", S.method === "getElementById" ? "🔍 Como los <code>id</code> son únicos, el navegador va <strong>directo</strong> al elemento." : S.method === "querySelector" ? "🔍 <code>querySelector</code> recorre el árbol en orden y <strong>se detiene en el primero</strong> que coincide." : "🔍 <code>querySelectorAll</code> recorre <strong>todo</strong> el árbol y junta todos los que coinciden.");
+    await animateSearch(S.method, S.arg, res);
+    showReturn(res);
+    const count = res.kind === "list" ? res.value.length : res.value ? 1 : 0;
+    if (S.mode === "find") {
+      say(count ? "ok" : "bad",
+        res.kind === "list" ? `Devolvió una <strong>lista</strong> (NodeList) con ${count} elemento${count === 1 ? "" : "s"}.${count === 0 ? " Ojo: no es <code>null</code>, es una lista vacía." : ""}`
+          : res.value ? `Devolvió <strong>un elemento</strong>: <code>${short(res.value)}</code>.` : `Devolvió <code>null</code>: no hay ningún elemento que coincida.${S.method === "getElementById" && S.arg.startsWith("#") ? " ¡getElementById va <strong>sin</strong> el #!" : ""}`);
+    } else {
+      await sleep(SPEED * 2);
+      await applyAction(res, forEach);
+    }
+    S.running = false; $("#runBtn").disabled = false;
+  }
+  async function applyAction(res, forEach) {
+    const a = S.action;
+    if (res.kind === "one") {
+      if (!res.value) { say("bad", `💥 <strong>TypeError</strong>: Cannot ${a.k === "remove" || a.k === "append" || a.k === "class" ? "read" : "set"} properties of null.<br>La búsqueda devolvió <code>null</code> y a «nada» no se le puede cambiar nada. Siempre conviene chequear: <code>if (elemento) { … }</code>`); return; }
+      await doAction(res.value);
+      say("ok", `✅ Se cambió <code>${short(res.value)}</code>. Mirá la página y el árbol.${S.method === "querySelector" && find("querySelectorAll", S.arg).value.length > 1 ? ` Ojo: había más elementos que coincidían, pero <code>querySelector</code> sólo trajo el primero.` : ""}`);
+      return;
+    }
+    // es una lista
+    if (!forEach) {
+      if (a.k === "text") say("bad", `😶 <strong>No pasó nada.</strong> <code>querySelectorAll</code> devuelve una <strong>lista</strong>, y a la lista le pusimos un textContent (que no existe en las listas). Los elementos de adentro no se enteraron. Hay que recorrerla.`);
+      else say("bad", `💥 <strong>TypeError</strong>: ${a.k === "remove" ? "lista.remove is not a function" : a.k === "append" ? "lista.appendChild is not a function" : `Cannot read properties of undefined (reading '${a.k === "class" ? "add" : "color"}')`}.<br><code>querySelectorAll</code> devuelve una <strong>lista</strong>, no un elemento. Hay que recorrerla y cambiar cada uno.`);
+      if (res.value.length) $("#forEachBtn").hidden = false;
+      return;
+    }
+    for (const el of res.value) { await doAction(el); await sleep(SPEED); }
+    say("ok", `✅ Con <code>forEach</code> se aplicó a cada uno de los ${res.value.length} elementos de la lista.`);
+  }
+  async function doAction(el) {
+    const a = S.action;
+    const r = await a.apply(el);
+    if (a.k === "append") { renderTree(r.dataset.k); return; }
+    if (a.k === "remove") { renderTree(); return; }
+    el.classList.remove("changed"); void el.offsetWidth; el.classList.add("changed");
+    renderTree(); const n = treeNode(el); n?.classList.add("found");
+  }
+  $("#runBtn").onclick = () => run(false);
+  $("#forEachBtn").onclick = () => run(true);
+  $("#resetBtn").onclick = () => { if (S.running) return; resetPage(); clearMarks(); $("#result").hidden = true; $("#forEachBtn").hidden = true; say("", "Página restaurada."); };
+
+  // ===================================================================== juego
+  const QUESTIONS = [
+    { m: "querySelector", a: "li", opts: ["El primer <li> (Malbec)", "Los 4 <li>", "El último <li>", "null"], right: 0, why: "<code>querySelector</code> devuelve <strong>el primero</strong> que encuentra, aunque haya más." },
+    { m: "querySelectorAll", a: "li", opts: ["El primer <li>", "Una lista con los 4 <li>", "Un array de textos", "null"], right: 1, why: "<code>querySelectorAll</code> devuelve una <strong>lista</strong> (NodeList) con todos los que coinciden." },
+    { m: "getElementById", a: "titulo", opts: ["El <header>", "Una lista con el <h1>", "El <h1>", "null"], right: 2, why: "Devuelve el elemento con ese id: el <code>&lt;h1&gt;</code>." },
+    { m: "getElementById", a: "#titulo", opts: ["El <h1>", "null", "Un error", "Una lista vacía"], right: 1, why: "¡Trampa! <code>getElementById</code> recibe el id <strong>sin</strong> el <code>#</code>. Busca un id que se llame literalmente «#titulo» y no existe → <code>null</code>." },
+    { m: "querySelector", a: "titulo", opts: ["El <h1>", "null", "Un error", "El <header>"], right: 1, why: "¡Trampa! Sin <code>#</code>, «titulo» es un selector de <strong>etiqueta</strong>: busca un <code>&lt;titulo&gt;</code>, que no existe → <code>null</code>." },
+    { m: "querySelectorAll", a: ".oferta", opts: ["Una lista con 2 <li>", "Una lista con 3 elementos (2 <li> y un botón)", "El primer <li> en oferta", "null"], right: 1, why: "La clase <code>oferta</code> la tienen dos <code>li</code> y también un <code>button</code>." },
+    { m: "querySelectorAll", a: ".agotado", opts: ["null", "Una lista vacía", "Un error", "undefined"], right: 1, why: "<code>querySelectorAll</code> nunca devuelve <code>null</code>: si no encuentra nada, devuelve una <strong>lista vacía</strong>." },
+    { m: "querySelector", a: "nav a", opts: ["Una lista con 3 enlaces", "El enlace «Inicio»", "El <nav>", "El enlace «Contacto»"], right: 1, why: "Busca un <code>a</code> dentro de un <code>nav</code> y se queda con el primero: «Inicio»." },
+  ];
+  const G = { i: 0, score: 0, answered: false };
+  function startGame() { G.i = 0; G.score = 0; showQ(); }
+  function showQ() {
+    resetPage(); clearMarks(); $("#result").hidden = true;
+    const q = QUESTIONS[G.i]; G.answered = false;
+    $("#gLine").innerHTML = lineHtml(q.m, q.a, null);
+    $("#answers").innerHTML = q.opts.map((o, k) => `<button data-k="${k}">${o.replace(/</g, "&lt;")}</button>`).join("");
+    $("#gExplain").hidden = true; $("#nextBtn").hidden = true;
+    $("#gRound").textContent = `${G.i + 1} de ${QUESTIONS.length}`;
+    $("#gProg").style.width = (G.i / QUESTIONS.length) * 100 + "%";
+    $("#gScore").textContent = `⭐ ${G.score}`;
+  }
+  $("#answers").addEventListener("click", async (e) => {
+    const b = e.target.closest("button[data-k]"); if (!b || G.answered) return;
+    G.answered = true;
+    const q = QUESTIONS[G.i], ok = +b.dataset.k === q.right;
+    if (ok) G.score++;
+    $$("#answers button").forEach(x => { x.disabled = true; if (+x.dataset.k === q.right) x.classList.add("right"); });
+    if (!ok) b.classList.add("wrong");
+    $("#gExplain").hidden = false; $("#gExplain").className = "explain " + (ok ? "ok" : "bad");
+    $("#gExplain").innerHTML = (ok ? "🎯 <strong>¡Bien!</strong> " : "😅 ") + q.why + " <small>Mirá el árbol.</small>";
+    $("#gScore").textContent = `⭐ ${G.score}`; $("#gProg").style.width = ((G.i + 1) / QUESTIONS.length) * 100 + "%";
+    const res = find(q.m, q.a);
+    await animateSearch(q.m, q.a, res); showReturn(res);
+    $("#nextBtn").hidden = false; $("#nextBtn").textContent = G.i === QUESTIONS.length - 1 ? "Ver resultado ▶" : "Siguiente ▶";
+  });
+  $("#nextBtn").onclick = () => {
+    if (G.i === -1) return startGame();
+    if (G.i < QUESTIONS.length - 1) { G.i++; return showQ(); }
+    $("#gLine").innerHTML = `<span style="font-family:var(--sans);font-size:1.4rem">${G.score} de ${QUESTIONS.length} ${G.score >= QUESTIONS.length - 1 ? "🏆" : G.score >= QUESTIONS.length / 2 ? "👏" : "💪"}</span>`;
+    $("#answers").innerHTML = "";
+    $("#gExplain").className = "explain ok";
+    $("#gExplain").innerHTML = "Para llevarse: <code>getElementById</code> → un elemento o <code>null</code> (sin #) · <code>querySelector</code> → el primero o <code>null</code> · <code>querySelectorAll</code> → siempre una lista (puede estar vacía).";
+    $("#nextBtn").textContent = "Jugar de nuevo ↻"; G.i = -1;
+    if (G.score >= QUESTIONS.length / 2) confetti();
+  };
+
+  // ===================================================================== modos
+  function bindSeg(id, fn) {
+    $(id).addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+      fn(b.dataset.v);
+    });
+  }
+  bindSeg("#speedSeg", (v) => SPEED = +v);
+  bindSeg("#modeSeg", (m) => {
+    if (S.running) return;
+    S.mode = m;
+    $("#finderPanel").hidden = m === "game"; $("#gamePanel").hidden = m !== "game";
+    $("#actionPanel").hidden = m !== "change";
+    $("#forEachBtn").hidden = true; $("#result").hidden = true;
+    resetPage(); clearMarks();
+    if (m === "change" && !S.action) S.action = ACTIONS[0];
+    if (m === "find") say("", "El DOM es el árbol de todos los elementos de la página. Con JavaScript lo recorremos para <strong>encontrar</strong> elementos y después <strong>cambiarlos</strong>.");
+    if (m === "change") say("", "Elegí una búsqueda y una acción, y ejecutá. Probá también qué pasa cuando la búsqueda devuelve una <strong>lista</strong> o <code>null</code>.");
+    renderFinders();
+    if (m === "game") startGame();
+  });
+
+  resetPage();
+  renderFinders();
+})();
+</script>
+</body>
+</html>
