@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interfaces en TypeScript · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1050px) { .layout { grid-template-columns: 1fr; } }
+
+  /* ---------- el molde ---------- */
+  .mold { background: #f4efff; border: 3px solid #b9a2e6; border-radius: 18px; padding: 14px 16px 16px; position: relative; }
+  .mold-title { font-family: var(--mono); font-weight: 800; font-size: 1.15rem; color: #5b2aa6; margin-bottom: 10px; }
+  .mold-title .kw { color: #c2338a; }
+  .slot { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 1.05rem; padding: 9px 12px; margin: 7px 0; border-radius: 12px; border: 2px solid #b9a2e6; background: #fff; transition: all .25s; position: relative; }
+  .slot.opt { border-style: dashed; background: #fbf9ff; }
+  .slot .sk { font-weight: 800; color: #1a5fb4; }
+  .slot .st { color: #7b2cbf; font-weight: 700; }
+  .slot .q { font: inherit; font-weight: 800; border: 2px dashed #b9a2e6; background: transparent; color: #b9a2e6; border-radius: 8px; padding: 0 6px; cursor: pointer; line-height: 1.3; }
+  .slot .q[aria-pressed="true"] { border-style: solid; background: #7b2cbf; border-color: #7b2cbf; color: #fff; }
+  .slot .q:hover { border-color: #7b2cbf; }
+  .slot .res { margin-left: auto; font-family: var(--font); font-size: .9rem; font-weight: 700; }
+  .slot.scan { box-shadow: 0 0 0 4px #ffd666; transform: translateX(4px); }
+  .slot.ok { border-color: var(--ok); background: var(--ok-bg); }
+  .slot.skip { border-color: #9aa3ad; background: #f1f3f5; }
+  .slot.bad { border-color: var(--bad); background: var(--bad-bg); animation: shakeb .4s; }
+  .slot.ok .res { color: var(--ok); } .slot.bad .res { color: var(--bad); } .slot.skip .res { color: #6c757d; }
+  .mold-help { font-size: .92rem; color: var(--ink-2); margin-top: 8px; }
+  .lens { position: absolute; font-size: 30px; left: -22px; top: 0; transition: top .35s, opacity .3s; opacity: 0; z-index: 5; filter: drop-shadow(0 2px 2px rgba(0,0,0,.25)); pointer-events: none; }
+
+  /* ---------- el objeto ---------- */
+  .rows { display: flex; flex-direction: column; gap: 7px; }
+  .row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; align-items: center; }
+  .row .rk { font-family: var(--mono); font-weight: 800; color: #1a5fb4; text-align: right; }
+  .row .seg button { font-family: var(--mono); font-size: .92rem; padding: 5px 10px; }
+  .row .seg button.none { font-family: var(--font); color: var(--ink-2); }
+  .row.extra .rk { color: #a05a00; }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; }
+  .problems { background: #19181e; color: #e8e6ef; border-radius: 12px; padding: 8px 12px; min-height: 52px; font-size: 14px; }
+  .problems .p { padding: 6px 0; border-bottom: 1px solid #2a2930; animation: slidein .25s; }
+  .problems .p .en { font-family: var(--mono); color: #ff8a8a; }
+  .problems .p .es { color: #d8d4e2; margin-top: 2px; }
+  .problems .p.okp .en { color: #8ff0c9; }
+  .problems code, .tip code { background: #34313f; color: #ffd479; }
+  .problems:empty::before { content: "Problemas: todavía no se revisó."; color: #6d6879; }
+  .verdict { font-weight: 800; font-size: 1.25rem; margin: 10px 0 4px; min-height: 1.5em; }
+  .verdict.ok { color: var(--ok); } .verdict.bad { color: var(--bad); }
+
+  /* tarjeta de la Agenda */
+  .ccard { display: flex; gap: 14px; align-items: center; background: #fff; border: 2px solid var(--line); border-radius: 16px; padding: 14px 16px; margin-top: 10px; min-height: 92px; transition: all .4s; }
+  .ccard .av { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #7b2cbf, #d6336c); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 1.3rem; flex: none; }
+  .ccard .nm { font-weight: 800; font-size: 1.15rem; } .ccard .meta { color: var(--ink-2); font-size: .95rem; }
+  .ccard.off { opacity: .55; filter: grayscale(1); justify-content: center; color: var(--ink-2); font-weight: 700; }
+  .ccard.in { animation: pop .5s; border-color: var(--ok); }
+
+  /* ---------- ¿cuándo te enterás? ---------- */
+  .duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-top: 14px; }
+  @media (max-width: 1000px) { .duo { grid-template-columns: 1fr; } }
+  .lane h3 { margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+  .lane h3 .pill { font-size: .8rem; }
+  .ed { position: relative; font-family: var(--mono); font-size: 15px; line-height: 1.7; background: #1e1d24; color: #e8e6ef; border-radius: 14px; padding: 12px 14px; min-height: 150px; white-space: pre; overflow: visible; transition: min-height .3s; }
+  .squig { text-decoration: underline wavy transparent; text-decoration-thickness: 2px; text-underline-offset: 4px; transition: text-decoration-color .3s; }
+  .squig.on { text-decoration-color: #ff5c5c; }
+  .tip { position: absolute; z-index: 10; background: #2b2a33; border: 1px solid #ff8a8a; color: #f1eff7; border-radius: 10px; padding: 8px 10px; font-size: 13px; white-space: normal; width: min(92%, 430px); box-shadow: 0 8px 20px rgba(0,0,0,.35); opacity: 0; transform: translateY(6px); transition: all .3s; pointer-events: none; }
+  .tip.show { opacity: 1; transform: none; }
+  .tip .en { font-family: var(--mono); color: #ff9b9b; } .tip .es { font-family: var(--font); margin-top: 4px; color: #e8e6ef; }
+  .ac { position: absolute; z-index: 10; background: #252430; border: 1px solid #4a4658; border-radius: 8px; min-width: 230px; box-shadow: 0 8px 20px rgba(0,0,0,.35); font-size: 14px; opacity: 0; transition: opacity .3s; overflow: hidden; }
+  .ac.show { opacity: 1; }
+  .ac div { padding: 4px 10px; display: flex; justify-content: space-between; gap: 16px; animation: slidein .25s backwards; }
+  .ac div:first-child { background: #3b3870; }
+  .ac .t { color: #b9a2e6; } .ac .none { color: #8a8698; font-style: italic; font-family: var(--font); }
+  .caret { display: inline-block; width: 2px; height: 1.1em; background: #fff; vertical-align: text-bottom; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .track { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+  .track::before { content: ""; position: absolute; left: 12%; right: 12%; top: 30px; height: 4px; background: repeating-linear-gradient(90deg, #c9c2d6 0 10px, transparent 10px 18px); }
+  .stn { position: relative; text-align: center; font-size: .88rem; font-weight: 700; color: var(--ink-2); }
+  .stn .ic { width: 60px; height: 60px; margin: 0 auto 6px; border-radius: 50%; background: #fff; border: 3px solid var(--line); display: grid; place-items: center; font-size: 26px; transition: all .3s; position: relative; z-index: 1; }
+  .stn.here .ic { border-color: #ffd666; box-shadow: 0 0 0 5px rgba(255,214,102,.35); }
+  .stn.caught .ic { border-color: var(--bad); background: var(--bad-bg); }
+  .stn.pass .ic { border-color: var(--ok); }
+  .stn.nobuild { display: grid; place-items: start center; } .stn .nb { position: relative; z-index: 1; margin-top: 18px; background: var(--bg, #f6f4f0); padding: 2px 8px; border-radius: 8px; font-weight: 600; font-size: .8rem; color: var(--ink-2); }
+  .stn small { display: block; font-weight: 400; min-height: 1.3em; }
+  .bug { position: absolute; top: 14px; width: 34px; margin-left: -17px; text-align: center; font-size: 26px; line-height: 34px; transition: left .9s ease-in-out; z-index: 3; }
+  .bug.caught { animation: pop .4s; }
+  .bug.caught::after { content: ""; position: absolute; inset: -8px; border: 3px solid var(--bad); border-radius: 50%; }
+  .mini { margin-top: 12px; }
+  .mini .pg { padding: 14px 16px; min-height: 64px; font-size: 1.15rem; }
+  .mini .pg.broken { color: #9aa3ad; font-style: italic; }
+  .mini .console { min-height: 32px; margin: 0 10px 10px; }
+  .stamp { margin-top: 10px; font-weight: 800; padding: 10px 14px; border-radius: 12px; opacity: 0; transform: scale(.9); transition: all .35s; }
+  .stamp.show { opacity: 1; transform: none; }
+  .stamp.ok { background: var(--ok-bg); color: #1d6b3a; } .stamp.bad { background: var(--bad-bg); color: #a12a2a; }
+
+  .game { max-width: 980px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › TypeScript › <strong>Interfaces</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="mold" aria-pressed="true">🧩 El molde</button>
+      <button data-v="when">🐞 ¿Cuándo te enterás?</button>
+      <button data-v="game">🎲 ¿Compila?</button>
+    </div>
+  </div>
+
+  <!-- ====================================================== el molde -->
+  <section class="layout" id="moldView">
+    <div>
+      <div class="mold" id="mold">
+        <div class="lens" id="lens">🔍</div>
+        <div class="mold-title"><span class="kw">interface</span> Contact {</div>
+        <div id="slots"></div>
+        <div class="mold-title" style="margin:8px 0 0">}</div>
+      </div>
+      <p class="mold-help">Tocá el <strong>?</strong> de una propiedad para hacerla <strong>opcional</strong> (puede faltar) u <strong>obligatoria</strong>. Es la misma idea que <code>interfaces/contact.ts</code> de la Agenda, más cortita.</p>
+      <div class="col-title" style="margin-top:14px">Así se vería en la Agenda</div>
+      <div class="ccard off" id="ccard">Todavía no se revisó</div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="col-title">El objeto <small>elegí qué valor tiene cada propiedad</small></div>
+        <div class="rows" id="rows"></div>
+        <div class="col-title" style="margin-top:14px">Ejemplos rápidos</div>
+        <div class="presets" id="presets"></div>
+      </div>
+      <div id="objCode" style="margin-top:12px"></div>
+      <div class="bar"><button class="btn primary big" id="checkBtn">🔍 Revisar con TypeScript</button><span class="verdict" id="verdict"></span></div>
+      <div class="problems" id="problems" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <!-- ====================================================== ¿cuándo te enterás? -->
+  <section id="whenView" hidden style="margin-top:16px">
+    <div class="bar" style="margin-top:0"><span style="font-weight:700">Situación:</span><div class="seg" id="scSeg"></div><button class="btn primary big" id="whenBtn">▶ Ver qué pasa</button></div>
+    <div class="duo">
+      <div class="panel lane" id="laneJS">
+        <h3>Sin interfaz <span class="pill muted">JavaScript</span></h3>
+        <div class="ed"></div>
+        <div class="track"></div>
+        <div class="browser mini"><div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="addr">localhost:4200</div></div><div class="pg"></div><div class="console" data-empty="Consola"></div></div>
+        <div class="stamp"></div>
+      </div>
+      <div class="panel lane" id="laneTS">
+        <h3>Con interfaz <span class="pill ok">TypeScript</span></h3>
+        <div class="ed"></div>
+        <div class="track"></div>
+        <div class="browser mini"><div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="addr">localhost:4200</div></div><div class="pg"></div><div class="console" data-empty="Consola"></div></div>
+        <div class="stamp"></div>
+      </div>
+    </div>
+    <div class="explain" id="whenWhy">Elegí una situación y tocá <strong>▶ Ver qué pasa</strong>. El 🐞 es el error: mirá en qué estación lo atrapan.</div>
+  </section>
+
+  <!-- ====================================================== quiz -->
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, $$, sleep, esc, confetti, bindSeg, codeBox, consoleLog, quiz, hlJS } = UI;
+
+  /* =========================================================== EL MOLDE */
+  const IFACE = [
+    { k: "id", t: "number", opt: false },
+    { k: "firstName", t: "string", opt: false },
+    { k: "lastName", t: "string", opt: false },
+    { k: "phone", t: "string", opt: false },
+    { k: "email", t: "string", opt: true },
+    { k: "isFavorite", t: "boolean", opt: true },
+  ];
+  // valores posibles para cada propiedad del objeto (null = no está)
+  const VALS = {
+    id: [["7", "number"], ['"7"', "string"]],
+    firstName: [['"Ana"', "string"], ["42", "number"]],
+    lastName: [['"Gómez"', "string"]],
+    phone: [['"351 555-1234"', "string"], ["3515551234", "number"]],
+    email: [['"ana@mail.com"', "string"]],
+    isFavorite: [["true", "boolean"], ['"sí"', "string"]],
+  };
+  const EXTRAS = [
+    { k: "fistName", v: '"Ana"', hint: "firstName" },
+    { k: "apodo", v: '"Anita"' },
+  ];
+  const M = { obj: {}, extra: {}, runId: 0 };
+  function setDefault() {
+    M.obj = { id: 0, firstName: 0, lastName: 0, phone: 0, email: 0, isFavorite: null };
+    M.extra = { fistName: false, apodo: false };
+  }
+  const PRESETS = [
+    ["✅ Completo", () => {}],
+    ["Le falta el teléfono", () => { M.obj.phone = null; }],
+    ["id como texto", () => { M.obj.id = 1; }],
+    ["Sin los opcionales", () => { M.obj.email = null; M.obj.isFavorite = null; }],
+    ["Un dato de más", () => { M.extra.apodo = true; }],
+    ["Typo en firstName", () => { M.obj.firstName = null; M.extra.fistName = true; }],
+  ];
+
+  function renderSlots() {
+    $("#slots").innerHTML = IFACE.map((s, i) => `<div class="slot${s.opt ? " opt" : ""}" data-i="${i}"><span class="sk">${s.k}</span><button class="q" data-i="${i}" aria-pressed="${s.opt}" title="opcional / obligatoria">?</button>: <span class="st">${s.t}</span>;<span class="res"></span></div>`).join("");
+  }
+  function renderRows() {
+    const row = (k, opts, cur, extra) => `<div class="row${extra ? " extra" : ""}"><div class="rk">${k}</div><div class="seg" data-k="${k}">${opts}</div></div>`;
+    let h = IFACE.map(s => row(s.k, VALS[s.k].map(([v], j) => `<button data-v="${j}" aria-pressed="${M.obj[s.k] === j}">${esc(v)}</button>`).join("") + `<button class="none" data-v="none" aria-pressed="${M.obj[s.k] === null}">✕ no está</button>`)).join("");
+    h += `<div class="col-title" style="margin:10px 0 2px">Propiedades que no están en el molde</div>`;
+    h += EXTRAS.map(e => row(e.k, `<button class="none" data-v="no" aria-pressed="${!M.extra[e.k]}">no está</button><button data-v="si" aria-pressed="${M.extra[e.k]}">${esc(e.v)}</button>`, 0, true)).join("");
+    $("#rows").innerHTML = h;
+  }
+  // código del objeto y en qué línea quedó cada propiedad
+  function objLines() {
+    const lines = ["const contacto: Contact = {"], at = {};
+    IFACE.forEach(s => { const j = M.obj[s.k]; if (j !== null) { at[s.k] = lines.length + 1; lines.push(`  ${s.k}: ${VALS[s.k][j][0]},`); } });
+    EXTRAS.forEach(e => { if (M.extra[e.k]) { at[e.k] = lines.length + 1; lines.push(`  ${e.k}: ${e.v},`); } });
+    lines.push("};");
+    return { code: lines.join("\n"), at };
+  }
+  let box, AT = {};
+  function renderObj() {
+    const o = objLines(); AT = o.at;
+    box = codeBox($("#objCode"), o.code);
+  }
+  function resetCheck() {
+    M.runId++;
+    $$(".slot").forEach(s => { s.classList.remove("scan", "ok", "bad", "skip"); $(".res", s).textContent = ""; });
+    $("#lens").style.opacity = 0;
+    $("#problems").innerHTML = ""; $("#verdict").textContent = ""; $("#verdict").className = "verdict";
+    const c = $("#ccard"); c.className = "ccard off"; c.textContent = "Todavía no se revisó";
+    renderObj();
+  }
+  function problem(en, es, ok) {
+    const d = document.createElement("div"); d.className = "p" + (ok ? " okp" : "");
+    d.innerHTML = `<div class="en">${esc(en)}</div><div class="es">${es}</div>`;
+    $("#problems").appendChild(d);
+  }
+  async function check() {
+    resetCheck();
+    const my = M.runId, alive = () => my === M.runId;
+    const lens = $("#lens"); lens.style.opacity = 1;
+    let errors = 0;
+    for (let i = 0; i < IFACE.length; i++) {
+      const s = IFACE[i], el = $$(".slot")[i], j = M.obj[s.k];
+      lens.style.top = (el.offsetTop + 4) + "px";
+      el.classList.add("scan");
+      if (j !== null) box.mark([AT[s.k]]); else box.mark([]);
+      await sleep(650); if (!alive()) return;
+      el.classList.remove("scan");
+      const res = $(".res", el);
+      if (j === null && s.opt) { el.classList.add("skip"); res.textContent = "puede faltar 👌"; }
+      else if (j === null) {
+        el.classList.add("bad"); res.textContent = "✗ falta"; errors++;
+        problem(`Property '${s.k}' is missing in type '{ ... }' but required in type 'Contact'.`, `Falta <code>${s.k}</code> y en el molde es <strong>obligatoria</strong> (no tiene <code>?</code>).`);
+      } else {
+        const t = VALS[s.k][j][1];
+        if (t === s.t) { el.classList.add("ok"); res.textContent = "✓"; box.mark([AT[s.k]], "ok"); }
+        else {
+          el.classList.add("bad"); res.textContent = `✗ es ${t}`; errors++; box.mark([AT[s.k]], "bad");
+          problem(`Type '${t}' is not assignable to type '${s.t}'.`, `<code>${s.k}</code> tiene que ser <strong>${s.t}</strong>, pero le pusiste un <strong>${t}</strong>${s.t === "string" && t === "number" ? " (sin comillas)" : t === "string" && s.t !== "string" ? " (está entre comillas)" : ""}.`);
+        }
+      }
+      await sleep(300); if (!alive()) return;
+    }
+    lens.style.opacity = 0;
+    for (const e of EXTRAS) {
+      if (!M.extra[e.k]) continue;
+      box.mark([AT[e.k]], "bad"); errors++;
+      problem(`Object literal may only specify known properties, and '${e.k}' does not exist in type 'Contact'.${e.hint ? ` Did you mean to write '${e.hint}'?` : ""}`,
+        e.hint ? `<code>${e.k}</code> no existe en el molde. ¿Quisiste escribir <code>${e.hint}</code>? Sin la interfaz, este typo pasaría de largo.` : `<code>${e.k}</code> no está en el molde. Si de verdad lo necesitás, hay que agregarlo a la interfaz.`);
+      await sleep(600); if (!alive()) return;
+    }
+    // todas las líneas con su color final
+    IFACE.forEach(s => { const j = M.obj[s.k]; if (j !== null) $$("#objCode .l")[AT[s.k] - 1].classList.add(VALS[s.k][j][1] === s.t ? "ok" : "bad"); });
+    EXTRAS.forEach(e => { if (M.extra[e.k]) $$("#objCode .l")[AT[e.k] - 1].classList.add("bad"); });
+    const v = $("#verdict"), c = $("#ccard");
+    if (errors) {
+      v.className = "verdict bad"; v.textContent = `❌ No compila · ${errors} ${errors === 1 ? "error" : "errores"}`;
+      c.className = "ccard off"; c.textContent = "🚫 No compila: la app ni arranca hasta que lo arregles";
+    } else {
+      v.className = "verdict ok"; v.textContent = "✅ Compila: el objeto respeta el molde";
+      problem("0 problems", "Todo lo obligatorio está y cada dato es del tipo correcto.", true);
+      const o = Object.fromEntries(IFACE.filter(s => M.obj[s.k] !== null).map(s => [s.k, JSON.parse(VALS[s.k][M.obj[s.k]][0])]));
+      c.className = "ccard in";
+      c.innerHTML = `<div class="av">${o.firstName[0]}${o.lastName[0]}</div><div><div class="nm">${esc(o.firstName)} ${esc(o.lastName)} ${o.isFavorite ? "⭐" : ""}</div><div class="meta">📞 ${esc(o.phone)}${o.email ? ` · ✉️ ${esc(o.email)}` : ""}</div><div class="meta">#${o.id}</div></div>`;
+      confetti(40);
+    }
+  }
+
+  $("#slots").addEventListener("click", (e) => {
+    const b = e.target.closest(".q"); if (!b) return;
+    const s = IFACE[+b.dataset.i]; s.opt = !s.opt;
+    renderSlots(); resetCheck();
+  });
+  $("#rows").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    const k = b.closest(".seg").dataset.k, v = b.dataset.v;
+    if (k in M.extra) M.extra[k] = v === "si";
+    else M.obj[k] = v === "none" ? null : +v;
+    renderRows(); resetCheck();
+  });
+  $("#presets").innerHTML = PRESETS.map(([n], i) => `<button class="chip" data-i="${i}">${n}</button>`).join("");
+  $("#presets").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    setDefault(); IFACE.forEach(s => s.opt = s.k === "email" || s.k === "isFavorite");
+    PRESETS[+b.dataset.i][1]();
+    renderSlots(); renderRows(); resetCheck(); check();
+  });
+  $("#checkBtn").addEventListener("click", check);
+
+  /* =========================================================== ¿CUÁNDO TE ENTERÁS? */
+  // [[texto]] marca la parte que TypeScript subraya; | es el cursor
+  const SC = {
+    typo: {
+      label: "Un typo",
+      js: `function saludar(contacto) {\n  return "Hola, " + contacto.fistName;\n}\n\nsaludo.textContent = saludar(ana);`,
+      ts: `interface Contact { firstName: string; phone: string; }\n\nfunction saludar(contacto: Contact) {\n  return "Hola, " + contacto.[[fistName]];\n}\n\nsaludo.textContent = saludar(ana);`,
+      en: "Property 'fistName' does not exist on type 'Contact'. Did you mean 'firstName'?",
+      es: "fistName no existe en Contact. ¿Quisiste decir firstName?",
+      page: "Hola, undefined", log: null,
+      why: "Sin interfaz el typo llega hasta la pantalla: el usuario ve <strong>«Hola, undefined»</strong> y nadie avisó nada. Con la interfaz, TypeScript lo subraya <strong>mientras escribís</strong>.",
+    },
+    missing: {
+      label: "Falta un dato",
+      js: `const contacto = { firstName: "Ana" };\n\n// ... mucho más abajo\nconst tel = contacto.phone.replace(" ", "");`,
+      ts: `interface Contact { firstName: string; phone: string; }\n\nconst [[contacto]]: Contact = { firstName: "Ana" };\n\n// ... mucho más abajo\nconst tel = contacto.phone.replace(" ", "");`,
+      en: "Property 'phone' is missing in type '{ firstName: string; }' but required in type 'Contact'.",
+      es: "Falta phone, y en Contact es obligatoria.",
+      page: "", log: "TypeError: Cannot read properties of undefined (reading 'replace')",
+      why: "Sin interfaz te enterás cuando la app <strong>se rompe en el navegador</strong>, y el error aparece lejos de donde está el problema. Con la interfaz el aviso aparece justo donde creaste el objeto incompleto.",
+    },
+    type: {
+      label: "Tipo equivocado",
+      js: `const contacto = { id: "7", firstName: "Ana" };\n\nsiguiente.textContent = contacto.id + 1;`,
+      ts: `interface Contact { id: number; firstName: string; }\n\nconst contacto: Contact = { [[id]]: "7", firstName: "Ana" };\n\nsiguiente.textContent = contacto.id + 1;`,
+      en: "Type 'string' is not assignable to type 'number'.",
+      es: "id tiene que ser number y le pusiste un texto.",
+      page: "Siguiente: 71 🤔", log: null,
+      why: "El peor caso: sin interfaz <strong>no hay ningún error</strong>, sólo un resultado raro (<code>\"7\" + 1</code> da <code>\"71\"</code>). Con la interfaz, TypeScript no te deja poner un texto donde va un número.",
+    },
+    ac: {
+      label: "Autocompletado",
+      js: `function mostrar(contacto) {\n  contacto.|\n}`,
+      ts: `interface Contact {\n  id: number; firstName: string;\n  phone: string; email?: string;\n}\n\nfunction mostrar(contacto: Contact) {\n  contacto.|\n}`,
+      why: "Cuando el dato viene de afuera (un parámetro, un <code>fetch</code>), JavaScript no sabe qué tiene adentro. Con la interfaz, el editor te <strong>sugiere las propiedades</strong> y su tipo: menos typos, menos ir a mirar el back.",
+    },
+  };
+  const W = { sc: "typo", runId: 0 };
+  $("#scSeg").innerHTML = Object.entries(SC).map(([k, s], i) => `<button data-v="${k}" aria-pressed="${i === 0}">${s.label}</button>`).join("");
+  // en JS vainilla no hay build: el navegador ejecuta el .js tal cual
+  const STATIONS = {
+    laneJS: [["✍️", "Escribís el código"], null, ["🌐", "Lo abre alguien en el navegador"]],
+    laneTS: [["✍️", "Escribís el código"], ["⚙️", "Compila (ng serve)"], ["🌐", "Lo abre alguien en el navegador"]],
+  };
+
+  function renderEd(el, src) {
+    const html = src.split(/(\[\[.*?\]\]|\|)/).map(p => p === "|" ? '<span class="caret"></span>' : p.startsWith("[[") ? `<span class="squig">${hlJS(p.slice(2, -2))}</span>` : hlJS(p)).join("");
+    el.innerHTML = html + '<div class="tip"></div><div class="ac"></div>';
+  }
+  function renderLanes() {
+    W.runId++;
+    const s = SC[W.sc];
+    for (const [id, src] of [["#laneJS", s.js], ["#laneTS", s.ts]]) {
+      const L = $(id);
+      $(".ed", L).style.minHeight = ""; renderEd($(".ed", L), src);
+      $(".track", L).innerHTML = STATIONS[L.id].map(st => st ? `<div class="stn"><div class="ic">${st[0]}</div>${st[1]}<small></small></div>` : `<div class="stn nobuild"><div class="nb">sin compilación:<br>va directo al navegador</div></div>`).join("") + '<div class="bug" style="left:16.6%;opacity:0">🐞</div>';
+      $(".track", L).hidden = W.sc === "ac"; $(".mini", L).hidden = W.sc === "ac";
+      $(".pg", L).className = "pg"; $(".pg", L).textContent = ""; $(".console", L).innerHTML = "";
+      $(".stamp", L).className = "stamp"; $(".stamp", L).textContent = "";
+    }
+    $("#whenWhy").className = "explain"; $("#whenWhy").innerHTML = W.sc === "ac" ? "Tocá <strong>▶ Ver qué pasa</strong> para «escribir» <code>contacto.</code> en los dos editores." : "Tocá <strong>▶ Ver qué pasa</strong>. El 🐞 es el error: mirá en qué estación lo atrapan.";
+  }
+  // agranda el editor para que el cartelito no tape lo de abajo
+  function fitEd(ed, pop) { ed.style.minHeight = Math.max(150, pop.offsetTop + pop.offsetHeight + 14) + "px"; }
+  function placeTip(L) {
+    const ed = $(".ed", L), sq = $(".squig", ed), tip = $(".tip", ed);
+    tip.style.left = Math.min(sq.offsetLeft, ed.clientWidth * .08) + "px";
+    tip.style.top = (sq.offsetTop + sq.offsetHeight + 8) + "px";
+    fitEd(ed, tip);
+  }
+  async function whenRun() {
+    renderLanes();
+    const my = W.runId, alive = () => my === W.runId, s = SC[W.sc];
+    const JS = $("#laneJS"), TS = $("#laneTS");
+    if (W.sc === "ac") {
+      for (const [L, items] of [[JS, null], [TS, [["firstName", "string"], ["phone", "string"], ["email?", "string | undefined"], ["id", "number"]]]]) {
+        const ed = $(".ed", L), ac = $(".ac", ed), c = $(".caret", ed);
+        ac.style.left = c.offsetLeft + "px"; ac.style.top = (c.offsetTop + 26) + "px";
+        ac.innerHTML = items ? items.map(([k, t], i) => `<div style="animation-delay:${i * .12}s"><span>${k}</span><span class="t">${esc(t)}</span></div>`).join("") : `<div class="none" style="background:none">sin sugerencias: no sabe qué tiene contacto</div>`;
+      }
+      for (const L of [JS, TS]) fitEd($(".ed", L), $(".ac", $(".ed", L)));
+      await sleep(300); if (!alive()) return;
+      $(".ac", $(".ed", JS)).classList.add("show");
+      await sleep(700); if (!alive()) return;
+      $(".ac", $(".ed", TS)).classList.add("show");
+      $(".stamp", JS).className = "stamp show bad"; $(".stamp", JS).textContent = "🤷 Tenés que acordarte cómo se llama cada propiedad";
+      $(".stamp", TS).className = "stamp show ok"; $(".stamp", TS).textContent = "💡 El editor te lo sugiere, con el tipo de cada una";
+      $("#whenWhy").className = "explain ok"; $("#whenWhy").innerHTML = s.why;
+      return;
+    }
+    const bugs = [JS, TS].map(L => $(".bug", L)), sts = (L) => $$(".stn", L);
+    const moveBug = (L, i) => { const b = $(".bug", L); b.style.opacity = 1; b.style.left = (16.6 + i * 33.3) + "%"; $$(".stn", L).forEach((x, k) => x.classList.toggle("here", k === i)); };
+    moveBug(JS, 0); moveBug(TS, 0);
+    await sleep(900); if (!alive()) return;
+    // TypeScript lo ve mientras escribís
+    const sq = $(".squig", $(".ed", TS)); sq.classList.add("on");
+    const tip = $(".tip", $(".ed", TS)); tip.innerHTML = `<div class="en">${esc(s.en)}</div><div class="es">${esc(s.es)}</div>`; placeTip(TS); tip.classList.add("show");
+    const t0 = sts(TS)[0]; t0.classList.remove("here"); t0.classList.add("caught"); $("small", t0).textContent = "¡atrapado!";
+    $(".bug", TS).classList.add("caught");
+    $$("small", TS)[1].textContent = "no compila"; sts(TS)[1].classList.add("caught");
+    $(".stamp", TS).className = "stamp show ok"; $(".stamp", TS).textContent = "✅ Te enterás vos, al escribir. El usuario nunca lo ve.";
+    $(".pg", TS).className = "pg broken"; $(".pg", TS).textContent = "(no llega: primero arreglás el error)";
+    sts(JS)[0].classList.add("pass"); $("small", sts(JS)[0]).textContent = "nadie se queja";
+    const lastJS = sts(JS).length - 1;
+    await sleep(1100); if (!alive()) return;
+    moveBug(JS, 2); sts(JS)[lastJS].classList.add("caught"); $("small", sts(JS)[lastJS]).textContent = "acá aparece 😬";
+    await sleep(700); if (!alive()) return;
+    const pg = $(".pg", JS);
+    if (s.log) { pg.className = "pg broken"; pg.textContent = "(la página quedó a medias)"; consoleLog($(".console", JS), s.log, "err"); }
+    else pg.textContent = s.page;
+    $(".stamp", JS).className = "stamp show bad"; $(".stamp", JS).textContent = s.log ? "💥 Te enterás cuando se rompe en el navegador" : "😶 Ningún error… pero se ve mal";
+    $("#whenWhy").className = "explain ok"; $("#whenWhy").innerHTML = s.why;
+  }
+  bindSeg("#scSeg", (v) => { W.sc = v; renderLanes(); });
+  $("#whenBtn").addEventListener("click", whenRun);
+
+  /* =========================================================== ¿COMPILA? */
+  const IF = `interface Contact {\n  id: number;\n  firstName: string;\n  phone: string;\n  email?: string;\n}\n\n`;
+  const YN = ["✅ Compila", "❌ Error"];
+  const QUESTIONS = [
+    { prompt: "¿Compila?", code: IF + `const c: Contact = { id: 1, firstName: "Ana", phone: "351 555" };`, options: YN, right: 0, why: "Están todas las obligatorias y con el tipo correcto. <code>email</code> tiene <code>?</code>: puede faltar." },
+    { prompt: "¿Compila?", code: IF + `const c: Contact = { id: 1, firstName: "Ana" };`, options: YN, right: 1, why: "Falta <code>phone</code>, que es obligatoria." },
+    { prompt: "¿Compila?", code: IF + `const c: Contact = { id: "1", firstName: "Ana", phone: "351 555" };`, options: YN, right: 1, why: "<code>id</code> es <code>number</code> y <code>\"1\"</code> es un texto (tiene comillas)." },
+    { prompt: "¿Compila?", code: IF + `const c: Contact = {\n  id: 1, firstName: "Ana", phone: "351 555", edad: 30\n};`, options: YN, right: 1, why: "<code>edad</code> no está en el molde. Al crear el objeto «a mano», TypeScript no deja agregar propiedades que no existen." },
+    { prompt: "¿Compila?", code: IF + `const c: Contact = { id: 1, firstName: "Ana", phone: "351 555" };\nconsole.log(c.email);`, options: YN, right: 0, why: "Leer una opcional se puede: si no está, da <code>undefined</code>." },
+    { prompt: "¿Compila?", code: IF + `function llamar(c: Contact) {\n  console.log(c.telefono);\n}`, options: YN, right: 1, why: "La propiedad se llama <code>phone</code>. Este es el tipo de error que la interfaz atrapa mientras escribís." },
+    { prompt: "¿Compila?", code: IF + `const lista: Contact[] = [\n  { id: 1, firstName: "Ana", phone: "351" },\n  { id: 2, firstName: "Leo" },\n];`, options: YN, right: 1, why: "<code>Contact[]</code> es un array de contactos: <strong>cada uno</strong> tiene que respetar el molde, y al segundo le falta <code>phone</code>." },
+    { prompt: "¿Qué muestra la consola?", code: IF + `console.log(Contact);`, options: ["El molde con sus propiedades", "{}", "Error: Contact es sólo un tipo, no un valor", "undefined"], right: 2, why: "Las interfaces <strong>desaparecen al compilar</strong>: sirven para revisar el código, pero no existen cuando la app corre." },
+    { prompt: "El back manda <code>{ id: 1, nombre: \"Ana\" }</code>. ¿Qué pasa?", code: IF + `const res = await fetch(URL + "/contacts/1");\nconst c: Contact = await res.json();\nconsole.log(c.firstName);`, options: ["TypeScript avisa que el back mandó otra cosa", "Compila y muestra undefined", "Se rompe al compilar", "Muestra \"Ana\""], right: 1, why: "TypeScript <strong>confía</strong> en lo que le decís: no puede ver lo que llega del back cuando la app corre. Por eso la interfaz tiene que coincidir con lo que realmente devuelve la API." },
+    { prompt: "¿Compila?", code: IF + `function gritar(c: Contact) {\n  return c.email.toUpperCase();\n}`, options: YN, right: 1, why: "<code>email</code> puede no estar (<code>undefined</code>). TypeScript te obliga a fijarte antes: <code>c.email?.toUpperCase()</code> o un <code>if</code>." },
+  ];
+  quiz($("#quiz"), { questions: QUESTIONS, shuffle: false, summary: "Para llevarse: una <strong>interface</strong> es el molde de un objeto · sin <code>?</code> es obligatoria, con <code>?</code> puede faltar · el tipo tiene que coincidir · no se pueden inventar propiedades al crear el objeto · los errores aparecen <strong>mientras escribís</strong>, no en el navegador · al compilar desaparece: no controla lo que manda el back." });
+
+  bindSeg("#modeSeg", (m) => { $("#moldView").hidden = m !== "mold"; $("#whenView").hidden = m !== "when"; $("#gameView").hidden = m !== "game"; if (m === "when") renderLanes(); });
+
+  setDefault(); renderSlots(); renderRows(); renderObj();
+})();
+</script>
+</body>
+</html>

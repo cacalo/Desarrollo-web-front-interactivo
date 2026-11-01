@@ -23,6 +23,7 @@ js-ts/condicionales.html        Cascada de if/else if/switch (con break olvidado
 js-ts/bucles.html               for clásico, for…of y forEach (array, array de objetos, objeto, texto) vuelta por vuelta, recorrer la página, "¿Qué recibe?"
 js-ts/funciones.html            De nominal a flecha paso a paso, diferencias (hoisting, return, this), "¿Son equivalentes?"
 js-ts/laboratorio.html          20 retos de JavaScript con editor, vista en vivo, pruebas y progreso guardado (ex practica-js-basica)
+js-ts/interfaces.html           El molde (interface Contact) revisando un objeto, "¿Cuándo te enterás?" (JS vs TS) y "¿Compila?"
 angular/guards.html             La escena animada de los guards, con modo predicción
 ```
 
