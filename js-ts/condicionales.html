@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>if y switch · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.2fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1050px) { .layout { grid-template-columns: 1fr; } }
+  .ctrl { display: flex; flex-direction: column; gap: 12px; }
+  .var { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 1.1rem; flex-wrap: wrap; }
+  .var b { color: #7b2cbf; } .var input[type=range] { flex: 1; min-width: 140px; accent-color: var(--brand-2); }
+  .var output { font-weight: 800; min-width: 3ch; font-size: 1.3rem; }
+  .var select, .var input[type=text] { font: inherit; padding: 6px 10px; border-radius: 10px; border: 2px solid var(--line); }
+
+  /* cascada */
+  .cascade { position: relative; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 18px 14px; }
+  .gate-row { display: grid; grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr); align-items: center; margin-bottom: 14px; }
+  .gate { font-family: var(--mono); font-size: 1rem; padding: 10px 12px; border-radius: 12px; border: 3px solid var(--line); background: var(--surface); transition: all .25s; position: relative; }
+  .gate .eval { display: block; font-size: .85rem; color: var(--ink-2); min-height: 1.2em; }
+  .gate.t { border-color: var(--ok); background: var(--ok-bg); } .gate.f { border-color: var(--bad); background: var(--bad-bg); }
+  .gate.else { font-style: italic; }
+  .arrow { text-align: center; font-size: 1.4rem; color: var(--line); transition: color .25s; }
+  .arrow.on { color: var(--ok); }
+  .body { font-family: var(--mono); font-size: .95rem; padding: 10px 12px; border-radius: 12px; border: 2px dashed var(--line); background: #fff; transition: all .25s; min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .body.empty { color: var(--ink-2); font-style: italic; }
+  .body.run { border-style: solid; border-color: var(--ok); background: var(--ok-bg); }
+  .body .brk { font-size: .8rem; font-weight: 800; color: #fff; background: #c3002f; padding: 1px 7px; border-radius: 6px; }
+  .body .brk.off { background: var(--surface-2); color: var(--ink-2); text-decoration: line-through; }
+  .ball { position: absolute; width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #c7a6ff, #7b2cbf); box-shadow: 0 3px 8px rgba(123,44,191,.5); transition: left .45s cubic-bezier(.3,.8,.3,1), top .45s cubic-bezier(.3,.8,.3,1); z-index: 5; pointer-events: none; }
+  .out { margin-top: 6px; padding: 12px 16px; border-radius: 12px; background: #1e1d24; color: #e8e6ef; font-family: var(--mono); font-size: 1.15rem; min-height: 1.6em; }
+  .out b { color: #8ff0c9; }
+  .note { margin-top: 10px; font-size: .95rem; color: var(--ink-2); }
+
+  /* verdadero o falso */
+  .expr { font-family: var(--mono); font-size: 1.35rem; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px 18px; text-align: center; line-height: 2.6; }
+  .ex { display: inline-block; border-radius: 12px; padding: 2px 8px; margin: 0 2px; border: 2px solid transparent; position: relative; transition: all .3s; }
+  .ex.t { background: var(--ok-bg); border-color: var(--ok); } .ex.f { background: var(--bad-bg); border-color: var(--bad); }
+  .ex.skip { opacity: .35; text-decoration: line-through; }
+  .ex .val { position: absolute; left: 50%; bottom: -1.5em; transform: translateX(-50%); font-size: .7rem; font-weight: 800; line-height: 1; padding: 2px 6px; border-radius: 6px; color: #fff; white-space: nowrap; opacity: 0; transition: opacity .3s; }
+  .ex.t > .val { background: var(--ok); opacity: 1; } .ex.f > .val { background: var(--bad); opacity: 1; }
+  .ex.skip > .val { background: #999; opacity: 1; }
+  .opx { color: #c3002f; font-weight: 800; }
+  .expr > .ex > .val { bottom: -2.9em; font-size: .8rem; padding: 3px 9px; }
+  .expr { padding-bottom: 40px; }
+  .result-big { font-size: 1.6rem; font-weight: 800; text-align: center; margin-top: 18px; }
+  .game { display: grid; grid-template-columns: minmax(0, 1fr); max-width: 900px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › JavaScript › <strong>if y switch</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="cascade" aria-pressed="true">🌊 La cascada</button>
+      <button data-v="bool">⚖️ ¿Verdadero o falso?</button>
+      <button data-v="game">🎲 ¿Qué se muestra?</button>
+    </div>
+  </div>
+
+  <!-- ====================================================== cascada -->
+  <section class="layout" id="cascadeView">
+    <div class="ctrl">
+      <div class="panel">
+        <h3 class="col-title">Caso</h3>
+        <div class="seg" id="scSeg"><button data-v="ifelse" aria-pressed="true">if / else</button><button data-v="elseif">else if</button><button data-v="switch">switch</button></div>
+        <div id="vars" style="margin-top:14px"></div>
+        <div id="twist" style="margin-top:12px"></div>
+      </div>
+      <div class="codebox" id="code"></div>
+      <div class="bar"><button class="btn primary big" id="runBtn">▶ Ejecutar</button><span style="color:var(--ink-2)">o cambiá el valor y mirá la bolita</span></div>
+    </div>
+    <div>
+      <div class="cascade" id="cascade"></div>
+      <div class="explain" id="cExplain"></div>
+    </div>
+  </section>
+
+  <!-- ====================================================== verdadero o falso -->
+  <section class="layout" id="boolView" hidden>
+    <div class="ctrl">
+      <div class="panel">
+        <h3 class="col-title">Condición</h3>
+        <div class="chips" id="exprChips"></div>
+        <div id="bvars" style="margin-top:14px; display:flex; flex-direction:column; gap:10px"></div>
+      </div>
+      <div class="panel" style="font-size:.98rem">
+        <div><code>&amp;&amp;</code> (y): las dos partes tienen que ser verdaderas. Si la primera es falsa, <strong>ni mira</strong> la segunda.</div>
+        <div style="margin-top:6px"><code>||</code> (o): alcanza con que una sea verdadera. Si la primera es verdadera, <strong>ni mira</strong> la segunda.</div>
+        <div style="margin-top:6px"><code>!</code> (no): da vuelta el valor.</div>
+        <div style="margin-top:6px"><code>===</code> compara valor <strong>y tipo</strong>; <code>==</code> convierte antes de comparar.</div>
+      </div>
+    </div>
+    <div>
+      <div class="expr" id="expr"></div>
+      <div class="result-big" id="bResult"></div>
+      <div class="explain" id="bExplain"></div>
+    </div>
+  </section>
+
+  <!-- ====================================================== juego -->
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(() => {
+  const { $, $$, sleep, bindSeg, setSeg, codeBox, quiz, esc } = UI;
+
+  // ===================================================================== MODO 1: la cascada
+  // Cada caso define: variables, código, compuertas (condición + cuerpo) y cómo se evalúa.
+  const DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
+  const SC = {
+    ifelse: {
+      vars: { edad: { type: "range", min: 10, max: 40, value: 17 } },
+      code: (v) => `const edad = ${v.edad};\nlet mensaje;\nif (edad >= 18) {\n  mensaje = "Puede comprar vino 🍷";\n} else {\n  mensaje = "No puede comprar 🧃";\n}`,
+      gates: () => [
+        { label: "if (edad >= 18)", line: 3, body: 'mensaje = "Puede comprar vino 🍷"', bodyLine: 4, test: (v) => v.edad >= 18, show: (v) => `${v.edad} >= 18` },
+        { label: "else", line: 5, body: 'mensaje = "No puede comprar 🧃"', bodyLine: 6, isElse: true },
+      ],
+      result: (v) => v.edad >= 18 ? "Puede comprar vino 🍷" : "No puede comprar 🧃",
+      intro: "Un <code>if</code> pregunta algo que sólo puede ser verdadero o falso. Si es verdadero entra; si no, va al <code>else</code>.",
+    },
+    elseif: {
+      vars: { temp: { type: "range", min: -5, max: 40, value: 18 } },
+      twist: { key: "badOrder", label: "Poner las condiciones en otro orden (mal)" },
+      code: (v, t) => t.badOrder
+        ? `const temp = ${v.temp};\nif (temp < 25) {\n  clima = "Templado 🙂";\n} else if (temp < 10) {\n  clima = "Frío 🥶";\n} else {\n  clima = "Calor 🥵";\n}`
+        : `const temp = ${v.temp};\nif (temp < 10) {\n  clima = "Frío 🥶";\n} else if (temp < 25) {\n  clima = "Templado 🙂";\n} else {\n  clima = "Calor 🥵";\n}`,
+      gates: (t) => t.badOrder ? [
+        { label: "if (temp < 25)", line: 2, body: 'clima = "Templado 🙂"', bodyLine: 3, test: (v) => v.temp < 25, show: (v) => `${v.temp} < 25`, out: "Templado 🙂" },
+        { label: "else if (temp < 10)", line: 4, body: 'clima = "Frío 🥶"', bodyLine: 5, test: (v) => v.temp < 10, show: (v) => `${v.temp} < 10`, out: "Frío 🥶" },
+        { label: "else", line: 6, body: 'clima = "Calor 🥵"', bodyLine: 7, isElse: true, out: "Calor 🥵" },
+      ] : [
+        { label: "if (temp < 10)", line: 2, body: 'clima = "Frío 🥶"', bodyLine: 3, test: (v) => v.temp < 10, show: (v) => `${v.temp} < 10`, out: "Frío 🥶" },
+        { label: "else if (temp < 25)", line: 4, body: 'clima = "Templado 🙂"', bodyLine: 5, test: (v) => v.temp < 25, show: (v) => `${v.temp} < 25`, out: "Templado 🙂" },
+        { label: "else", line: 6, body: 'clima = "Calor 🥵"', bodyLine: 7, isElse: true, out: "Calor 🥵" },
+      ],
+      intro: "Con <code>else if</code> las condiciones se revisan <strong>de arriba hacia abajo</strong> y entra en la <strong>primera</strong> verdadera. Las demás ni se miran.",
+    },
+    switch: {
+      vars: { dia: { type: "select", options: DIAS, value: "sábado" } },
+      twist: { key: "noBreak", label: "Olvidarse el break del lunes" },
+      code: (v, t) => `const dia = "${v.dia}";\nswitch (dia) {\n  case "sábado":\n  case "domingo":\n    horario = "10 a 14 hs";\n    break;\n  case "lunes":\n    horario = "Cerrado";\n${t.noBreak ? "    // ¡falta el break!" : "    break;"}\n  default:\n    horario = "10 a 20 hs";\n}`,
+      gates: (t) => [
+        { label: 'case "sábado":', line: 3, body: "(vacío)", empty: true, bodyLine: 3, test: (v) => v.dia === "sábado", show: (v) => `"${v.dia}" === "sábado"` },
+        { label: 'case "domingo":', line: 4, body: 'horario = "10 a 14 hs"', bodyLine: 5, brk: true, test: (v) => v.dia === "domingo", show: (v) => `"${v.dia}" === "domingo"`, out: "10 a 14 hs" },
+        { label: 'case "lunes":', line: 7, body: 'horario = "Cerrado"', bodyLine: 8, brk: !t.noBreak, missing: t.noBreak, test: (v) => v.dia === "lunes", show: (v) => `"${v.dia}" === "lunes"`, out: "Cerrado" },
+        { label: "default:", line: 10, body: 'horario = "10 a 20 hs"', bodyLine: 11, isElse: true, out: "10 a 20 hs" },
+      ],
+      isSwitch: true,
+      intro: "El <code>switch</code> compara el valor con cada <code>case</code> (con <code>===</code>). Cuando coincide, ejecuta <strong>desde ahí hacia abajo</strong> hasta encontrar un <code>break</code>.",
+    },
+  };
+  const C = { sc: "ifelse", vals: {}, twist: {}, runId: 0, box: null };
+  function initVals() { C.vals = Object.fromEntries(Object.entries(SC[C.sc].vars).map(([k, d]) => [k, d.value])); C.twist = {}; }
+  function renderControls() {
+    const s = SC[C.sc];
+    $("#vars").innerHTML = Object.entries(s.vars).map(([k, d]) => d.type === "range"
+      ? `<label class="var"><b>${k}</b><input type="range" data-k="${k}" min="${d.min}" max="${d.max}" value="${C.vals[k]}"><output>${C.vals[k]}</output></label>`
+      : `<label class="var"><b>${k}</b><select data-k="${k}">${d.options.map(o => `<option ${o === C.vals[k] ? "selected" : ""}>${o}</option>`).join("")}</select></label>`).join("");
+    $("#twist").innerHTML = s.twist ? `<label class="switch"><input type="checkbox" id="twistChk" ${C.twist[s.twist.key] ? "checked" : ""}> ${s.twist.label}</label>` : "";
+    $("#twistChk")?.addEventListener("change", (e) => { C.twist[s.twist.key] = e.target.checked; renderAll(); run(); });
+  }
+  $("#vars").addEventListener("input", (e) => {
+    const el = e.target.closest("[data-k]"); if (!el) return;
+    C.vals[el.dataset.k] = el.type === "range" ? +el.value : el.value;
+    if (el.nextElementSibling) el.nextElementSibling.textContent = el.value;
+    clearTimeout(C._t); C._t = setTimeout(() => { renderAll(); run(); }, 250);
+  });
+  function renderAll() {
+    const s = SC[C.sc];
+    C.box = codeBox($("#code"), s.code(C.vals, C.twist));
+    const gates = s.gates(C.twist);
+    $("#cascade").innerHTML = gates.map((g, i) => `<div class="gate-row" data-i="${i}">
+        <div class="gate ${g.isElse ? "else" : ""}"><span>${esc(g.label)}</span><span class="eval"></span></div>
+        <div class="arrow">→</div>
+        <div class="body ${g.empty ? "empty" : ""}"><span>${esc(g.body)}</span>${s.isSwitch && !g.empty && !g.isElse ? `<span class="brk ${g.brk ? "" : "off"}">break</span>` : ""}</div>
+      </div>`).join("") + `<div class="out" id="out">…</div><div class="ball" id="ball" hidden></div>`;
+  }
+  const at = (el, dx = 0) => { const c = $("#cascade").getBoundingClientRect(), r = el.getBoundingClientRect(); return { left: r.left - c.left + dx, top: r.top - c.top + r.height / 2 - 11 }; };
+  async function moveBall(el, side = "left") { const b = $("#ball"); const p = at(el, side === "left" ? -8 : el.getBoundingClientRect().width - 14); b.style.left = p.left + "px"; b.style.top = p.top + "px"; await sleep(480); }
+  async function run() {
+    const id = ++C.runId;          // si se vuelve a ejecutar, la corrida anterior se corta
+    const W = async (ms) => { await sleep(ms); if (id !== C.runId) throw "cancel"; };
+    const moveBallW = async (el, side) => { await moveBall(el, side); if (id !== C.runId) throw "cancel"; };
+    try {
+    const s = SC[C.sc], v = C.vals, gates = s.gates(C.twist);
+    renderAll();
+    const rows = $$("#cascade .gate-row"), ball = $("#ball");
+    ball.hidden = false; ball.style.transition = "none"; ball.style.left = "-4px"; ball.style.top = "-14px"; void ball.offsetWidth; ball.style.transition = "";
+    let out = null, note = "";
+    C.box.mark([1]); await W(300);
+    if (!s.isSwitch) {
+      for (let i = 0; i < gates.length; i++) {
+        const g = gates[i], row = rows[i], gate = $(".gate", row);
+        C.box.mark([g.line]);
+        await moveBallW(gate);
+        const pass = g.isElse ? true : g.test(v);
+        if (!g.isElse) $(".eval", gate).textContent = `${g.show(v)} → ${pass}`;
+        gate.classList.add(pass ? "t" : "f");
+        await W(350);
+        if (pass) {
+          $(".arrow", row).classList.add("on");
+          C.box.mark([g.bodyLine], "ok");
+          await moveBallW($(".body", row), "right"); $(".body", row).classList.add("run");
+          out = g.out || s.result(v);
+          rows.slice(i + 1).forEach(r => r.style.opacity = ".35");
+          break;
+        }
+      }
+      if (C.sc === "elseif" && C.twist.badOrder && v.temp < 10) note = `😱 Con ${v.temp}° hace frío, pero dijo «Templado»: como ${v.temp} &lt; 25 es verdadero, entró ahí y <strong>nunca llegó</strong> a preguntar si era menor a 10. El orden importa: primero la condición más específica.`;
+    } else {
+      // switch: busca el primer case que coincide, después ejecuta hacia abajo hasta un break
+      let start = gates.findIndex(g => !g.isElse && g.test(v));
+      for (let i = 0; i < gates.length && (start === -1 || i <= start); i++) {
+        const g = gates[i]; if (g.isElse) break;
+        const gate = $(".gate", rows[i]);
+        C.box.mark([g.line]); await moveBallW(gate);
+        const pass = g.test(v);
+        $(".eval", gate).textContent = `${g.show(v)} → ${pass}`;
+        gate.classList.add(pass ? "t" : "f"); await W(320);
+      }
+      if (start === -1) { start = gates.length - 1; const gate = $(".gate", rows[start]); C.box.mark([gates[start].line]); await moveBallW(gate); gate.classList.add("t"); $(".eval", gate).textContent = "ningún case coincidió"; await W(300); }
+      for (let i = start; i < gates.length; i++) {
+        const g = gates[i], row = rows[i];
+        $(".arrow", row).classList.add("on");
+        C.box.mark([g.bodyLine], "ok");
+        await moveBallW($(".body", row), "right"); $(".body", row).classList.add("run");
+        if (g.out) out = g.out;
+        if (g.empty) { note = `«${v.dia}» coincidió con un <code>case</code> vacío: como no tiene <code>break</code>, sigue de largo al siguiente. Así se agrupan casos que hacen lo mismo.`; await W(250); continue; }
+        if (g.brk || g.isElse) { if (g.brk) { C.box.mark([g.bodyLine + 1], "hl"); await W(350); } rows.slice(i + 1).forEach(r => r.style.opacity = ".35"); break; }
+        note = `😱 <strong>¡Faltaba el break!</strong> Ejecutó <code>horario = "Cerrado"</code> y siguió de largo al <code>default</code>, que lo pisó con «10 a 20 hs».`;
+        await W(250);
+      }
+    }
+    $("#out").innerHTML = `${C.sc === "switch" ? "horario" : C.sc === "elseif" ? "clima" : "mensaje"} → <b>"${esc(out)}"</b>`;
+    $("#cExplain").className = "explain " + (note.startsWith("😱") ? "bad" : note ? "warn" : "ok");
+    $("#cExplain").innerHTML = note || s.intro;
+    } catch (e) { if (e !== "cancel") throw e; }
+  }
+  bindSeg("#scSeg", (v) => { C.sc = v; initVals(); renderControls(); renderAll(); $("#cExplain").className = "explain"; $("#cExplain").innerHTML = SC[v].intro; run(); });
+  $("#runBtn").onclick = run;
+
+  // ===================================================================== MODO 2: ¿verdadero o falso?
+  // mini árbol de expresiones: { op, l, r } | { not } | { v: "nombre" } | { lit }
+  const EXPRS = [
+    { txt: "edad >= 18 && tieneDNI", vars: { edad: ["num", 20, 10, 40], tieneDNI: ["bool", false] },
+      ast: { op: "&&", l: { op: ">=", l: { v: "edad" }, r: { lit: 18 } }, r: { v: "tieneDNI" } } },
+    { txt: "esFinde || esFeriado", vars: { esFinde: ["bool", true], esFeriado: ["bool", false] },
+      ast: { op: "||", l: { v: "esFinde" }, r: { v: "esFeriado" } } },
+    { txt: "stock > 0 && !pausado", vars: { stock: ["num", 3, 0, 10], pausado: ["bool", false] },
+      ast: { op: "&&", l: { op: ">", l: { v: "stock" }, r: { lit: 0 } }, r: { not: { v: "pausado" } } } },
+    { txt: "precio === 100", vars: { precio: ["pick", "100", ["100", 100]] },
+      ast: { op: "===", l: { v: "precio" }, r: { lit: 100 } } },
+    { txt: "precio == 100", vars: { precio: ["pick", "100", ["100", 100]] },
+      ast: { op: "==", l: { v: "precio" }, r: { lit: 100 } } },
+    { txt: "nombre", vars: { nombre: ["text", ""] }, truthy: true,
+      ast: { v: "nombre" } },
+  ];
+  const B = { i: 0, vals: {} };
+  const show = (x) => typeof x === "string" ? `"${x}"` : String(x);
+  function bInit() { const e = EXPRS[B.i]; B.vals = Object.fromEntries(Object.entries(e.vars).map(([k, d]) => [k, d[1]])); }
+  function bControls() {
+    const e = EXPRS[B.i];
+    $("#exprChips").innerHTML = EXPRS.map((x, i) => `<button class="chip" data-i="${i}" aria-pressed="${i === B.i}">${esc(x.truthy ? `if (${x.txt})` : x.txt)}</button>`).join("");
+    $("#bvars").innerHTML = Object.entries(e.vars).map(([k, d]) => {
+      if (d[0] === "num") return `<label class="var"><b>${k}</b><input type="range" data-k="${k}" min="${d[2]}" max="${d[3]}" value="${B.vals[k]}"><output>${B.vals[k]}</output></label>`;
+      if (d[0] === "bool") return `<label class="var"><b>${k}</b><span class="seg" data-k="${k}"><button data-v="true" aria-pressed="${B.vals[k] === true}">true</button><button data-v="false" aria-pressed="${B.vals[k] === false}">false</button></span></label>`;
+      if (d[0] === "pick") return `<label class="var"><b>${k}</b><span class="seg" data-k="${k}">${d[2].map(o => `<button data-v="${typeof o}:${o}" aria-pressed="${B.vals[k] === o}">${show(o)}</button>`).join("")}</span></label>`;
+      return `<label class="var"><b>${k}</b><input type="text" data-k="${k}" value="${esc(B.vals[k])}" placeholder='(texto vacío "")'></label>`;
+    }).join("");
+  }
+  $("#exprChips").addEventListener("click", (e) => { const b = e.target.closest(".chip"); if (!b) return; B.i = +b.dataset.i; bInit(); bControls(); bEval(); });
+  $("#bvars").addEventListener("input", (e) => { const el = e.target.closest("[data-k]"); if (!el || el.tagName === "SPAN") return; B.vals[el.dataset.k] = el.type === "range" ? +el.value : el.value; if (el.type === "range") el.nextElementSibling.textContent = el.value; bEval(); });
+  $("#bvars").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); const sg = e.target.closest(".seg[data-k]"); if (!b || !sg) return;
+    $$("button", sg).forEach(x => x.setAttribute("aria-pressed", x === b));
+    const v = b.dataset.v; B.vals[sg.dataset.k] = v === "true" ? true : v === "false" ? false : v.startsWith("number:") ? 100 : v.startsWith("string:") ? v.slice(7) : v;
+    bEval();
+  });
+  // devuelve { html, value } marcando qué partes se evaluaron
+  function render(n, skip) {
+    if (n.lit !== undefined) return { html: `<span class="ex">${show(n.lit)}</span>`, value: n.lit, leaf: true };
+    if (n.v) { const val = B.vals[n.v]; return { html: `<span class="ex ${skip ? "skip" : ""}">${n.v}<span class="val">${skip ? "no se evalúa" : show(val)}</span></span>`, value: val, leaf: true }; }
+    if (n.not) { const a = render(n.not, skip); const val = !a.value; return { html: `<span class="ex ${skip ? "skip" : val ? "t" : "f"}"><span class="opx">!</span>${a.html}<span class="val">${skip ? "no se evalúa" : val}</span></span>`, value: val }; }
+    const a = render(n.l, skip);
+    let rightSkip = skip;
+    if (n.op === "&&" && !a.value) rightSkip = true;
+    if (n.op === "||" && a.value) rightSkip = true;
+    const b = render(n.r, rightSkip);
+    let val;
+    switch (n.op) {
+      case "&&": val = a.value && b.value; if (!a.value) val = a.value; break;
+      case "||": val = a.value || b.value; if (a.value) val = a.value; break;
+      case ">=": val = a.value >= b.value; break;
+      case ">": val = a.value > b.value; break;
+      case "===": val = a.value === b.value; break;
+      case "==": val = a.value == b.value; break;
+    }
+    val = !!val;
+    return { html: `<span class="ex ${skip ? "skip" : val ? "t" : "f"}">${a.html} <span class="opx">${esc(n.op)}</span> ${b.html}<span class="val">${skip ? "no se evalúa" : val}</span></span>`, value: val, skipped: rightSkip && !skip };
+  }
+  function bEval() {
+    const e = EXPRS[B.i];
+    const r = render(e.ast, false);
+    let finalVal = e.truthy ? !!B.vals.nombre : r.value;
+    $("#expr").innerHTML = e.truthy ? `if ( <span class="ex ${finalVal ? "t" : "f"}">nombre<span class="val">${show(B.vals.nombre)} → ${finalVal ? "truthy" : "falsy"}</span></span> )` : `if ( ${r.html} )`;
+    $("#bResult").innerHTML = finalVal ? `<span style="color:var(--ok)">✅ Entra al if</span>` : `<span style="color:var(--bad)">⛔ No entra (va al else)</span>`;
+    let msg = "";
+    if (e.ast.op === "&&" && r.skipped) msg = "La primera parte es <strong>false</strong>, así que con <code>&&</code> el resultado ya es falso: JavaScript <strong>ni mira</strong> la segunda.";
+    else if (e.ast.op === "||" && r.skipped) msg = "La primera parte es <strong>true</strong>, así que con <code>||</code> ya alcanza: JavaScript <strong>ni mira</strong> la segunda.";
+    else if (e.ast.op === "===") msg = typeof B.vals.precio === "string" ? '😬 <code>"100"</code> (texto) y <code>100</code> (número) <strong>no son iguales</strong> para <code>===</code>: compara también el tipo. Pasa seguido con los <code>.value</code> de los inputs, que siempre son texto.' : "Mismo valor y mismo tipo: <code>===</code> da true.";
+    else if (e.ast.op === "==") msg = typeof B.vals.precio === "string" ? '<code>==</code> convierte <code>"100"</code> a número antes de comparar, así que da true. Parece cómodo, pero trae sorpresas: en la materia usamos <code>===</code>.' : "Mismo valor: true.";
+    else if (e.truthy) msg = finalVal ? `Un texto con algo adentro cuenta como verdadero (<em>truthy</em>). Sirve para preguntar «¿escribió algo?».` : `El texto vacío <code>""</code> cuenta como falso (<em>falsy</em>). También son falsy: <code>0</code>, <code>null</code>, <code>undefined</code> y <code>NaN</code>.`;
+    else msg = e.ast.op === "&&" ? "Con <code>&&</code> tienen que cumplirse <strong>las dos</strong>." : "Con <code>||</code> alcanza con que se cumpla <strong>una</strong>.";
+    $("#bExplain").className = "explain " + (msg.startsWith("😬") ? "bad" : "");
+    $("#bExplain").innerHTML = msg;
+  }
+
+  // ===================================================================== MODO 3: juego
+  const QUESTIONS = [
+    { prompt: "¿Qué se muestra?", code: `const edad = 18;\nif (edad > 18) {\n  console.log("Mayor");\n} else {\n  console.log("Menor");\n}`, options: ['"Mayor"', '"Menor"', "Los dos", "Nada"], right: 1, why: "<code>18 > 18</code> es <strong>false</strong>: para incluir el 18 había que usar <code>>=</code>." },
+    { prompt: "¿Qué se muestra?", code: `const temp = 5;\nif (temp < 25) {\n  console.log("Templado");\n} else if (temp < 10) {\n  console.log("Frío");\n} else {\n  console.log("Calor");\n}`, options: ['"Frío"', '"Templado"', '"Calor"', '"Templado" y "Frío"'], right: 1, why: "Entra en la <strong>primera</strong> condición verdadera: <code>5 < 25</code>. El <code>else if</code> ni se revisa. El orden importa." },
+    { prompt: "¿Qué se muestra?", code: `const dia = "lunes";\nswitch (dia) {\n  case "lunes":\n    console.log("Cerrado");\n  case "martes":\n    console.log("Abierto");\n    break;\n}`, options: ['"Cerrado"', '"Abierto"', '"Cerrado" y "Abierto"', "Nada"], right: 2, why: "Falta el <code>break</code> después de «Cerrado»: sigue de largo y ejecuta también el código del martes." },
+    { prompt: "¿Qué se muestra?", code: `if ("0") {\n  console.log("Entra");\n} else {\n  console.log("No entra");\n}`, options: ['"Entra"', '"No entra"', "Un error", "Nada"], right: 0, why: '<code>"0"</code> es un <strong>texto con algo adentro</strong>: es truthy. (El número <code>0</code> sí sería falsy.)' },
+    { prompt: "¿Qué se muestra?", code: `const stock = 0;\nif (stock) {\n  console.log("Hay stock");\n} else {\n  console.log("Agotado");\n}`, options: ['"Hay stock"', '"Agotado"', "Un error", "Los dos"], right: 1, why: "El número <code>0</code> es <strong>falsy</strong>." },
+    { prompt: "¿Qué se muestra?", code: `const precio = "100"; // vino de un input\nif (precio === 100) {\n  console.log("Son iguales");\n} else {\n  console.log("Son distintos");\n}`, options: ['"Son iguales"', '"Son distintos"', "Un error", "Nada"], right: 1, why: '<code>===</code> compara el tipo: el texto <code>"100"</code> no es el número <code>100</code>. Hay que convertir con <code>Number(precio)</code>.' },
+    { prompt: "¿Qué se muestra?", code: `const cantidad = 3;\nswitch (cantidad) {\n  case "3":\n    console.log("Tres");\n    break;\n  default:\n    console.log("Otro");\n}`, options: ['"Tres"', '"Otro"', '"Tres" y "Otro"', "Un error"], right: 1, why: 'El <code>switch</code> compara con <code>===</code>: el número <code>3</code> no coincide con el texto <code>"3"</code>, así que va al <code>default</code>.' },
+    { prompt: "¿Qué se muestra?", code: `const edad = 70;\nif (edad >= 18) {\n  console.log("Adulto");\n}\nif (edad >= 65) {\n  console.log("Jubilado");\n}`, options: ['"Adulto"', '"Jubilado"', '"Adulto" y "Jubilado"', "Nada"], right: 2, why: "Son dos <code>if</code> separados, no un <code>else if</code>: se revisan los dos y los dos son verdaderos." },
+    { prompt: "¿Cuánto vale <code>visitas</code> al final?", code: `let visitas = 0;\nconst logueado = false;\nif (logueado && visitas++ > 0) {\n  console.log("Hola de nuevo");\n}\nconsole.log(visitas);`, options: ["0", "1", "Un error", "undefined"], right: 0, why: "Como <code>logueado</code> es false, el <code>&&</code> ya sabe que todo es falso y <strong>no ejecuta</strong> la segunda parte: el <code>visitas++</code> nunca pasa." },
+  ];
+  quiz($("#quiz"), { questions: QUESTIONS, summary: "Para llevarse: el <code>if</code> entra en la primera condición verdadera · el orden de los <code>else if</code> importa · al <code>switch</code> no hay que olvidarle el <code>break</code> · <code>===</code> compara el tipo · <code>0</code>, <code>\"\"</code>, <code>null</code>, <code>undefined</code> y <code>NaN</code> son falsy." });
+
+  // ===================================================================== modos
+  bindSeg("#modeSeg", (m) => {
+    $("#cascadeView").hidden = m !== "cascade"; $("#boolView").hidden = m !== "bool"; $("#gameView").hidden = m !== "game";
+    if (m === "cascade") { renderAll(); run(); }
+    if (m === "bool") bEval();
+  });
+
+  initVals(); renderControls(); renderAll(); $("#cExplain").innerHTML = SC.ifelse.intro; run();
+  bInit(); bControls(); bEval();
+})();
+</script>
+</body>
+</html>

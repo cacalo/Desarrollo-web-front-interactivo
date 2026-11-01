@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bucles: for, for…of y forEach · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.15fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1050px) { .layout { grid-template-columns: 1fr; } }
+  .ctrl { display: flex; flex-direction: column; gap: 12px; }
+  .ctrl h4 { margin: 0 0 6px; font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); }
+
+  /* datos */
+  .stage { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; position: relative; }
+  .dname { font-family: var(--mono); font-weight: 800; color: #7b2cbf; margin-bottom: 8px; }
+  .items { display: flex; gap: 10px; flex-wrap: wrap; }
+  .items.obj { flex-direction: column; gap: 6px; }
+  .item { position: relative; font-family: var(--mono); border: 3px solid var(--line); border-radius: 12px; padding: 10px 14px; background: var(--surface); transition: all .25s; min-width: 54px; text-align: center; }
+  .item .idx { position: absolute; top: -11px; left: 8px; font-size: 11px; font-weight: 800; background: var(--ink-2); color: #fff; padding: 0 6px; border-radius: 6px; }
+  .items.obj .item { display: flex; gap: 10px; text-align: left; }
+  .item .k { color: #1a5fb4; font-weight: 800; } .item .v { color: #a05a00; } .item .ol { display: block; text-align: left; white-space: nowrap; } .item .ol .k { margin-right: 2px; }
+  .item.on { border-color: #e0a800; background: #fff6d6; transform: translateY(-4px); box-shadow: 0 6px 14px rgba(224,168,0,.25); }
+  .item.on .k.got { background: #ffd666; border-radius: 4px; padding: 0 3px; }
+  .item.on .v.got { background: #ffd666; border-radius: 4px; padding: 0 3px; }
+  .item.done { opacity: .55; }
+  .varbox { margin-top: 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .vslot { font-family: var(--mono); font-size: 1.25rem; background: #1e1d24; color: #e8e6ef; border-radius: 12px; padding: 10px 16px; min-width: 220px; }
+  .vslot .nm { color: #d5b6ff; } .vslot .val { color: #ffd479; font-weight: 800; } .vslot .num { color: #a8e6a3; font-weight: 800; }
+  .vslot.flash { animation: vflash .5s; }
+  @keyframes vflash { from { box-shadow: 0 0 0 6px rgba(255, 214, 102, .6); } to { box-shadow: 0 0 0 0 rgba(255, 214, 102, 0); } }
+  .lap { font-weight: 800; font-size: 1.05rem; color: var(--brand-2); }
+  .flyer { position: fixed; z-index: 100; font-family: var(--mono); font-weight: 800; background: #ffd666; border-radius: 8px; padding: 2px 8px; pointer-events: none; transition: all .45s cubic-bezier(.3,.8,.3,1); }
+  .boom { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: var(--bad-bg); color: #8c1d1d; font-family: var(--mono); font-weight: 700; animation: shakeb .4s; }
+
+  /* recorrer la página */
+  .mini { padding: 14px 18px; font-family: "Segoe UI", system-ui, sans-serif; }
+  .mini ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .mini li { padding: 8px 12px; border: 2px solid #eee; border-radius: 10px; transition: all .3s; font-size: 1.05rem; }
+  .mini li.on { border-color: #e0a800; background: #fff6d6; transform: translateX(6px); }
+  .mini li.ok { border-color: var(--ok); background: var(--ok-bg); }
+  .game { max-width: 900px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › JavaScript › <strong>Bucles: for, for…of y forEach</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="step" aria-pressed="true">🔁 Vuelta por vuelta</button>
+      <button data-v="page">🧺 Recorrer la página</button>
+      <button data-v="game">🎲 ¿Qué recibe la variable?</button>
+    </div>
+    <div class="right"><span style="color:var(--ink-2)">Velocidad</span><span class="seg" id="speedSeg"><button data-v="1300">🐢</button><button data-v="800" aria-pressed="true">1×</button><button data-v="350">🐇</button></span></div>
+  </div>
+
+  <!-- ====================================================== vuelta por vuelta -->
+  <section class="layout" id="stepView">
+    <div class="ctrl">
+      <div class="panel">
+        <h4>¿Qué recorremos?</h4>
+        <div class="seg" id="dataSeg"><button data-v="arr" aria-pressed="true">un array</button><button data-v="aobj">un array de objetos</button><button data-v="obj">un objeto</button><button data-v="str">un texto</button></div>
+        <h4 style="margin-top:14px">¿Con qué?</h4>
+        <div class="seg" id="loopSeg"><button data-v="classic" aria-pressed="true">for clásico</button><button data-v="of">for…of</button><button data-v="each">forEach</button></div>
+      </div>
+      <div class="codebox" id="code"></div>
+      <div class="bar"><button class="btn primary big" id="runBtn">▶ Ejecutar</button></div>
+      <div class="console" id="console" data-empty="La consola muestra cada console.log."></div>
+    </div>
+    <div>
+      <div class="stage" id="stage"></div>
+      <div class="explain" id="explain"></div>
+    </div>
+  </section>
+
+  <!-- ====================================================== recorrer la página -->
+  <section class="layout" id="pageView" hidden>
+    <div class="ctrl">
+      <div class="panel">
+        <h4>La colección</h4>
+        <div class="seg" id="collSeg"><button data-v="qsa" aria-pressed="true">querySelectorAll("li")</button><button data-v="children">lista.children</button></div>
+        <h4 style="margin-top:14px">El recorrido</h4>
+        <div class="seg" id="ploopSeg"><button data-v="classic" aria-pressed="true">for clásico</button><button data-v="of">for…of</button><button data-v="each">forEach</button></div>
+      </div>
+      <div class="codebox" id="pcode"></div>
+      <div class="bar"><button class="btn primary big" id="prunBtn">▶ Ejecutar</button><button class="btn" id="presetBtn">↺ Restaurar</button></div>
+      <div class="console" id="pconsole" data-empty="La consola muestra qué recibe la variable en cada vuelta."></div>
+    </div>
+    <div>
+      <div class="browser"><div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="addr">vinoteca.html</div></div>
+        <div class="mini"><ul id="plista"></ul></div>
+      </div>
+      <div class="explain" id="pexplain">El objetivo: pasar cada vino a MAYÚSCULAS (como el reto 7 del laboratorio). Probá las combinaciones.</div>
+    </div>
+  </section>
+
+  <!-- ====================================================== juego -->
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(() => {
+  const { $, $$, sleep, bindSeg, codeBox, consoleLog, quiz, esc } = UI;
+  let SPEED = 800;
+  bindSeg("#speedSeg", (v) => SPEED = +v);
+
+  // ===================================================================== MODO 1
+  const DATA = {
+    arr: { name: "vinos", decl: 'const vinos = ["Malbec", "Cabernet", "Torrontés"];', value: ["Malbec", "Cabernet", "Torrontés"], single: "vino" },
+    aobj: { name: "vinos", decl: 'const vinos = [\n  { nombre: "Malbec", precio: 12500 },\n  { nombre: "Cabernet", precio: 11900 },\n  { nombre: "Torrontés", precio: 8200 },\n];',
+      value: [{ nombre: "Malbec", precio: 12500 }, { nombre: "Cabernet", precio: 11900 }, { nombre: "Torrontés", precio: 8200 }], single: "vino" },
+    obj: { name: "vino", decl: 'const vino = { nombre: "Malbec", cepa: "Malbec", precio: 12500 };', value: { nombre: "Malbec", cepa: "Malbec", precio: 12500 }, single: "dato" },
+    str: { name: "texto", decl: 'const texto = "Hola";', value: "Hola", single: "letra" },
+  };
+  const S = { data: "arr", loop: "classic", runId: 0 };
+  const q = (v) => typeof v === "string" ? `"${v}"` : typeof v === "object" ? `{ ${Object.entries(v).map(([k, x]) => `${k}: ${q(x)}`).join(", ")} }` : String(v);
+  const declLines = (d) => DATA[d].decl.split("\n").length;
+  function codeFor(d, loop) {
+    const D = DATA[d], n = D.name, x = D.single, ao = d === "aobj";
+    if (loop === "classic") return `${D.decl}\nfor (let i = 0; i < ${n}.length; i++) {\n  console.log(i, ${n}[i]${ao ? ".nombre" : ""});\n}`;
+    if (loop === "of") return `${D.decl}\nfor (const ${x} of ${n}) {\n  console.log(${x}${ao ? ".nombre" : ""});\n}`;
+    return `${D.decl}\n${n}.forEach((${x}, i) => {\n  console.log(i, ${x}${ao ? ".nombre" : ""});\n});`;
+  }
+  // devuelve las vueltas: [{ key, show: [[nombre, valor]], log }] o un error
+  function plan(d, loop) {
+    const D = DATA[d], v = D.value, isObj = d === "obj", ao = d === "aobj";
+    const keys = isObj ? Object.keys(v) : [...(typeof v === "string" ? v : v)].map((_, i) => i);
+    const get = (k) => v[k];
+    const logOf = (k) => ao ? get(k).nombre : get(k);
+    if (loop === "classic") {
+      if (isObj) return { laps: [], why: "😶 <strong>No dio ni una vuelta.</strong> Un objeto no es una lista: no tiene <code>length</code> (da <code>undefined</code>), así que <code>0 &lt; undefined</code> es falso desde el principio.", warn: true };
+      return { laps: keys.map(k => ({ key: k, show: [["i", k], [`${D.name}[i]`, q(get(k))]], log: `${k} ${logOf(k)}` })),
+        why: ao ? "Cada vuelta, <code>vinos[i]</code> es <strong>un objeto entero</strong>. Con <code>vinos[i].nombre</code> sacás un dato de ese objeto."
+          : `El <code>for</code> clásico tiene tres partes: <strong>dónde empieza</strong> (<code>let i = 0</code>), <strong>hasta cuándo sigue</strong> (<code>i &lt; ${D.name}.length</code>) y <strong>cómo avanza</strong> (<code>i++</code>). Con <code>${D.name}[i]</code> agarrás el elemento de cada vuelta.` };
+    }
+    if (loop === "of") {
+      if (isObj) return { error: `TypeError: ${D.name} is not iterable`, why: "Un objeto común <strong>no es una lista</strong>, así que <code>for…of</code> no sabe recorrerlo. Si necesitás recorrer sus datos, <code>Object.values(vino)</code> o <code>Object.keys(vino)</code> te devuelven arrays." };
+      return { laps: keys.map(k => ({ key: k, show: [[D.single, q(get(k))]], log: String(logOf(k)) })),
+        why: ao ? "Con <code>for…of</code>, <code>vino</code> recibe <strong>cada objeto</strong> de la lista, sin tener que usar índices. Después <code>vino.nombre</code>, <code>vino.precio</code>…"
+          : `<code>for…of</code> te da <strong>cada valor</strong> directo, sin índices. ${d === "str" ? "En un texto, cada vuelta es una letra." : "Hace lo mismo que el for clásico, pero más corto."}` };
+    }
+    if (d !== "arr" && !ao) return { error: `TypeError: ${D.name}.forEach is not a function`, why: d === "obj" ? "<code>forEach</code> es un método de los <strong>arrays</strong>; un objeto común no lo tiene." : "Los textos no tienen <code>forEach</code>. Se puede usar <code>for…of</code>, o convertirlo: <code>[...texto].forEach(...)</code>." };
+    return { laps: keys.map(k => ({ key: k, show: [[D.single, q(get(k))], ["i", k]], log: `${k} ${logOf(k)}` })),
+      why: "<code>forEach</code> llama a la función una vez por elemento y le pasa <strong>el elemento y el índice</strong>. Es un método de los arrays (y de las NodeList)." + (ao ? " Acá cada elemento es un objeto: <code>vino.nombre</code>." : "") };
+  }
+  function renderData() {
+    const D = DATA[S.data], v = D.value;
+    let items;
+    if (S.data === "obj") items = Object.entries(v).map(([k, val]) => `<div class="item" data-key="${k}"><span class="k">${k}</span>:<span class="v">${q(val)}</span></div>`).join("");
+    else if (S.data === "aobj") items = v.map((o, i) => `<div class="item" data-key="${i}"><span class="idx">${i}</span><span class="v">{ ${Object.entries(o).map(([k, x]) => `<span class="ol"><span class="k">${k}</span>: ${q(x)}</span>`).join("")} }</span></div>`).join("");
+    else items = [...v].map((val, i) => `<div class="item" data-key="${i}"><span class="idx">${i}</span><span class="v">${q(val)}</span></div>`).join("");
+    $("#stage").innerHTML = `<div class="dname">${D.name}</div><div class="items ${S.data === "obj" ? "obj" : ""}">${items}</div>
+      <div class="varbox"><span class="lap" id="lap">vuelta —</span><div class="vslot" id="vslot"><span class="nm">…</span></div></div><div id="boom"></div>`;
+  }
+  let box;
+  function renderCode() { box = codeBox($("#code"), codeFor(S.data, S.loop)); }
+  function fly(from, to, text) {
+    const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+    const f = document.createElement("div"); f.className = "flyer"; f.textContent = text;
+    f.style.left = a.left + 8 + "px"; f.style.top = a.top + 6 + "px"; document.body.appendChild(f);
+    requestAnimationFrame(() => requestAnimationFrame(() => { f.style.left = b.left + 30 + "px"; f.style.top = b.top + 10 + "px"; f.style.opacity = ".2"; }));
+    setTimeout(() => f.remove(), 520);
+  }
+  async function run() {
+    const id = ++S.runId, alive = () => id === S.runId;
+    renderData(); renderCode(); $("#console").innerHTML = "";
+    const p = plan(S.data, S.loop);
+    $("#explain").className = "explain"; $("#explain").innerHTML = "…";
+    const L = declLines(S.data);            // líneas del array antes del bucle
+    box.mark(Array.from({ length: L }, (_, k) => k + 1)); await sleep(SPEED / 2); if (!alive()) return;
+    box.mark([L + 1]); await sleep(SPEED / 2); if (!alive()) return;
+    if (p.error) {
+      box.mark([L + 1], "bad");
+      $("#boom").innerHTML = `<div class="boom">💥 ${p.error}</div>`;
+      consoleLog($("#console"), "❌ " + p.error, "err");
+      $("#explain").className = "explain bad"; $("#explain").innerHTML = p.why; return;
+    }
+    let n = 0;
+    for (const lap of p.laps) {
+      n++;
+      const it = $(`.item[data-key="${lap.key}"]`);
+      $$(".item.on").forEach(x => { x.classList.remove("on"); x.classList.add("done"); });
+      it.classList.remove("done"); it.classList.add("on");
+      $$(".v", it).forEach(x => x.classList.add("got"));
+      box.mark([L + 1]);
+      $("#lap").textContent = `vuelta ${n}`;
+      fly(it, $("#vslot"), String(lap.show[lap.show.length - 1][1]).slice(0, 26));
+      await sleep(450); if (!alive()) return;
+      $("#vslot").innerHTML = lap.show.map(([nm, val]) => `<span class="nm">${nm}</span> = <span class="${typeof val === "number" ? "num" : "val"}">${esc(val)}</span>`).join("&nbsp;&nbsp; ");
+      $("#vslot").classList.remove("flash"); void $("#vslot").offsetWidth; $("#vslot").classList.add("flash");
+      box.mark([L + 2], "ok");
+      await sleep(SPEED / 2); if (!alive()) return;
+      consoleLog($("#console"), "› " + lap.log);
+      await sleep(SPEED / 2); if (!alive()) return;
+    }
+    $$(".item.on").forEach(x => { x.classList.remove("on"); x.classList.add("done"); });
+    box.mark([L + 3]);
+    $("#lap").textContent = n ? `terminó: ${n} vuelta${n > 1 ? "s" : ""}` : "0 vueltas";
+    $("#explain").className = "explain " + (p.warn ? "warn" : "ok"); $("#explain").innerHTML = p.why;
+  }
+  bindSeg("#dataSeg", (v) => { S.data = v; run(); });
+  bindSeg("#loopSeg", (v) => { S.loop = v; run(); });
+  $("#runBtn").onclick = run;
+
+  // ===================================================================== MODO 2
+  const VINOS = ["Malbec", "Cabernet", "Torrontés", "Bonarda"];
+  const P = { coll: "qsa", loop: "classic", runId: 0 };
+  let pbox;
+  function presetList() { $("#plista").innerHTML = VINOS.map(v => `<li>${v}</li>`).join(""); }
+  function pCode() {
+    const c = P.coll === "qsa" ? `const items = document.querySelectorAll("li");` : `const items = lista.children;`;
+    const body = P.loop === "classic" ? `for (let i = 0; i < items.length; i++) {\n  items[i].textContent = items[i].textContent.toUpperCase();\n}`
+      : P.loop === "of" ? `for (const li of items) {\n  li.textContent = li.textContent.toUpperCase();\n}`
+      : `items.forEach((li) => {\n  li.textContent = li.textContent.toUpperCase();\n});`;
+    pbox = codeBox($("#pcode"), c + "\n" + body);
+  }
+  async function prun() {
+    const id = ++P.runId, alive = () => id === P.runId;
+    presetList(); pCode(); $("#pconsole").innerHTML = "";
+    const lis = $$("#plista li");
+    const coll = P.coll === "qsa" ? $("#plista").parentElement.querySelectorAll("li") : $("#plista").children;
+    pbox.mark([1]); await sleep(SPEED / 2); if (!alive()) return;
+    pbox.mark([2]);
+    const say = (k, h) => { $("#pexplain").className = "explain " + k; $("#pexplain").innerHTML = h; };
+    if (P.loop === "each" && P.coll === "children") {
+      pbox.mark([2], "bad"); consoleLog($("#pconsole"), "❌ TypeError: items.forEach is not a function", "err");
+      say("bad", "💥 <code>lista.children</code> es una <strong>HTMLCollection</strong>, que <strong>no tiene forEach</strong> (la NodeList de <code>querySelectorAll</code> sí). Soluciones: usar el <code>for</code> clásico o <code>for…of</code>, o convertirla: <code>Array.from(items).forEach(…)</code>."); return;
+    }
+    let n = 0;
+    for (const li of coll) {
+      li.classList.add("on"); pbox.mark([3], "ok");
+      consoleLog($("#pconsole"), P.loop === "classic" ? `› i = ${n} → items[${n}] = <li>${li.textContent}</li>` : `› li = <li>${li.textContent}</li>`);
+      await sleep(SPEED / 2); if (!alive()) return;
+      li.textContent = li.textContent.toUpperCase(); li.classList.remove("on"); li.classList.add("ok"); n++;
+      await sleep(SPEED / 3); if (!alive()) return;
+    }
+    pbox.mark([]);
+    say("ok", P.loop === "classic" ? `✅ El <code>for</code> clásico funciona con las dos colecciones: con <code>items[i]</code> agarra el <code>&lt;li&gt;</code> de cada vuelta, y <code>items.length</code> dice cuántos hay.`
+      : P.loop === "of" ? `✅ <code>for…of</code> funciona con las dos colecciones: la variable recibe cada <code>&lt;li&gt;</code> directo, sin índices.`
+      : `✅ <code>forEach</code> funciona con la <strong>NodeList</strong> que devuelve <code>querySelectorAll</code>. Probá con <code>lista.children</code>…`);
+  }
+  bindSeg("#collSeg", (v) => { P.coll = v; P.runId++; presetList(); pCode(); });
+  bindSeg("#ploopSeg", (v) => { P.loop = v; P.runId++; presetList(); pCode(); });
+  $("#prunBtn").onclick = prun;
+  $("#presetBtn").onclick = () => { P.runId++; presetList(); pCode(); $("#pconsole").innerHTML = ""; };
+
+  // ===================================================================== MODO 3
+  const VINOS_Q = `const vinos = [\n  { nombre: "Malbec", precio: 100 },\n  { nombre: "Bonarda", precio: 80 },\n];`;
+  const QUESTIONS = [
+    { prompt: "¿Qué muestra la consola?", code: `for (let i = 0; i < 3; i++) {\n  console.log(i);\n}`, options: ["1, 2, 3", "0, 1, 2", "0, 1, 2, 3", "3"], right: 1, why: "Empieza en 0 y corta cuando <code>i < 3</code> deja de cumplirse: 0, 1, 2." },
+    { prompt: "¿Qué muestra la consola?", code: `const vinos = ["Malbec", "Bonarda"];\nfor (let i = 0; i < vinos.length; i++) {\n  console.log(vinos[i]);\n}`, options: ["Malbec, Bonarda", "0, 1", "2", "Un error"], right: 0, why: "<code>vinos[i]</code> es el elemento de la vuelta <code>i</code>." },
+    { prompt: "¿Qué pasa en la última vuelta?", code: VINOS_Q + `\nfor (let i = 0; i <= vinos.length; i++) {\n  console.log(vinos[i].nombre);\n}`, options: ["Nada raro: muestra los dos", "TypeError: no puede leer nombre de undefined", "Muestra undefined y sigue", "No entra nunca"], right: 1, why: "Con <code>&lt;=</code> hace una vuelta de más: <code>i</code> llega a 2 y <code>vinos[2]</code> no existe (es <code>undefined</code>). El clásico error «por uno»." },
+    { prompt: "¿Qué muestra la consola?", code: VINOS_Q + `\nfor (let i = 0; i < vinos.length; i++) {\n  console.log(vinos[i].precio);\n}`, options: ["100, 80", "Malbec, Bonarda", "0, 1", "Un error"], right: 0, why: "<code>vinos[i]</code> es un objeto y <code>.precio</code> saca ese dato." },
+    { prompt: "¿Qué muestra la consola?", code: `for (const v of ["a", "b"]) {\n  console.log(v);\n}`, options: ["a, b", "0, 1", '"0", "1"', "Un error"], right: 0, why: "<code>for…of</code> recibe los <strong>valores</strong>, sin índices." },
+    { prompt: "¿Qué muestra la consola?", code: VINOS_Q + `\nfor (const vino of vinos) {\n  console.log(vino.nombre);\n}`, options: ["Malbec, Bonarda", "0, 1", "nombre, nombre", "Un error"], right: 0, why: "Cada vuelta <code>vino</code> es un objeto de la lista: <code>vino.nombre</code> da su nombre." },
+    { prompt: "¿Qué muestra la consola?", code: VINOS_Q + `\nfor (const vino of vinos) {\n  console.log(vino);\n}`, options: ["Malbec, Bonarda", "Los dos objetos enteros: { nombre: …, precio: … }", "0, 1", "Un error"], right: 1, why: "Sin <code>.nombre</code> se muestra el <strong>objeto entero</strong>. Un error común cuando se quiere mostrar sólo un dato." },
+    { prompt: "¿Qué pasa?", code: `const vino = { nombre: "Malbec", precio: 100 };\nfor (const v of vino) {\n  console.log(v);\n}`, options: ['"Malbec", 100', "nombre, precio", "TypeError: vino is not iterable", "No muestra nada"], right: 2, why: "Un objeto común <strong>no es una lista</strong>: <code>for…of</code> no sabe recorrerlo." },
+    { prompt: "¿Qué muestra la consola?", code: `["a", "b"].forEach((x, i) => {\n  console.log(i);\n});`, options: ["a, b", "0, 1", '"0", "1"', "Un error"], right: 1, why: "El segundo parámetro de <code>forEach</code> es el <strong>índice</strong>." },
+    { prompt: "¿Qué pasa?", code: `const lista = document.querySelector("ul");\nlista.children.forEach(li => {\n  li.remove();\n});`, options: ["Borra todos los li", "Borra sólo el primero", "TypeError: forEach is not a function", "No pasa nada"], right: 2, why: "<code>children</code> es una <strong>HTMLCollection</strong>: no tiene <code>forEach</code>. Con el <code>for</code> clásico, <code>for…of</code> o <code>Array.from(...)</code> sí." },
+    { prompt: "¿Cuánto vale <code>total</code> al final?", code: VINOS_Q + `\nlet total = 0;\nvinos.forEach(vino => {\n  total += vino.precio;\n});`, options: ["180", "2", '"10080"', "0"], right: 0, why: "Cada vuelta suma el precio de un vino: 100 + 80 = 180." },
+  ];
+  quiz($("#quiz"), { questions: QUESTIONS, shuffle: false, summary: "Para llevarse: <code>for</code> clásico → empieza, condición y avance; con <code>lista[i]</code> agarrás cada elemento (ojo con <code>&lt;=</code>) · <code>for…of</code> → cada valor directo · <code>forEach</code> → elemento e índice (arrays y NodeList, no HTMLCollection) · en un array de objetos, cada vuelta es un objeto: <code>.nombre</code>, <code>.precio</code>." });
+
+  bindSeg("#modeSeg", (m) => {
+    $("#stepView").hidden = m !== "step"; $("#pageView").hidden = m !== "page"; $("#gameView").hidden = m !== "game";
+    S.runId++; P.runId++;
+    if (m === "page") { presetList(); pCode(); }
+  });
+
+  renderData(); renderCode();
+  $("#explain").innerHTML = "Elegí qué recorrer y con qué bucle, y apretá <strong>▶ Ejecutar</strong>. Mirá qué recibe la variable en cada vuelta.";
+  presetList(); pCode();
+})();
+</script>
+</body>
+</html>

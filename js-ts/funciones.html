@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Funciones flecha vs nominales · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1050px) { .layout { grid-template-columns: 1fr; } }
+  /* transformador */
+  .morph { font-family: var(--mono); font-size: 1.55rem; line-height: 1.7; background: #1e1d24; color: #e8e6ef; border-radius: 16px; padding: 26px 28px; min-height: 190px; white-space: pre-wrap; word-break: break-word; }
+  .tok { display: inline; transition: all .5s; }
+  .tok.rm { color: #ff8a8a; text-decoration: line-through; background: rgba(255, 99, 99, .15); border-radius: 4px; }
+  .tok.rm.gone { font-size: 0; opacity: 0; }
+  .tok.add { color: #8ff0c9; background: rgba(80, 200, 120, .18); border-radius: 4px; animation: grow .5s; }
+  @keyframes grow { from { opacity: 0; font-size: 0; } }
+  .steps { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+  .step { display: flex; gap: 10px; align-items: flex-start; padding: 8px 12px; border-radius: 12px; border: 2px solid var(--line); background: #fff; opacity: .55; transition: all .3s; cursor: pointer; }
+  .step .n { width: 24px; height: 24px; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center; font-weight: 800; font-size: .85rem; flex: none; }
+  .step.done { opacity: .85; } .step.done .n { background: var(--ok); color: #fff; }
+  .step.now { opacity: 1; border-color: var(--brand-2); box-shadow: 0 0 0 4px rgba(123,44,191,.12); } .step.now .n { background: var(--brand-2); color: #fff; }
+  .try { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-family: var(--mono); font-size: 1.1rem; }
+  .try input { width: 70px; font: inherit; padding: 6px 8px; border-radius: 8px; border: 2px solid var(--line); }
+  .try .res { font-weight: 800; color: var(--ok); }
+  /* diferencias */
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+  @media (max-width: 900px) { .duo { grid-template-columns: 1fr; } }
+  .side h4 { margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; }
+  .side .codebox { font-size: 14.5px; min-height: 120px; }
+  .side .console { margin-top: 8px; min-height: 44px; }
+  .game { max-width: 980px; margin-top: 16px; }
+  .quiz .q-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 800px) { .quiz .q-pair { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › JavaScript › <strong>Funciones flecha vs nominales</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="morph" aria-pressed="true">🔀 De nominal a flecha</button>
+      <button data-v="diff">⚖️ Diferencias que importan</button>
+      <button data-v="game">🎲 ¿Son equivalentes?</button>
+    </div>
+  </div>
+
+  <!-- ====================================================== transformador -->
+  <section class="layout" id="morphView">
+    <div>
+      <div class="bar" style="margin-top:0"><span style="font-weight:700">Función:</span><div class="seg" id="exSeg"></div></div>
+      <div class="morph" id="morph" style="margin-top:12px"></div>
+      <div class="bar">
+        <button class="btn" id="prevBtn">◀ Paso anterior</button>
+        <button class="btn primary big" id="nextBtn">Paso siguiente ▶</button>
+        <span style="flex:1"></span>
+        <div class="try panel" id="try"></div>
+      </div>
+      <div class="explain" id="mExplain"></div>
+    </div>
+    <div>
+      <h3 class="col-title">Los pasos</h3>
+      <div class="steps" id="steps"></div>
+    </div>
+  </section>
+
+  <!-- ====================================================== diferencias -->
+  <section id="diffView" hidden style="margin-top:16px">
+    <div class="chips" id="expChips"></div>
+    <div class="explain" id="dIntro" style="margin-top:12px"></div>
+    <div class="duo">
+      <div class="side panel"><h4>📛 Nominal <button class="btn primary" data-run="0">▶ Ejecutar</button></h4><div id="codeA"></div><div class="console" id="conA" data-empty="(todavía no se ejecutó)"></div></div>
+      <div class="side panel"><h4>🏹 Flecha <button class="btn primary" data-run="1">▶ Ejecutar</button></h4><div id="codeB"></div><div class="console" id="conB" data-empty="(todavía no se ejecutó)"></div></div>
+    </div>
+    <div class="explain" id="dExplain" hidden></div>
+  </section>
+
+  <!-- ====================================================== juego -->
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(() => {
+  const { $, $$, sleep, bindSeg, codeBox, consoleLog, quiz, esc, hlJS } = UI;
+
+  // ===================================================================== MODO 1: transformador
+  const EXAMPLES = {
+    sumar: { params: ["a", "b"], call: (a, b) => a + b, defaults: [2, 3],
+      steps: [
+        "function sumar(a, b) {\n  return a + b;\n}",
+        "const sumar = function (a, b) {\n  return a + b;\n};",
+        "const sumar = (a, b) => {\n  return a + b;\n};",
+        "const sumar = (a, b) => a + b;",
+      ] },
+    doble: { params: ["n"], call: (n) => n * 2, defaults: [4],
+      steps: [
+        "function doble(n) {\n  return n * 2;\n}",
+        "const doble = function (n) {\n  return n * 2;\n};",
+        "const doble = (n) => {\n  return n * 2;\n};",
+        "const doble = (n) => n * 2;",
+        "const doble = n => n * 2;",
+      ] },
+    saludar: { params: [], call: () => "¡Hola!", defaults: [],
+      steps: [
+        'function saludar() {\n  return "¡Hola!";\n}',
+        'const saludar = function () {\n  return "¡Hola!";\n};',
+        'const saludar = () => {\n  return "¡Hola!";\n};',
+        'const saludar = () => "¡Hola!";',
+      ] },
+    esMayor: { params: ["edad"], call: (e) => e >= 18, defaults: [20],
+      steps: [
+        "function esMayor(edad) {\n  return edad >= 18;\n}",
+        "const esMayor = function (edad) {\n  return edad >= 18;\n};",
+        "const esMayor = (edad) => {\n  return edad >= 18;\n};",
+        "const esMayor = (edad) => edad >= 18;",
+        "const esMayor = edad => edad >= 18;",
+      ] },
+  };
+  const STEP_TEXT = [
+    ["Función nominal", "La forma clásica: la palabra <code>function</code> y un <strong>nombre</strong>."],
+    ["Guardarla en una constante", "La misma función, pero <strong>sin nombre</strong> (anónima) y guardada en una <code>const</code>. El nombre ahora lo da la constante."],
+    ["Cambiar function por =>", "Se borra la palabra <code>function</code> y se pone una flecha <code>=&gt;</code> entre los paréntesis y las llaves. Ya es una <strong>función flecha</strong>."],
+    ["Return implícito", "Si lo único que hace es un <code>return</code>, se pueden sacar las llaves y la palabra <code>return</code>: lo que queda a la derecha de la flecha <strong>se devuelve solo</strong>."],
+    ["Un solo parámetro", "Con <strong>un solo</strong> parámetro se pueden sacar los paréntesis. (Con cero o con dos o más, van sí o sí.)"],
+  ];
+  const M = { ex: "sumar", i: 0, busy: false };
+  $("#exSeg").innerHTML = Object.keys(EXAMPLES).map(k => `<button data-v="${k}" aria-pressed="${k === M.ex}">${k}</button>`).join("");
+  const tokens = (s) => s.match(/\n|[ \t]+|[A-Za-z_$¡!¿][\w$¡!]*|\d+|=>|>=|===|"[^"]*"|[^\s]/g) || [];
+  // diff por LCS entre dos listas de tokens
+  function diff(a, b) {
+    const n = a.length, m = b.length, dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    const out = []; let i = 0, j = 0;
+    while (i < n || j < m) {
+      if (i < n && j < m && a[i] === b[j]) { out.push(["=", a[i]]); i++; j++; }
+      else if (j < m && (i === n || dp[i][j + 1] >= dp[i + 1][j])) { out.push(["+", b[j]]); j++; }
+      else { out.push(["-", a[i]]); i++; }
+    }
+    return out;
+  }
+  const tokHtml = (t) => hlJS(t);
+  function showStatic() {
+    const ex = EXAMPLES[M.ex];
+    $("#morph").innerHTML = tokens(ex.steps[M.i]).map(t => `<span class="tok">${tokHtml(t)}</span>`).join("");
+    renderSteps();
+  }
+  function renderSteps() {
+    const ex = EXAMPLES[M.ex];
+    $("#steps").innerHTML = ex.steps.map((_, k) => `<div class="step ${k < M.i ? "done" : k === M.i ? "now" : ""}" data-k="${k}"><span class="n">${k < M.i ? "✓" : k + 1}</span><div><strong>${STEP_TEXT[k][0]}</strong><div style="color:var(--ink-2);font-size:.92rem">${STEP_TEXT[k][1]}</div></div></div>`).join("");
+    $("#prevBtn").disabled = M.i === 0; $("#nextBtn").disabled = M.i === ex.steps.length - 1;
+    $("#mExplain").innerHTML = M.i === ex.steps.length - 1
+      ? `🎉 Las ${ex.steps.length} versiones <strong>hacen exactamente lo mismo</strong>. Probala abajo a la derecha: da el mismo resultado en cada paso.` + (ex.params.length === 0 ? " Sin parámetros, los paréntesis vacíos <code>()</code> no se pueden sacar." : ex.params.length > 1 ? " Con dos parámetros, los paréntesis tampoco se pueden sacar." : "")
+      : `<strong>Paso ${M.i + 1}:</strong> ${STEP_TEXT[M.i][1]}`;
+    renderTry();
+  }
+  async function go(to) {
+    const ex = EXAMPLES[M.ex];
+    if (M.busy || to < 0 || to >= ex.steps.length || to === M.i) return;
+    M.busy = true;
+    const d = diff(tokens(ex.steps[M.i]), tokens(ex.steps[to]));
+    $("#morph").innerHTML = d.map(([op, t]) => op === "+" ? "" : `<span class="tok ${op === "-" ? "rm" : ""}">${tokHtml(t)}</span>`).join("");
+    await sleep(900);
+    $("#morph").innerHTML = d.map(([op, t]) => `<span class="tok ${op === "-" ? "rm gone" : op === "+" ? "add" : ""}">${tokHtml(t)}</span>`).join("");
+    M.i = to; renderSteps();
+    await sleep(1100);
+    M.busy = false;
+  }
+  function renderTry() {
+    const ex = EXAMPLES[M.ex];
+    const vals = M.tryVals || ex.defaults;
+    $("#try").innerHTML = `${M.ex}(${ex.params.map((p, k) => `<input type="number" data-k="${k}" value="${vals[k]}" aria-label="${p}">`).join(", ")}) → <span class="res">${esc(JSON.stringify(ex.call(...vals.map(Number))))}</span>`;
+  }
+  $("#try").addEventListener("input", () => { M.tryVals = $$("#try input").map(i => +i.value); $("#try .res").textContent = JSON.stringify(EXAMPLES[M.ex].call(...M.tryVals)); });
+  $("#steps").addEventListener("click", (e) => { const s = e.target.closest(".step"); if (s) go(+s.dataset.k); });
+  $("#nextBtn").onclick = () => go(M.i + 1);
+  $("#prevBtn").onclick = () => go(M.i - 1);
+  bindSeg("#exSeg", (v) => { M.ex = v; M.i = 0; M.tryVals = null; showStatic(); });
+
+  // ===================================================================== MODO 2: diferencias
+  const EXPS = [
+    { name: "Usarla antes de declararla",
+      intro: "En el código, la función se <strong>llama en la línea 1</strong> pero se <strong>declara después</strong>. ¿Funcionan las dos?",
+      a: "console.log(sumar(2, 3));\n\nfunction sumar(a, b) {\n  return a + b;\n}", outA: [["5", "ok"]],
+      b: "console.log(sumar(2, 3));\n\nconst sumar = (a, b) => a + b;", outB: [["ReferenceError: Cannot access 'sumar' before initialization", "err"]],
+      why: "Las funciones <strong>nominales</strong> se «suben» al principio del archivo (<em>hoisting</em>): se pueden usar antes de escribirlas. Una flecha guardada en <code>const</code> recién existe cuando se llega a esa línea." },
+    { name: "Llaves sin return",
+      intro: "Las dos versiones tienen flecha. La diferencia es que la segunda tiene <strong>llaves</strong>.",
+      a: "const doble = n => n * 2;\n\nconsole.log(doble(4));", outA: [["8", "ok"]],
+      b: "const doble = n => { n * 2 };\n\nconsole.log(doble(4));", outB: [["undefined", "warn"]],
+      why: "El <em>return implícito</em> funciona sólo <strong>sin llaves</strong>. Si ponés llaves, el cuerpo es un bloque normal y hay que escribir <code>return</code>. Es uno de los errores más comunes.",
+      labels: ["✅ Sin llaves", "😬 Con llaves"] },
+    { name: "Devolver un objeto",
+      intro: "Queremos que la flecha devuelva un objeto <code>{ nombre }</code> directamente.",
+      a: "const crear = nombre => ({ nombre: nombre });\n\nconsole.log(crear(\"Ana\"));", outA: [['{ nombre: "Ana" }', "ok"]],
+      b: "const crear = nombre => { nombre: nombre };\n\nconsole.log(crear(\"Ana\"));", outB: [["undefined", "warn"]],
+      why: "Sin los paréntesis, JavaScript cree que las llaves son el <strong>cuerpo</strong> de la función, no un objeto. Para devolver un objeto en una línea: <code>=&gt; ({ ... })</code>.",
+      labels: ["✅ Con paréntesis", "😬 Sin paréntesis"] },
+    { name: "Como callback",
+      intro: "Un <em>callback</em> es una función que le pasamos a otra (a <code>filter</code>, <code>forEach</code>, <code>addEventListener</code>…). Acá las dos funcionan igual.",
+      a: "function esOferta(vino) {\n  return vino.precio < 10000;\n}\nconst ofertas = vinos.filter(esOferta);\nconsole.log(ofertas.length);", outA: [["2", "ok"]],
+      b: "const ofertas = vinos.filter(vino => vino.precio < 10000);\nconsole.log(ofertas.length);", outB: [["2", "ok"]],
+      why: "Hacen lo mismo. La flecha brilla en estos casos: funciones cortas que se usan una sola vez, escritas <strong>justo donde se necesitan</strong>. Si la lógica es larga o se reutiliza, conviene una función con nombre." },
+    { name: "this (lo que usa Angular)",
+      intro: "Dentro de un objeto (o una clase de Angular), una función que se ejecuta <strong>más tarde</strong> quiere usar <code>this.contactos</code>.",
+      a: "const agenda = {\n  contactos: 3,\n  mostrar() {\n    setTimeout(function () {\n      console.log(this.contactos);\n    }, 1000);\n  }\n};\nagenda.mostrar();", outA: [["undefined", "warn"]],
+      b: "const agenda = {\n  contactos: 3,\n  mostrar() {\n    setTimeout(() => {\n      console.log(this.contactos);\n    }, 1000);\n  }\n};\nagenda.mostrar();", outB: [["3", "ok"]],
+      why: "Una <code>function</code> tiene su <strong>propio</strong> <code>this</code>, que en un callback ya no es el objeto. La flecha <strong>no tiene this propio</strong>: usa el de afuera. Por eso en los componentes y servicios de Angular los callbacks se escriben con flecha.", delay: true },
+  ];
+  const DX = { i: 0 };
+  function renderExp() {
+    const x = EXPS[DX.i];
+    $("#expChips").innerHTML = EXPS.map((e, k) => `<button class="chip" data-k="${k}" aria-pressed="${k === DX.i}">${k + 1}. ${e.name}</button>`).join("");
+    $("#dIntro").innerHTML = x.intro;
+    codeBox($("#codeA"), x.a); codeBox($("#codeB"), x.b);
+    const [la, lb] = x.labels || ["📛 Nominal", "🏹 Flecha"];
+    $$(".side h4")[0].firstChild.textContent = la + " "; $$(".side h4")[1].firstChild.textContent = lb + " ";
+    $("#conA").innerHTML = ""; $("#conB").innerHTML = ""; $("#dExplain").hidden = true; DX.ran = new Set();
+  }
+  $("#expChips").addEventListener("click", (e) => { const b = e.target.closest(".chip"); if (b) { DX.i = +b.dataset.k; renderExp(); } });
+  $("#diffView").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-run]"); if (!b) return;
+    const x = EXPS[DX.i], k = +b.dataset.run, con = k ? $("#conB") : $("#conA");
+    con.innerHTML = ""; b.disabled = true;
+    if (x.delay) { consoleLog(con, "⏳ (espera 1 segundo…)", ""); await sleep(1000); con.innerHTML = ""; } else await sleep(250);
+    (k ? x.outB : x.outA).forEach(([t, kind]) => consoleLog(con, (kind === "err" ? "❌ " : "› ") + t, kind));
+    b.disabled = false;
+    DX.ran.add(k);
+    if (DX.ran.size === 2) { $("#dExplain").hidden = false; $("#dExplain").className = "explain"; $("#dExplain").innerHTML = "💡 " + x.why; }
+  });
+
+  // ===================================================================== MODO 3: ¿son equivalentes?
+  const pair = (a, b) => ({ a, b });
+  const QUESTIONS = [
+    { ...pair("function doble(n) {\n  return n * 2;\n}", "const doble = n => n * 2;"), options: ["Sí, hacen lo mismo", "No: la flecha devuelve undefined", "No: la flecha da error"], right: 0, why: "Un parámetro, return implícito: equivalentes." },
+    { ...pair("function doble(n) {\n  return n * 2;\n}", "const doble = n => { n * 2 };"), options: ["Sí, hacen lo mismo", "No: la flecha devuelve undefined", "No: la flecha da error"], right: 1, why: "Con llaves no hay return implícito: la flecha devuelve <code>undefined</code>." },
+    { ...pair('function saludar() {\n  return "Hola";\n}', 'const saludar = => "Hola";'), options: ["Sí, hacen lo mismo", "No: la flecha devuelve undefined", "No: la flecha da error de sintaxis"], right: 2, why: "Sin parámetros, los paréntesis vacíos son obligatorios: <code>() =&gt; \"Hola\"</code>." },
+    { ...pair("function sumar(a, b) {\n  return a + b;\n}", "const sumar = a, b => a + b;"), options: ["Sí, hacen lo mismo", "No: la flecha devuelve undefined", "No: la flecha da error"], right: 2, why: "Con dos parámetros van entre paréntesis: <code>(a, b) =&gt; a + b</code>." },
+    { ...pair("function crear(n) {\n  return { nombre: n };\n}", "const crear = n => ({ nombre: n });"), options: ["Sí, hacen lo mismo", "No: la flecha devuelve undefined", "No: la flecha da error"], right: 0, why: "Los paréntesis alrededor del objeto hacen que se devuelva. Equivalentes." },
+    { ...pair("mostrar(); // se llama en la línea 1\n\nfunction mostrar() {\n  console.log(\"Hola\");\n}", "mostrar(); // se llama en la línea 1\n\nconst mostrar = () => {\n  console.log(\"Hola\");\n};"), options: ["Sí, las dos muestran Hola", "No: la flecha da ReferenceError", "No: la nominal da error"], right: 1, why: "La nominal tiene <em>hoisting</em>; la <code>const</code> todavía no existe en la línea 1." },
+    { ...pair('boton.addEventListener("click", function () {\n  contar();\n});', 'boton.addEventListener("click", () => contar());'), options: ["Sí, hacen lo mismo", "No: la flecha se ejecuta enseguida", "No: la flecha da error"], right: 0, why: "Las dos le pasan una función al listener, que se ejecuta en cada clic. (Ojo: <code>addEventListener(\"click\", contar())</code>, sin flecha, sí la ejecutaría enseguida.)" },
+    { ...pair("function esPar(n) {\n  return n % 2 === 0;\n}", "const esPar = n => n % 2 === 0;"), options: ["Sí, hacen lo mismo", "No: la flecha devuelve undefined", "No: la flecha da error"], right: 0, why: "Equivalentes: la comparación se devuelve sola." },
+  ].map(q => ({ ...q, prompt: "¿Son equivalentes estas dos funciones?" }));
+  quiz($("#quiz"), {
+    questions: QUESTIONS,
+    summary: "Para llevarse: <code>function nombre() {}</code> ⇄ <code>const nombre = () =&gt; {}</code> · sin llaves hay return implícito · con 0 o 2+ parámetros van paréntesis · para devolver un objeto: <code>=&gt; ({ … })</code> · las nominales se pueden usar antes de declararlas · las flecha no tienen <code>this</code> propio.",
+    onShow: (q) => {
+      const box = $("#quiz .q-code");
+      box.className = "q-code q-pair"; box.innerHTML = `<div><div class="col-title">📛 Nominal</div><div class="cA"></div></div><div><div class="col-title">🏹 Flecha</div><div class="cB"></div></div>`;
+      codeBox($(".cA", box), q.a); codeBox($(".cB", box), q.b);
+    },
+  });
+
+  bindSeg("#modeSeg", (m) => { $("#morphView").hidden = m !== "morph"; $("#diffView").hidden = m !== "diff"; $("#gameView").hidden = m !== "game"; });
+
+  showStatic(); renderExp();
+})();
+</script>
+</body>
+</html>

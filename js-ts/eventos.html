@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eventos · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<style>
+  .grid3 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, .9fr); gap: 16px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1150px) { .grid3 { grid-template-columns: 1fr 1fr; } .grid3 > :last-child { grid-column: 1 / -1; } }
+  @media (max-width: 760px) { .grid3 { grid-template-columns: 1fr; } }
+
+  /* la tiendita */
+  .shop { padding: 14px 18px 18px; font-family: "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; gap: 10px; }
+  .shop h3 { margin: 0; font-family: Georgia, serif; display: flex; justify-content: space-between; align-items: center; }
+  .shop input[type=text], .shop select { font: inherit; padding: 7px 10px; border-radius: 9px; border: 1px solid #ccc; }
+  .shop ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .shop li { padding: 6px 10px; border: 1px solid #eee; border-radius: 8px; cursor: default; user-select: none; transition: opacity .25s, background .25s; }
+  .shop li.fav::after { content: " ⭐"; }
+  .shop li.hide { display: none; }
+  .shop .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .shop button { font: inherit; padding: 7px 14px; border-radius: 9px; border: 1px solid #bbb; background: #f4f4f4; cursor: pointer; }
+  .shop button:disabled { opacity: .45; cursor: not-allowed; }
+  .shop .promo { border: 2px dashed #d6336c; border-radius: 12px; padding: 10px 12px; color: #d6336c; font-weight: 700; transition: background .3s; }
+  .shop .promo.on { background: #ffe3ec; }
+  .cart { font-weight: 800; font-size: 1.05rem; }
+  .cart.bump { animation: bump .4s; }
+  @keyframes bump { 50% { transform: scale(1.35); } }
+  .flash-el { animation: flashel .6s; }
+  @keyframes flashel { 0% { box-shadow: 0 0 0 0 rgba(255, 214, 102, .9); } 100% { box-shadow: 0 0 0 12px rgba(255, 214, 102, 0); } }
+
+  /* listeners */
+  .listeners { display: flex; flex-direction: column; gap: 8px; }
+  .lis { background: #fff; border: 2px solid var(--line); border-radius: 12px; padding: 9px 12px; position: relative; transition: border-color .25s, background .25s; }
+  .lis .lcode { font-family: var(--mono); font-size: .88rem; }
+  .lis .lcode .ev { color: #c3002f; font-weight: 800; } .lis .lcode .fn { color: #1a5fb4; font-weight: 700; } .lis .lcode .el { color: #7b2cbf; }
+  .lis small { display: block; color: var(--ink-2); margin-top: 2px; }
+  .lis .cnt { position: absolute; top: 8px; right: 10px; font-family: var(--mono); font-weight: 800; font-size: .85rem; background: var(--surface-2); border-radius: 999px; padding: 1px 9px; }
+  .lis.fire { border-color: var(--ok); background: var(--ok-bg); }
+  .lis.fire .cnt { background: var(--ok); color: #fff; }
+  .spark { position: fixed; z-index: 100; width: 14px; height: 14px; border-radius: 50%; background: #ffd666; box-shadow: 0 0 12px 4px rgba(255,214,102,.8); pointer-events: none; transition: left .45s cubic-bezier(.3,.8,.3,1), top .45s cubic-bezier(.3,.8,.3,1), opacity .2s .45s; }
+
+  /* radar */
+  .radar-log { background: #19181e; border-radius: 12px; font-family: var(--mono); font-size: 13.5px; color: #e8e6ef; padding: 6px 0; height: 430px; overflow: auto; display: flex; flex-direction: column-reverse; }
+  .radar-log div { padding: 3px 12px; display: flex; gap: 8px; animation: slidein .25s; }
+  .radar-log .t { color: #c3a6ff; font-weight: 800; min-width: 84px; }
+  .radar-log .on { color: #7f8c98; }
+  .radar-log .hit { background: rgba(80, 200, 120, .15); } .radar-log .hit .t { color: #8ff0c9; }
+  .radar-log .fn { color: #8ff0c9; margin-left: auto; }
+  .radar-log:empty::before { content: "Usá la página: acá aparece cada evento que pasa."; color: #6d6879; padding: 8px 12px; }
+
+  /* input vs change vs keydown */
+  .cmp { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1000px) { .cmp { grid-template-columns: 1fr; } }
+  .lamps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .lamp { border-radius: 14px; border: 3px solid var(--line); padding: 14px 10px; text-align: center; background: #fff; transition: all .2s; }
+  .lamp .nm { font-family: var(--mono); font-weight: 800; font-size: 1.2rem; }
+  .lamp .n { font-size: 2.2rem; font-weight: 800; }
+  .lamp .last { font-family: var(--mono); font-size: .85rem; color: var(--ink-2); min-height: 1.3em; word-break: break-all; }
+  .lamp.go { transform: scale(1.06); }
+  .lamp[data-t="keydown"] { --c: #1a5fb4; } .lamp[data-t="input"] { --c: #2a9d8f; } .lamp[data-t="change"] { --c: #d6336c; }
+  .lamp .nm { color: var(--c); }
+  .lamp.go { border-color: var(--c); background: color-mix(in srgb, var(--c) 15%, white); }
+  .timeline { margin-top: 14px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .tl-row { display: grid; grid-template-columns: 80px 1fr; align-items: center; gap: 8px; height: 30px; }
+  .tl-row .nm { font-family: var(--mono); font-weight: 800; font-size: .9rem; }
+  .tl-track { position: relative; height: 18px; border-bottom: 1px dashed var(--line); overflow: hidden; }
+  .tl-dot { position: absolute; top: 3px; width: 12px; height: 12px; border-radius: 50%; transform: translateX(-50%); animation: pop .3s; }
+  .tl-dot b { position: absolute; left: 50%; top: -2px; transform: translateX(-50%); font-size: 9px; color: #fff; }
+  .fields { display: flex; flex-direction: column; gap: 12px; }
+  .fields label { font-weight: 700; display: flex; flex-direction: column; gap: 6px; }
+  .fields input[type=text], .fields select { font: inherit; font-size: 1.2rem; padding: 10px 12px; border-radius: 12px; border: 2px solid var(--line); }
+  .fields input[type=text]:focus, .fields select:focus { border-color: var(--brand-2); outline: none; }
+  .fields .row { display: flex; gap: 10px; align-items: center; }
+  .watch { display: flex; gap: 6px; flex-wrap: wrap; }
+  .game { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; margin-top: 16px; }
+  @media (max-width: 1000px) { .game { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › JavaScript › <strong>Eventos</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="catch" aria-pressed="true">📡 Atrapar eventos</button>
+      <button data-v="cmp">⌨️ input, change y keydown</button>
+      <button data-v="game">🎲 ¿Qué evento uso?</button>
+    </div>
+  </div>
+
+  <!-- ===================================================== atrapar eventos -->
+  <section class="grid3" id="catchView">
+    <div>
+      <h3 class="col-title">La página <small>usala como un usuario</small></h3>
+      <div class="browser">
+        <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="addr">vinoteca.html</div></div>
+        <div class="shop" id="shop">
+          <h3>🍷 Vinoteca <span class="cart" id="carrito">🛒 0</span></h3>
+          <input type="text" id="buscador" placeholder="Buscar vino…" autocomplete="off">
+          <ul id="vinos"><li>Malbec</li><li>Cabernet</li><li>Torrontés</li><li>Bonarda</li></ul>
+          <div class="row"><label for="envio">Entrega:</label><select id="envio"><option value="0">Retiro en local</option><option value="2500">Envío a domicilio</option></select><span id="costo">Gratis</span></div>
+          <div class="row"><label><input type="checkbox" id="acepto"> Acepto los términos</label></div>
+          <div class="row"><button id="comprar" disabled>Agregar al carrito</button></div>
+          <div class="promo" id="promo">👀 Pasá el mouse por acá</div>
+        </div>
+      </div>
+      <div class="explain" id="cExplain">Un <strong>evento</strong> es algo que pasa en la página: un clic, una tecla, un cambio. Un <strong>listener</strong> es el que está atento a ese evento y ejecuta una función cuando pasa.</div>
+    </div>
+    <div>
+      <h3 class="col-title">Los listeners <small>quién escucha qué</small></h3>
+      <div class="listeners" id="listeners"></div>
+    </div>
+    <div>
+      <h3 class="col-title">Radar de eventos <button class="btn" id="clearRadar" style="padding:2px 10px;font-size:.8rem">limpiar</button></h3>
+      <div class="watch chips" id="watch"></div>
+      <div class="radar-log" id="radar" style="margin-top:8px"></div>
+      <p style="color:var(--ink-2);font-size:.88rem;margin:8px 0 0">En gris, eventos que pasan pero <strong>nadie escucha</strong>. En verde, los que atrapó un listener.</p>
+    </div>
+  </section>
+
+  <!-- ===================================================== input vs change vs keydown -->
+  <section class="cmp" id="cmpView" hidden>
+    <div class="panel fields">
+      <label>Escribí acá
+        <input type="text" id="cmpInput" placeholder="probá letras, flechas, borrar…" autocomplete="off">
+      </label>
+      <label>Elegí una opción
+        <select id="cmpSelect"><option>Malbec</option><option>Cabernet</option><option>Torrontés</option></select>
+      </label>
+      <div class="row"><button class="btn" id="cmpClear">↺ Empezar de nuevo</button><span style="color:var(--ink-2);font-size:.9rem">Tip: escribí algo y después hacé clic afuera del campo.</span></div>
+      <div class="explain" id="cmpExplain" style="margin-top:0">Los tres eventos parecen lo mismo, pero se disparan en momentos distintos. Probá y mirá qué lámpara se prende.</div>
+    </div>
+    <div>
+      <div class="lamps">
+        <div class="lamp" data-t="keydown"><div class="nm">keydown</div><div class="n">0</div><div class="last">event.key</div></div>
+        <div class="lamp" data-t="input"><div class="nm">input</div><div class="n">0</div><div class="last">value</div></div>
+        <div class="lamp" data-t="change"><div class="nm">change</div><div class="n">0</div><div class="last">value</div></div>
+      </div>
+      <div class="timeline" id="timeline">
+        <div class="tl-row"><span class="nm" style="color:#1a5fb4">keydown</span><div class="tl-track" data-t="keydown"></div></div>
+        <div class="tl-row"><span class="nm" style="color:#2a9d8f">input</span><div class="tl-track" data-t="input"></div></div>
+        <div class="tl-row"><span class="nm" style="color:#d6336c">change</span><div class="tl-track" data-t="change"></div></div>
+      </div>
+      <div class="panel" style="margin-top:14px; font-size:.98rem">
+        <div><strong style="color:#1a5fb4">keydown</strong>: cada tecla que se aprieta, cambie o no el texto (también flechas, Shift, Enter). Trae <code>event.key</code>.</div>
+        <div style="margin-top:6px"><strong style="color:#2a9d8f">input</strong>: cada vez que el valor cambia, mientras escribís. Ideal para buscar o contar en vivo.</div>
+        <div style="margin-top:6px"><strong style="color:#d6336c">change</strong>: cuando el cambio se «confirma». En un texto, al salir del campo (o Enter). En un select o checkbox, apenas elegís.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== juego -->
+  <section class="game" id="gameView" hidden>
+    <div class="panel" id="quiz"></div>
+    <div>
+      <h3 class="col-title">Probalo <small>aparece después de responder</small></h3>
+      <div class="browser"><div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="addr">demo.html</div></div>
+        <div class="shop" id="demo" style="min-height:200px"><p style="color:var(--ink-2)">🤔 Respondan y acá aparece un ejemplo funcionando.</p></div>
+      </div>
+      <div class="codebox" id="demoCode" style="margin-top:10px" hidden></div>
+    </div>
+  </section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(() => {
+  const { $, $$, sleep, bindSeg, codeBox, quiz, esc } = UI;
+
+  // ===================================================================== MODO 1
+  const shop = $("#shop");
+  let carrito = 0;
+  // cada listener: sobre qué elemento, qué evento, qué función y qué hace (la función real)
+  const LISTENERS = [
+    { el: "buscador", ev: "input", fn: "filtrar", desc: "Filtra la lista mientras escribís",
+      run: (e) => { const t = e.target.value.toLowerCase(); $$("#vinos li").forEach(li => li.classList.toggle("hide", !li.textContent.toLowerCase().includes(t))); } },
+    { el: "buscador", ev: "keydown", fn: "siEsEnter", desc: "Si la tecla es Enter, borra la búsqueda", onlyIf: (e) => e.key === "Enter",
+      run: (e) => { e.target.value = ""; $$("#vinos li").forEach(li => li.classList.remove("hide")); } },
+    { el: "vinos", ev: "dblclick", fn: "marcarFavorito", desc: "Doble clic en un vino: favorito ⭐",
+      run: (e) => { const li = e.target.closest("li"); if (li) li.classList.toggle("fav"); } },
+    { el: "envio", ev: "change", fn: "mostrarCosto", desc: "Al elegir la entrega, muestra el costo",
+      run: (e) => { $("#costo").textContent = e.target.value === "0" ? "Gratis" : "$2.500"; } },
+    { el: "acepto", ev: "change", fn: "habilitarCompra", desc: "Habilita el botón si marcaste la casilla",
+      run: (e) => { $("#comprar").disabled = !e.target.checked; } },
+    { el: "comprar", ev: "click", fn: "agregarAlCarrito", desc: "Suma 1 al carrito",
+      run: () => { carrito++; const c = $("#carrito"); c.textContent = "🛒 " + carrito; c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump"); } },
+    { el: "promo", ev: "mouseover", fn: "mostrarPromo", desc: "Al pasar el mouse, muestra la promo",
+      run: (e) => { const p = $("#promo"); p.classList.add("on"); p.textContent = "🎉 ¡20% off en Malbec!"; } },
+    { el: "promo", ev: "mouseout", fn: "ocultarPromo", desc: "Al sacar el mouse, la esconde",
+      run: () => { const p = $("#promo"); p.classList.remove("on"); p.textContent = "👀 Pasá el mouse por acá"; } },
+  ];
+  $("#listeners").innerHTML = LISTENERS.map((l, i) => `<div class="lis" data-i="${i}"><span class="cnt">0</span>
+      <div class="lcode"><span class="el">${l.el}</span>.addEventListener(<span class="ev">"${l.ev}"</span>, <span class="fn">${l.fn}</span>)</div><small>${l.desc}</small></div>`).join("");
+  const counts = LISTENERS.map(() => 0);
+  function fly(fromEl, toEl) {
+    const a = fromEl.getBoundingClientRect(), b = toEl.getBoundingClientRect();
+    const s = document.createElement("div"); s.className = "spark";
+    s.style.left = a.left + a.width / 2 - 7 + "px"; s.style.top = a.top + a.height / 2 - 7 + "px";
+    document.body.appendChild(s);
+    requestAnimationFrame(() => requestAnimationFrame(() => { s.style.left = b.left - 7 + "px"; s.style.top = b.top + b.height / 2 - 7 + "px"; s.style.opacity = "0"; }));
+    setTimeout(() => s.remove(), 800);
+  }
+  const lastHit = {};
+  LISTENERS.forEach((l, i) => {
+    $("#" + l.el).addEventListener(l.ev, (e) => {
+      if (l.onlyIf && !l.onlyIf(e)) return;
+      l.run(e);
+      counts[i]++;
+      const card = $(`.lis[data-i="${i}"]`);
+      $(".cnt", card).textContent = counts[i];
+      card.classList.remove("fire"); void card.offsetWidth; card.classList.add("fire");
+      clearTimeout(card._t); card._t = setTimeout(() => card.classList.remove("fire"), 900);
+      const src = e.target.closest("li") || e.target;
+      src.classList.remove("flash-el"); void src.offsetWidth; src.classList.add("flash-el");
+      fly(src, card);
+      lastHit[e.type + "|" + e.timeStamp] = l.fn;
+      if (!seen.has(l.fn)) { seen.add(l.fn); explainFirst(l); }
+    });
+  });
+  const seen = new Set();
+  function explainFirst(l) {
+    $("#cExplain").className = "explain ok";
+    $("#cExplain").innerHTML = `⚡ Pasó un <code>${l.ev}</code> en <code>#${l.el}</code> y el listener ejecutó <code>${l.fn}()</code>. ${l.ev === "keydown" ? "Ojo: este listener escucha todas las teclas, pero sólo hace algo si <code>event.key === \"Enter\"</code>." : ""}`;
+  }
+
+  // radar: escucha en la fase de captura todos los tipos elegidos, haya o no listener
+  const TYPES = ["click", "dblclick", "input", "change", "keydown", "mouseover", "mouseout", "focus", "blur"];
+  const watching = new Set(["click", "dblclick", "input", "change", "keydown", "focus", "blur"]);
+  $("#watch").innerHTML = TYPES.map(t => `<button class="chip" data-t="${t}" aria-pressed="${watching.has(t)}">${t}</button>`).join("");
+  $("#watch").addEventListener("click", (e) => { const b = e.target.closest(".chip"); if (!b) return; const t = b.dataset.t; watching.has(t) ? watching.delete(t) : watching.add(t); b.setAttribute("aria-pressed", watching.has(t)); });
+  const desc = (el) => el.id ? `#${el.id}` : el.tagName.toLowerCase() + (el.closest("#vinos") && el.tagName === "LI" ? ` «${el.textContent.replace(" ⭐", "")}»` : "");
+  TYPES.forEach(t => shop.addEventListener(t, (e) => {
+    if (!watching.has(t)) return;
+    if ((t === "mouseover" || t === "mouseout") && e.target === shop) return;
+    // esperamos a que corran los listeners de la página para saber si alguno lo atrapó
+    setTimeout(() => {
+      const fn = lastHit[e.type + "|" + e.timeStamp];
+      const d = document.createElement("div");
+      if (fn) d.className = "hit";
+      const extra = t === "keydown" ? ` key="${e.key}"` : (t === "input" || t === "change") && "value" in e.target ? ` value="${e.target.type === "checkbox" ? e.target.checked : e.target.value}"` : "";
+      d.innerHTML = `<span class="t">${t}</span><span class="on">en ${esc(desc(e.target))}${esc(extra)}</span>${fn ? `<span class="fn">→ ${fn}()</span>` : ""}`;
+      $("#radar").prepend(d);
+      while ($("#radar").children.length > 80) $("#radar").lastChild.remove();
+    }, 0);
+  }, true));
+  $("#clearRadar").onclick = () => $("#radar").innerHTML = "";
+
+  // ===================================================================== MODO 2
+  const cmpCount = { keydown: 0, input: 0, change: 0 };
+  let t0 = null;
+  function lamp(t, last) {
+    cmpCount[t]++;
+    const l = $(`.lamp[data-t="${t}"]`);
+    $(".n", l).textContent = cmpCount[t]; $(".last", l).textContent = last;
+    l.classList.add("go"); clearTimeout(l._t); l._t = setTimeout(() => l.classList.remove("go"), 250);
+    if (t0 === null) t0 = performance.now();
+    const track = $(`.tl-track[data-t="${t}"]`);
+    const x = Math.min(98, ((performance.now() - t0) / 15000) * 100);
+    const dot = document.createElement("span"); dot.className = "tl-dot"; dot.style.left = x + "%";
+    dot.style.background = t === "keydown" ? "#1a5fb4" : t === "input" ? "#2a9d8f" : "#d6336c";
+    track.appendChild(dot);
+    if (x >= 98) { $$(".tl-dot").forEach(d => d.remove()); t0 = performance.now(); }
+  }
+  const ci = $("#cmpInput"), cs = $("#cmpSelect");
+  ci.addEventListener("keydown", (e) => {
+    lamp("keydown", `key = "${e.key}"`);
+    if (["ArrowLeft", "ArrowRight", "Shift", "Control", "Alt", "Meta", "Tab", "CapsLock"].includes(e.key))
+      say("warn", `Apretaste <code>${e.key}</code>: se disparó <strong>keydown</strong>, pero <strong>input</strong> no, porque el texto no cambió.`);
+    if (e.key === "Enter") say("ok", "Enter: <strong>keydown</strong> con <code>event.key === \"Enter\"</code>, y además en un campo de texto confirma el valor (<strong>change</strong>, si cambió).");
+  });
+  ci.addEventListener("input", (e) => { lamp("input", `value = "${e.target.value}"`); if (cmpCount.input === 3 && !cmpCount.change) say("", "Mirá: <strong>input</strong> se dispara con cada letra. <strong>change</strong> todavía no… probá hacer clic afuera del campo."); });
+  ci.addEventListener("change", (e) => { lamp("change", `value = "${e.target.value}"`); say("ok", "¡Ahí está <strong>change</strong>! En un campo de texto se dispara recién cuando salís del campo (o con Enter), y sólo si el valor cambió."); });
+  cs.addEventListener("change", (e) => { lamp("change", `value = "${e.target.value}"`); say("ok", "En un <code>&lt;select&gt;</code>, <strong>change</strong> se dispara apenas elegís otra opción."); });
+  cs.addEventListener("input", (e) => { lamp("input", `value = "${e.target.value}"`); });
+  function say(kind, html) { $("#cmpExplain").className = "explain " + kind; $("#cmpExplain").innerHTML = html; }
+  $("#cmpClear").onclick = () => {
+    Object.keys(cmpCount).forEach(k => cmpCount[k] = 0);
+    $$(".lamp").forEach(l => { $(".n", l).textContent = "0"; });
+    $$(".tl-dot").forEach(d => d.remove()); t0 = null; ci.value = "";
+    say("", "Los tres eventos parecen lo mismo, pero se disparan en momentos distintos. Probá y mirá qué lámpara se prende.");
+  };
+
+  // ===================================================================== MODO 3
+  const ev = (e) => `<code>${e}</code>`;
+  const DEMOS = {
+    input: { html: `<textarea id="d" rows="2" placeholder="Escribí…" style="font:inherit;padding:8px;border-radius:9px"></textarea><p><strong id="o">0</strong> caracteres</p>`,
+      code: `textarea.addEventListener("input", () => {\n  contador.textContent = textarea.value.length;\n});`,
+      wire: () => $("#d").addEventListener("input", () => $("#o").textContent = $("#d").value.length) },
+    change: { html: `<label><input type="checkbox" id="d"> Acepto</label> <button id="o" disabled>Comprar</button>`,
+      code: `casilla.addEventListener("change", () => {\n  boton.disabled = !casilla.checked;\n});`,
+      wire: () => $("#d").addEventListener("change", () => $("#o").disabled = !$("#d").checked) },
+    keydown: { html: `<input id="d" placeholder="Escribí y apretá Enter" style="font:inherit;padding:8px;border-radius:9px"><p id="o"></p>`,
+      code: `buscador.addEventListener("keydown", (event) => {\n  if (event.key === "Enter") {\n    resultado.textContent = "Buscando: " + buscador.value;\n  }\n});`,
+      wire: () => $("#d").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#o").textContent = "🔍 Buscando: " + $("#d").value; }) },
+    mouseover: { html: `<div id="d" style="border:2px dashed #d6336c;padding:16px;border-radius:12px">👀 Pasá el mouse</div>`,
+      code: `tarjeta.addEventListener("mouseover", () => {\n  tarjeta.textContent = "¡20% off!";\n});`,
+      wire: () => $("#d").addEventListener("mouseover", () => $("#d").textContent = "🎉 ¡20% off!") },
+    click: { html: `<button id="d">Agregar al carrito</button> <strong id="o">🛒 0</strong>`,
+      code: `boton.addEventListener("click", () => {\n  carrito++;\n  contador.textContent = "🛒 " + carrito;\n});`,
+      wire: () => { let n = 0; $("#d").addEventListener("click", () => $("#o").textContent = "🛒 " + (++n)); } },
+    submit: { html: `<form id="d"><input placeholder="Tu email" style="font:inherit;padding:8px;border-radius:9px"> <button>Suscribirme</button></form><p id="o"></p>`,
+      code: `formulario.addEventListener("submit", (event) => {\n  event.preventDefault(); // que no recargue la página\n  mensaje.textContent = "¡Gracias!";\n});`,
+      wire: () => $("#d").addEventListener("submit", (e) => { e.preventDefault(); $("#o").textContent = "✅ ¡Gracias por suscribirte! (y la página no se recargó)"; }) },
+    dblclick: { html: `<ul style="margin:0"><li id="d" style="cursor:default;user-select:none">Malbec (doble clic)</li></ul>`,
+      code: `vino.addEventListener("dblclick", () => {\n  vino.classList.toggle("favorito");\n});`,
+      wire: () => $("#d").addEventListener("dblclick", () => { $("#d").textContent = $("#d").textContent.includes("⭐") ? "Malbec (doble clic)" : "Malbec ⭐"; }) },
+    blur: { html: `<input id="d" placeholder="Tu email" style="font:inherit;padding:8px;border-radius:9px"> <span id="o"></span><p style="color:#777;font-size:.9rem">Escribí y después hacé clic afuera.</p>`,
+      code: `email.addEventListener("blur", () => {\n  if (!email.value.includes("@")) {\n    error.textContent = "Email inválido";\n  }\n});`,
+      wire: () => $("#d").addEventListener("blur", () => $("#o").textContent = $("#d").value.includes("@") ? "✅" : "❌ Email inválido") },
+    select: { html: `<select id="d" style="font:inherit;padding:8px;border-radius:9px"><option value="0">Retiro</option><option value="2500">Envío</option></select> <strong id="o">Gratis</strong>`,
+      code: `entrega.addEventListener("change", () => {\n  costo.textContent = entrega.value === "0" ? "Gratis" : "$2.500";\n});`,
+      wire: () => $("#d").addEventListener("change", () => $("#o").textContent = $("#d").value === "0" ? "Gratis" : "$2.500") },
+  };
+  const O = (arr) => arr.map(ev);
+  const QUESTIONS = [
+    { prompt: "Quiero mostrar cuántos caracteres lleva un texto <em>mientras</em> se escribe.", options: O(["click", "input", "change", "submit"]), right: 1, demo: "input", why: `${ev("input")} se dispara con cada cambio del valor, mientras escribís. Con ${ev("change")} recién se actualizaría al salir del campo.` },
+    { prompt: "Quiero habilitar el botón «Comprar» cuando marcan la casilla «Acepto».", options: O(["click", "mouseover", "change", "keydown"]), right: 2, demo: "change", why: `En un checkbox, ${ev("change")} avisa cada vez que se marca o desmarca (también funcionaría con el teclado, cosa que no garantiza escuchar el clic).` },
+    { prompt: "Quiero buscar cuando el usuario aprieta <em>Enter</em> en el buscador.", options: O(["keydown", "input", "change", "dblclick"]), right: 0, demo: "keydown", why: `${ev("keydown")} trae ${ev("event.key")}: preguntamos si es ${ev('"Enter"')}.` },
+    { prompt: "Quiero mostrar una promo cuando pasan el mouse por arriba de una tarjeta.", options: O(["click", "mouseover", "focus", "change"]), right: 1, demo: "mouseover", why: `${ev("mouseover")} se dispara cuando el puntero entra al elemento (y ${ev("mouseout")} cuando sale).` },
+    { prompt: "Quiero sumar 1 al carrito al tocar el botón.", options: O(["submit", "dblclick", "click", "input"]), right: 2, demo: "click", why: `El clásico: ${ev("click")}.` },
+    { prompt: "Quiero mandar un formulario de suscripción sin que la página se recargue.", options: O(["click", "submit", "change", "blur"]), right: 1, demo: "submit", why: `${ev("submit")} es el evento del formulario (se dispara con el botón o con Enter). Con ${ev("event.preventDefault()")} evitamos que recargue la página.` },
+    { prompt: "Quiero marcar un vino como favorito con doble clic.", options: O(["click", "dblclick", "mouseover", "keydown"]), right: 1, demo: "dblclick", why: `${ev("dblclick")}: doble clic.` },
+    { prompt: "Quiero validar el email recién cuando el usuario <em>sale</em> del campo.", options: O(["input", "keydown", "blur", "click"]), right: 2, demo: "blur", why: `${ev("blur")} se dispara cuando el campo pierde el foco. (${ev("change")} también, pero sólo si el valor cambió.)` },
+    { prompt: "Quiero cambiar el costo de envío apenas eligen otra opción de un <code>&lt;select&gt;</code>.", options: O(["change", "click", "submit", "mouseover"]), right: 0, demo: "select", why: `En un select, ${ev("change")} se dispara apenas elegís otra opción.` },
+  ];
+  let demoCode = null;
+  quiz($("#quiz"), {
+    questions: QUESTIONS,
+    summary: "Para llevarse: <code>click</code> · <code>input</code> (mientras escribís) · <code>change</code> (al confirmar / select / checkbox) · <code>keydown</code> (teclas, con <code>event.key</code>) · <code>submit</code> (formularios) · <code>mouseover</code>/<code>mouseout</code> · <code>blur</code> (al salir del campo).",
+    onShow: () => { $("#demo").innerHTML = `<p style="color:var(--ink-2)">🤔 Respondan y acá aparece un ejemplo funcionando.</p>`; $("#demoCode").hidden = true; },
+    onAnswer: (q) => { const d = DEMOS[q.demo]; $("#demo").innerHTML = d.html; d.wire(); $("#demoCode").hidden = false; codeBox($("#demoCode"), d.code); },
+  });
+
+  // ===================================================================== modos
+  bindSeg("#modeSeg", (m) => {
+    $("#catchView").hidden = m !== "catch"; $("#cmpView").hidden = m !== "cmp"; $("#gameView").hidden = m !== "game";
+  });
+})();
+</script>
+</body>
+</html>

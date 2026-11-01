@@ -12,7 +12,7 @@
 
   /* ---------- escena ---------- */
   .scene-wrap { position: relative; width: 100%; max-width: 1150px; justify-self: center; overflow: hidden; border-radius: var(--radius); border: 1px solid var(--line); background: #e9f1e3; box-shadow: var(--shadow); }
-  .scene { position: absolute; left: 0; top: 0; width: 960px; height: 500px; transform-origin: 0 0; }
+  .scene { position: absolute; left: 0; top: 0; width: 960px; height: 560px; transform-origin: 0 0; }
   .ground { position: absolute; inset: 0; background:
       radial-gradient(circle at 20% 90%, rgba(255,255,255,.5), transparent 40%),
       linear-gradient(#dfeedd, #d2e6cf); }
@@ -47,7 +47,7 @@
   .sign .s-board { background: #7a5a3a; color: #fff; font-weight: 700; padding: 6px 12px; border-radius: 8px; font-size: 15px; white-space: nowrap; box-shadow: 0 3px 0 #5a4028; }
   .sign .s-pole { width: 6px; height: 24px; background: #5a4028; }
 
-  .addr { position: absolute; left: 18px; top: 410px; width: 210px; background: #fff; border: 2px solid var(--ink); border-radius: 10px; padding: 6px 10px; font-family: var(--mono); font-size: 15px; box-shadow: 0 3px 0 var(--ink); }
+  .addr { position: absolute; left: 18px; top: 478px; width: 210px; background: #fff; border: 2px solid var(--ink); border-radius: 10px; padding: 6px 10px; font-family: var(--mono); font-size: 15px; box-shadow: 0 3px 0 var(--ink); }
   .addr .a-label { font-family: var(--sans); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); font-weight: 700; }
   .addr .a-url { font-weight: 700; color: var(--info); }
 
@@ -62,7 +62,7 @@
   .user .bubble { bottom: calc(100% + 18px); }
   @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
 
-  .clock { position: absolute; left: 240px; top: 462px; font-size: 13px; background: var(--warn-bg); color: var(--warn); border: 2px solid var(--warn); padding: 4px 8px; border-radius: 8px; font-weight: 700; opacity: 0; transform: scale(.7); transition: all .3s; }
+  .clock { position: absolute; left: 245px; top: 500px; font-size: 13px; background: var(--warn-bg); color: var(--warn); border: 2px solid var(--warn); padding: 4px 8px; border-radius: 8px; font-weight: 700; opacity: 0; transform: scale(.7); transition: all .3s; }
   .clock.show { opacity: 1; transform: scale(1); }
 
   /* ---------- predicción ---------- */
@@ -148,10 +148,13 @@
     <div class="scene" id="scene">
       <div class="ground"></div>
       <!-- caminos -->
-      <div class="path" style="left:70px; top:425px; width:440px; height:34px"></div>
-      <div class="path" style="left:150px; top:270px; width:34px; height:180px"></div>
-      <div class="path" style="left:470px; top:350px; width:200px; height:34px"></div>
-      <div class="path" style="left:623px; top:320px; width:34px; height:60px"></div>
+      <!-- llega desde el sur hasta la plaza del Router; de ahí salen todos los caminos -->
+      <div class="path" style="left:453px; top:430px; width:34px; height:130px"></div>
+      <div class="path" style="left:150px; top:413px; width:320px; height:34px"></div>
+      <div class="path" style="left:150px; top:270px; width:34px; height:177px"></div>
+      <div class="path" style="left:470px; top:413px; width:187px; height:34px"></div>
+      <div class="path" style="left:623px; top:320px; width:34px; height:127px"></div>
+      <div class="path plaza" style="left:418px; top:378px; width:104px; height:104px; border-radius:50%"></div>
 
       <!-- Login -->
       <div class="building" style="left:30px; top:40px; width:270px; height:230px"><span class="name">/login · /register</span></div>
@@ -178,14 +181,14 @@
       <div class="guard" id="g-adminGuard" style="left:865px; top:290px"><div class="bubble"></div><div class="g-body">💂‍♀️</div><div class="g-name">adminGuard</div></div>
 
       <!-- Router -->
-      <div class="sign" id="router" style="left:470px; top:430px"><div class="bubble"></div><div class="s-board">🧭 Router</div><div class="s-pole"></div></div>
+      <div class="sign" id="router" style="left:470px; top:386px"><div class="bubble"></div><div class="s-board">🧭 Router</div><div class="s-pole"></div></div>
 
       <!-- Barra de direcciones -->
       <div class="addr"><div class="a-label">Barra de direcciones</div><div class="a-url" id="addrUrl">/contacts</div></div>
       <div class="clock" id="clock">⏰ AuthService: token vencido → logout()</div>
 
       <!-- Usuario -->
-      <div class="user" id="user" style="left:272px; top:445px">
+      <div class="user" id="user" style="left:470px; top:556px">
         <div class="bubble"></div>
         <div class="u-body">🧑‍💻</div>
         <div class="badges" id="badges"></div>
@@ -230,7 +233,7 @@
   function fit() {
     const k = wrap.clientWidth / 960;
     scene.style.transform = `scale(${k})`;
-    wrap.style.height = 500 * k + "px";
+    wrap.style.height = 560 * k + "px";
   }
   addEventListener("resize", fit); fit();
 
@@ -262,7 +265,7 @@
 
   // ---------- escena ----------
   const P = {
-    start: [272, 445], router: [470, 445],
+    start: [470, 556], router: [470, 440],
     loginWait: [167, 330], loginIn: [100, 212],
     gateWait: [640, 392], corridor: [640, 290],
     contactsIn: [420, 200], adminWait: [780, 290], adminIn: [700, 200],
@@ -311,10 +314,10 @@
     const back = {
       start: [P.router],
       router: [],
-      loginWait: [[167, 445], P.router],
-      gateWait: [[640, 367], [487, 367], P.router],
-      corridor: [P.gateWait, [640, 367], [487, 367], P.router],
-      adminWait: [P.corridor, P.gateWait, [640, 367], [487, 367], P.router],
+      loginWait: [[167, 432], P.router],
+      gateWait: [[640, 432], P.router],
+      corridor: [P.gateWait, [640, 432], P.router],
+      adminWait: [P.corridor, P.gateWait, [640, 432], P.router],
     }[where] || [P.router];
     return back;
   }
@@ -383,8 +386,8 @@
         log("🗺️", ev.text);
         showCode("app.routes.ts", ev.lines, "");
         hideBubble($("#router"));
-        if (ev.key === "/login" || ev.key === "/register") { await walk([[167, 445], P.loginWait]); where = "loginWait"; }
-        else { await walk([[487, 367], [640, 367], P.gateWait]); where = "gateWait"; }
+        if (ev.key === "/login" || ev.key === "/register") { await walk([[167, 432], P.loginWait]); where = "loginWait"; }
+        else { await walk([[640, 432], P.gateWait]); where = "gateWait"; }
         await sleep(300);
       }
       if (ev.kind === "guard") {
