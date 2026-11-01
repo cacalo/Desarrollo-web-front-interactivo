@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Router con parámetros · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<link rel="stylesheet" href="../assets/css/agenda.css">
+<style>
+  .urlbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .urlin { display: flex; align-items: center; background: #fff; border: 2px solid var(--line); border-radius: 999px; padding: 4px 6px 4px 14px; font-family: var(--mono); font-size: 1.1rem; min-width: 340px; }
+  .urlin span { color: var(--ink-2); }
+  .urlin input { border: 0; outline: 0; font: inherit; width: 220px; background: transparent; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 18px; margin-top: 14px; align-items: start; }
+  @media (max-width: 1050px) { .layout { grid-template-columns: 1fr; } }
+  .routes { font-family: var(--mono); font-size: 13.5px; line-height: 1.75; background: #1e1d24; color: #e8e6ef; border-radius: 14px; padding: 12px 0; overflow-x: auto; position: relative; }
+  .routes .cl, .routes .rt { display: flex; white-space: pre; padding: 0 12px 0 0; border-radius: 0; transition: background .25s, opacity .25s, box-shadow .25s; }
+  .routes .res { flex: none; width: 30px; text-align: center; font-weight: 800; font-family: var(--sans); }
+  .routes .k { color: #ff7ab2; } .routes .t { color: #82cfff; } .routes .s { color: #ffd479; } .routes .c { color: #7f8c98; font-style: italic; } .routes .p { color: #e8e6ef; } .routes .g { color: #a8e6a3; }
+  .rt .sg { color: #ffd479; padding: 0 2px; border-radius: 5px; transition: all .25s; }
+  .rt .sg.param { color: #d5b6ff; }
+  .rt .sg.eq { background: rgba(80,200,120,.3); color: #b6f5cc; }
+  .rt .sg.cap { background: #7b2cbf; color: #fff; }
+  .rt .sg.ne { background: rgba(255,99,99,.3); color: #ffb3b3; text-decoration: line-through; }
+  .rt.scan { background: rgba(255,214,102,.18); box-shadow: inset 4px 0 0 #ffd666; }
+  .rt.no { opacity: .4; } .rt.no .res { color: #ff8a8a; }
+  .rt.yes { background: rgba(80,200,120,.2); box-shadow: inset 4px 0 0 #50c878; } .rt.yes .res { color: #8ff0c9; }
+  .rt.pass { background: rgba(123,44,191,.25); box-shadow: inset 4px 0 0 #b98cff; } .rt.pass .res { color: #d5b6ff; }
+  .rt.moved { animation: pop .5s; }
+  .note { font-size: .82rem; color: var(--ink-2); margin: 2px 0 0 26px; }
+  .screen { min-height: 330px; }
+  .scr-body { padding: 14px; min-height: 260px; position: relative; }
+  .scr-body .crow { cursor: pointer; } .scr-body .crow:hover { border-color: #7b2cbf; box-shadow: 0 0 0 3px rgba(123,44,191,.12); }
+  .scr-empty { color: var(--ink-2); text-align: center; padding: 60px 10px; }
+  .cmpbadge { display: inline-block; font-family: var(--mono); font-size: .8rem; font-weight: 700; color: #fff; background: #1a5fb4; border-radius: 999px; padding: 2px 10px; margin-bottom: 8px; }
+  .inbox { display: inline-flex; gap: 6px; align-items: center; font-family: var(--mono); font-size: .9rem; background: #f0e8fb; color: #5b2aa6; border: 2px solid #b9a2e6; border-radius: 10px; padding: 3px 10px; margin: 0 0 10px 8px; animation: pop .4s; }
+  .detail { display: flex; gap: 14px; align-items: center; }
+  .detail .av { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #7b2cbf, #d6336c); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 1.4rem; }
+  .linkpill { font-family: var(--mono); font-size: .9rem; background: #19181e; color: #e8e6ef; border-radius: 10px; padding: 8px 12px; margin-top: 10px; min-height: 38px; }
+  .linkpill .pc { color: #ffd479; } .linkpill .ok { color: #8ff0c9; }
+  .fakebtn { font: inherit; border: 2px solid #7b2cbf; color: #7b2cbf; background: #fff; border-radius: 10px; padding: 5px 12px; cursor: pointer; font-weight: 700; }
+  .errscr { color: var(--bad); font-weight: 700; }
+  .console { margin-top: 10px; }
+  .game { max-width: 980px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › Angular › <strong>Router con parámetros</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="nav" aria-pressed="true">🧭 El Router busca</button>
+      <button data-v="game">🎲 ¿Qué se muestra?</button>
+    </div>
+    <div class="right"><label style="display:flex;gap:6px;align-items:center;font-weight:700"><input type="checkbox" id="swap"> Poner <code>contacts/:id</code> antes que <code>contacts/new</code></label></div>
+  </div>
+
+  <section id="navView">
+    <div class="panel" style="margin-top:14px">
+      <div class="urlbar">
+        <div class="urlin"><span>localhost:4200/</span><input id="url" value="contacts" spellcheck="false" aria-label="URL"></div>
+        <button class="btn primary" id="goBtn">↵ Ir</button>
+        <div class="chips" id="chips"></div>
+      </div>
+    </div>
+    <div class="layout">
+      <div>
+        <div class="panel">
+          <div class="col-title">app.routes.ts <small>el Router lee las rutas de arriba hacia abajo</small></div>
+          <div class="routes" id="routes"></div>
+        </div>
+        <div class="explain" id="why">Escribí una URL o tocá un atajo. El Router compara la URL <strong>pedazo por pedazo</strong> con cada ruta y se queda con <strong>la primera</strong> que coincide.</div>
+      </div>
+      <div>
+        <div class="ag screen">
+          <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="url" id="shownUrl">localhost:4200/</div></div>
+          <div class="ag-tb" id="tb"><div class="ib">☰</div><div class="ttl">Agenda</div><div class="who">Hola, Calo</div></div>
+          <div class="scr-body" id="screen"><div class="scr-empty">…</div></div>
+        </div>
+        <div class="linkpill" id="linkpill">Tocá un contacto de la lista: <span class="pc">[routerLink]</span> arma la URL por vos.</div>
+        <div class="console" id="console" data-empty="Consola"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, $$, sleep, esc, bindSeg, consoleLog, quiz } = UI;
+  const CONTACTS = { 7: { f: "Ana", l: "Gómez", ph: "351 555-1234" }, 12: { f: "Leo", l: "Pérez", ph: "351 444-8811" }, 15: { f: "Sofi", l: "Ruiz", ph: "11 4321-0000" } };
+  const GROUPS = { 3: "Familia", 4: "Trabajo" };
+  const SHORT = ["contacts", "contacts/7", "contacts/new", "contacts/12/edit", "groups/3", "", "contactos", "contacts/99"];
+
+  function routesList() {
+    const kids = [
+      { p: "contacts", c: "ContactsComponent" },
+      { p: "contacts/new", c: "ContactNewEditComponent" },
+      { p: "contacts/:id", c: "ContactInfoComponent" },
+      { p: "contacts/:id/edit", c: "ContactNewEditComponent" },
+      { p: "groups/:id", c: "GroupDetailsComponent" },
+    ];
+    if ($("#swap").checked) [kids[1], kids[2]] = [kids[2], kids[1]];
+    return [
+      { p: "login", c: "LoginComponent" },
+      { p: "register", c: "RegisterComponent" },
+      { p: "", redirect: "login", c: "redirectTo: \"login\"" },
+      { p: "", layout: true, c: "LoggedComponent (layout)" },
+      ...kids.map(k => ({ ...k, child: true })),
+    ];
+  }
+  let R = [];
+  const segsOf = (p) => p === "" ? [] : p.split("/");
+  // dibuja app.routes.ts como código; cada ruta es una línea .rt que el Router va revisando
+  function renderRoutes() {
+    R = routesList();
+    const K = (t) => `<span class="k">${t}</span>`, T = (t) => `<span class="t">${t}</span>`, S = (t) => `<span class="s">${t}</span>`, C = (t) => `<span class="c">${t}</span>`, G = (t) => `<span class="g">${t}</span>`;
+    const path = (r) => `<span class="p">path</span>: "${r.p === "" ? "" : segsOf(r.p).map(x => `<span class="sg ${x.startsWith(":") ? "param" : ""}">${x}</span>`).join("/")}"`;
+    const line = (html, cls = "cl", i) => `<div class="${cls}"${i !== undefined ? ` data-i="${i}"` : ""}><span class="res"></span><span>${html}</span></div>`;
+    let h = line(`${K("import")} { ${T("Routes")} } ${K("from")} ${S("'@angular/router'")};`) + line(" ") +
+      line(C("/** Lista de rutas que nuestra aplicación conoce */")) +
+      line(`${K("export const")} routes: ${T("Routes")} = [`);
+    R.forEach((r, i) => {
+      if (r.redirect) h += line(`  { ${path(r)}, redirectTo: ${S('"login"')}, pathMatch: ${S('"full"')} },`, "rt", i);
+      else if (r.layout) { h += line(`  { ${path(r)}, component: ${T("LoggedComponent")}, canActivate: [${G("onlyUserGuard")}],`, "rt", i); h += line("    children: ["); }
+      else if (r.child) h += line(`      { ${path(r)}, component: ${T(r.c)} },`, "rt", i);
+      else h += line(`  { ${path(r)}, component: ${T(r.c)}, canActivate: [${G("onlyGuestGuard")}] },`, "rt", i);
+    });
+    h += line("    ]") + line("  },") + line("];") + line(" ") + line(C("// En el repo usan loadComponent: () => import(...) para cargar cada"), "cl") + line(C("// página recién cuando hace falta. Para el Router es lo mismo."));
+    $("#routes").innerHTML = h;
+  }
+  $("#chips").innerHTML = SHORT.map(u => `<button class="chip" data-u="${u}">/${u}</button>`).join("");
+
+  const N = { run: 0 };
+  const why = (t, k = "") => { $("#why").className = "explain " + k; $("#why").innerHTML = t; };
+  async function navigate(raw, fromLink, redirected) {
+    const my = ++N.run, alive = () => my === N.run;
+    renderRoutes();
+    const url = raw.replace(/^\/+|\/+$/g, "");
+    $("#url").value = url; $("#shownUrl").textContent = "localhost:4200/" + url;
+    $("#console").innerHTML = "";
+    if (!fromLink) $("#linkpill").innerHTML = 'Tocá un contacto de la lista: <span class="pc">[routerLink]</span> arma la URL por vos.';
+    const us = segsOf(url);
+    const cards = $$("#routes .rt");
+    let inLayout = false;
+    for (let i = 0; i < R.length; i++) {
+      const r = R[i], el = cards[i];
+      if (r.child && !inLayout) continue;
+      el.classList.add("scan"); await sleep(420); if (!alive()) return;
+      el.classList.remove("scan");
+      // ruta vacía con redirect: sólo si la URL está vacía
+      if (r.redirect) {
+        if (us.length === 0) { el.classList.add("yes"); $(".res", el).textContent = "↪"; why(`La URL está vacía y coincide con <code>""</code>: el Router <strong>redirige</strong> a <code>/login</code>.`, "ok"); await sleep(900); if (alive()) navigate("login", false, true); return; }
+        el.classList.add("no"); $(".res", el).textContent = "✗"; continue;
+      }
+      if (r.layout) { el.classList.add("pass"); $(".res", el).textContent = "↓"; inLayout = true; continue; }
+      const rs = segsOf(r.p), sgEls = $$(".sg", el);
+      let ok = rs.length === us.length, params = {};
+      for (let k = 0; k < rs.length; k++) {
+        const a = rs[k], b = us[k];
+        if (b === undefined) { ok = false; break; }
+        if (a.startsWith(":")) { sgEls[k].classList.add("cap"); sgEls[k].textContent = `${a} = "${b}"`; params[a.slice(1)] = b; }
+        else if (a === b) sgEls[k].classList.add("eq");
+        else { sgEls[k].classList.add("ne"); ok = false; break; }
+        await sleep(160); if (!alive()) return;
+      }
+      if (ok) {
+        el.classList.add("yes"); $(".res", el).textContent = "✓";
+        cards.forEach((c, j) => { if (j > i && (!R[j].child || inLayout)) c.classList.add("no"); });
+        render(r, params, url, redirected);
+        return;
+      }
+      el.classList.add("no"); $(".res", el).textContent = "✗";
+      sgEls.forEach(s => { if (s.classList.contains("cap")) { s.classList.remove("cap"); s.textContent = s.textContent.split(" =")[0]; } });
+    }
+    $("#screen").innerHTML = `<div class="scr-empty errscr">(pantalla en blanco)</div>`;
+    consoleLog($("#console"), `ERROR: NG04002: Cannot match any routes. URL Segment: '${url}'`, "err");
+    why(`Ninguna ruta coincide con <code>/${esc(url)}</code>. La Agenda no tiene una ruta comodín <code>**</code> («cualquier otra cosa»), así que el Router tira un error y no muestra nada.`, "bad");
+  }
+
+  function render(r, params, url, redirected) {
+    $("#tb").hidden = r.c === "LoginComponent" || r.c === "RegisterComponent";
+    const id = params.id;
+    const inbox = id !== undefined ? `<span class="inbox">id = "${esc(id)}" <small style="font-family:var(--sans)">(texto)</small></span>` : "";
+    const head = `<span class="cmpbadge">${r.c}</span>${inbox}`;
+    let body = "", w = "", k = "ok";
+    if (r.c === "LoginComponent" || r.c === "RegisterComponent") { body = `<div class="ag-card" style="max-width:280px;margin:10px auto;text-align:center"><h3>${r.c === "LoginComponent" ? "Iniciar sesión" : "Registrarse"}</h3><p style="color:var(--ink-2)">Correo · Contraseña</p></div>`; w = (redirected ? "Llegaste acá por el <code>redirectTo</code>: la URL vacía te mandó a <code>/login</code>. " : "") + `<code>/${url}</code> coincide con <code>${r.p}</code>. (Estas pantallas no tienen el header: no están adentro del layout.)`; }
+    else if (r.c === "ContactsComponent") {
+      body = Object.entries(CONTACTS).map(([cid, c]) => `<div class="crow" data-id="${cid}" style="margin-bottom:6px"><div class="av">${c.f[0]}${c.l[0]}</div><div class="nm">${c.f} ${c.l}</div><div class="ph">📞 ${c.ph}</div><div class="em" style="font-family:var(--mono)">id ${cid}</div></div>`).join("");
+      w = "La lista. Tocá un contacto: el <code>routerLink</code> de la fila arma <code>/contacts/&lt;id&gt;</code>.";
+    }
+    else if (r.c === "ContactInfoComponent") {
+      const c = CONTACTS[id];
+      body = c ? `<div class="detail"><div class="av">${c.f[0]}${c.l[0]}</div><div><h3 style="margin:0">${c.f} ${c.l}</h3><div style="color:var(--ink-2)">📞 ${c.ph}</div><div style="margin-top:8px;display:flex;gap:6px"><button class="fakebtn" data-go="contacts/${id}/edit">✏️ Editar</button><button class="fakebtn" data-go="contacts">← Volver</button></div></div></div>`
+        : `<p class="errscr">Contacto no encontrado</p><button class="fakebtn" data-go="contacts">← Volver</button>`;
+      if (!c) k = "bad";
+      w = c ? `El <code>:id</code> atrapa <code>"${id}"</code> y el Router se lo pasa al componente por su input <code>id</code>. Con eso el componente busca a ese contacto.`
+        : id === "new" ? `¡Ups! <code>contacts/:id</code> está <strong>antes</strong> que <code>contacts/new</code>, así que <code>"new"</code> cayó como si fuera un id. Las rutas fijas tienen que ir <strong>antes</strong> que las que tienen parámetros.`
+        : `La ruta coincide (el <code>:id</code> acepta cualquier cosa), pero no hay ningún contacto con id <code>"${esc(id)}"</code>. El Router no valida datos: eso lo resuelve el componente.`;
+    }
+    else if (r.c === "ContactNewEditComponent") { body = `<div class="ag-card"><h3>${id ? `Editar contacto ${esc(id)}` : "Nuevo contacto"}</h3><p style="color:var(--ink-2)">Nombre · Apellido · Teléfono…</p><button class="fakebtn" data-go="${id ? "contacts/" + id : "contacts"}">← Volver</button></div>`; w = id ? "El mismo componente sirve para crear y para editar: si recibe un <code>id</code>, edita." : "<code>contacts/new</code> es una ruta fija: coincide palabra por palabra."; }
+    else if (r.c === "GroupDetailsComponent") { body = `<div class="ag-card"><h3>Grupo: ${GROUPS[id] || "no encontrado"}</h3><button class="fakebtn" data-go="contacts">← Volver</button></div>`; w = `Otra ruta con parámetro: <code>groups/:id</code> le pasa <code>id = "${esc(id)}"</code> al componente del grupo.`; }
+    $("#screen").innerHTML = head + `<div>${body}</div>`;
+    why(w + (id !== undefined && k === "ok" ? ` <br><small>Ojo: lo que viene de la URL <strong>siempre es texto</strong>. Si lo querés como número: <code>input.required({ transform: numberAttribute })</code>.</small>` : ""), k);
+  }
+
+  // routerLink en la pantalla
+  $("#screen").addEventListener("click", async (e) => {
+    const row = e.target.closest(".crow[data-id]"), btn = e.target.closest("[data-go]");
+    if (row) {
+      const id = row.dataset.id;
+      $("#linkpill").innerHTML = `<span class="pc">[routerLink]</span>="['/contacts', contact.id]"`;
+      await sleep(500);
+      $("#linkpill").innerHTML = `<span class="pc">[routerLink]</span>="['/contacts', ${id}]" → <span class="ok">/contacts/${id}</span>`;
+      await sleep(700);
+      navigate("contacts/" + id, true);
+    } else if (btn) navigate(btn.dataset.go);
+  });
+  $("#goBtn").addEventListener("click", () => navigate($("#url").value));
+  $("#url").addEventListener("keydown", (e) => { if (e.key === "Enter") navigate($("#url").value); });
+  $("#chips").addEventListener("click", (e) => { const b = e.target.closest("[data-u]"); if (b) navigate(b.dataset.u); });
+  $("#swap").addEventListener("change", () => { renderRoutes(); $$("#routes .rt").forEach(r => r.classList.add("moved")); navigate($("#swap").checked ? "contacts/new" : $("#url").value); });
+
+  /* ---------- quiz ---------- */
+  const RT = `{ path: "contacts", component: ContactsComponent },\n{ path: "contacts/new", component: ContactNewEditComponent },\n{ path: "contacts/:id", component: ContactInfoComponent },\n{ path: "contacts/:id/edit", component: ContactNewEditComponent },`;
+  const C4 = ["ContactsComponent", "ContactNewEditComponent", "ContactInfoComponent", "Ninguno: error"];
+  const QUESTIONS = [
+    { prompt: "URL <code>/contacts/7</code>. ¿Qué componente se muestra?", code: RT, options: C4, right: 2, why: "<code>contacts</code> = <code>contacts</code> y <code>:id</code> atrapa el <code>7</code>." },
+    { prompt: "URL <code>/contacts/7/edit</code>. ¿Qué se muestra?", code: RT, options: C4, right: 1, why: "Tiene 3 pedazos: sólo coincide <code>contacts/:id/edit</code>." },
+    { prompt: "URL <code>/contacts/new</code>, pero las rutas están en este orden. ¿Qué se muestra?", code: `{ path: "contacts/:id", component: ContactInfoComponent },\n{ path: "contacts/new", component: ContactNewEditComponent },`, options: ["ContactNewEditComponent", "ContactInfoComponent con id = \"new\"", "Las dos", "Error"], right: 1, why: "Gana la <strong>primera</strong> que coincide, y <code>:id</code> acepta <code>\"new\"</code>. Las rutas fijas van antes." },
+    { prompt: "URL <code>/contacts/abc</code>. ¿Qué pasa?", code: RT, options: ["Error: abc no es un número", "Se muestra ContactInfoComponent con id = \"abc\"", "Redirige al login", "Se muestra la lista"], right: 1, why: "El Router sólo mira la forma de la URL: <code>:id</code> acepta cualquier texto. Validar que exista es trabajo del componente." },
+    { prompt: "En la ruta <code>contacts/:id</code> con <code>id = input.required()</code>, ¿qué tipo tiene <code>id()</code> si la URL es <code>/contacts/7</code>?", options: ["number: 7", 'string: "7"', "undefined", "Depende del navegador"], right: 1, why: "Todo lo que viene de la URL es <strong>texto</strong>. Para número: <code>transform: numberAttribute</code> (o convertirlo a mano)." },
+    { prompt: "¿Qué URL arma este link si <code>contact.id</code> es 12?", code: `<a [routerLink]="['/contacts', contact.id, 'edit']">Editar</a>`, options: ["/contacts/12/edit", "/contacts,12,edit", "/contacts/contact.id/edit", "/edit/12/contacts"], right: 0, why: "<code>routerLink</code> junta los pedazos del array con <code>/</code>." },
+    { prompt: "URL <code>/contactos</code> (en castellano) en la Agenda. ¿Qué pasa?", options: ["Se muestra la lista igual", "Error: no coincide ninguna ruta", "Redirige a /contacts", "Se muestra el login"], right: 1, why: "No hay ninguna ruta <code>contactos</code> ni un comodín <code>**</code>. Se podría agregar <code>{ path: \"**\", redirectTo: \"contacts\" }</code> al final." },
+    { prompt: "¿Por qué usar <code>routerLink</code> y no <code>&lt;a href=\"/contacts/7\"&gt;</code>?", options: ["Es lo mismo", "href recarga toda la página; routerLink cambia de pantalla sin recargar", "href no funciona en Angular", "routerLink es más corto"], right: 1, why: "Con <code>href</code> el navegador pide la página de nuevo y la app arranca desde cero (se pierden datos en memoria). <code>routerLink</code> cambia sólo el componente." },
+  ];
+  quiz($("#quiz"), { questions: QUESTIONS, shuffle: false, summary: "Para llevarse: el Router compara la URL pedazo por pedazo, de arriba hacia abajo, y <strong>gana la primera</strong> · <code>:id</code> atrapa cualquier texto y llega al componente como input · lo de la URL es texto · rutas fijas antes que las de parámetros · <code>routerLink</code> arma la URL sin recargar." });
+
+  bindSeg("#modeSeg", (m) => { $("#navView").hidden = m !== "nav"; $("#gameView").hidden = m !== "game"; });
+  renderRoutes(); navigate("contacts");
+})();
+</script>
+</body>
+</html>

@@ -28,7 +28,7 @@
 
   // resaltado de JavaScript
   function hlJS(src) {
-    const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(function|return|if|else|for|of|in|while|let|const|var|new|true|false|null|undefined|switch|case|break|default|this|typeof|do|continue|interface|export|readonly)\b|\b(document|window|console|Math|Number|String|Array|JSON|Object|string|number|boolean)\b|\b(\d+(?:\.\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()|(=&gt;|=>|===|!==|&&|\|\||[<>]=?|!)/g;
+    const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(function|return|if|else|for|of|in|while|let|const|var|new|true|false|null|undefined|switch|case|break|default|this|typeof|do|continue|interface|export|readonly|async|await)\b|\b(document|window|console|Math|Number|String|Array|JSON|Object|string|number|boolean)\b|\b(\d+(?:\.\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()|(=&gt;|=>|===|!==|&&|\|\||[<>]=?|!)/g;
     let out = "", last = 0, m;
     while ((m = re.exec(src))) {
       out += esc(src.slice(last, m.index));

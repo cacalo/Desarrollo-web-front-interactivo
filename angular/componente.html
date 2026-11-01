@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Qué es un componente? · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<link rel="stylesheet" href="../assets/css/agenda.css">
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1050px) { .layout { grid-template-columns: 1fr; } }
+  /* árbol */
+  .tree { font-family: var(--mono); font-size: .95rem; }
+  .tree .node { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 9px; cursor: pointer; border: 2px solid transparent; transition: all .2s; }
+  .tree .node:hover { background: var(--surface-2); }
+  .tree .node.focus { border-color: var(--c); background: color-mix(in srgb, var(--c) 10%, #fff); }
+  .tree .node .dot { width: 12px; height: 12px; border-radius: 4px; background: var(--c); flex: none; }
+  .tree .node small { color: var(--ink-2); font-family: var(--sans); }
+  .tree .kids { margin-left: 18px; border-left: 2px dotted #cfc8db; padding-left: 6px; }
+  .ficha { margin-top: 12px; }
+  .ficha h3 { margin: 0 0 4px; font-family: var(--mono); }
+  .ficha .sel { color: var(--ink-2); margin-bottom: 10px; }
+  .parts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .part { border: 2px solid var(--line); border-radius: 12px; padding: 10px; background: #fff; animation: pop .35s; }
+  .part .pi { font-size: 22px; } .part .pf { font-family: var(--mono); font-size: .78rem; color: var(--ink-2); word-break: break-all; }
+  .part .pt { font-weight: 800; margin: 2px 0; } .part .pd { font-size: .9rem; }
+  @media (max-width: 700px) { .parts { grid-template-columns: 1fr; } }
+
+  /* el molde */
+  .mold { background: #f4efff; border: 3px solid #b9a2e6; border-radius: 18px; padding: 14px 16px; }
+  .mold h3 { margin: 0 0 2px; font-family: var(--mono); color: #5b2aa6; }
+  .mold .sub { font-size: .9rem; color: var(--ink-2); margin-bottom: 10px; }
+  .opt { display: flex; align-items: center; gap: 8px; padding: 6px 2px; font-size: .98rem; }
+  .opt input { width: 18px; height: 18px; accent-color: #7b2cbf; }
+  .opt .tagf { font-family: var(--mono); font-size: .75rem; color: #7b2cbf; background: #fff; border: 1px solid #d9cdf2; border-radius: 6px; padding: 0 5px; margin-left: auto; }
+  .stamp-area .crow { animation: stampin .45s cubic-bezier(.3,1.6,.6,1); }
+  @keyframes stampin { from { transform: scale(1.25) rotate(-2deg); opacity: 0; } }
+  .crow.flash { box-shadow: 0 0 0 4px rgba(123,44,191,.35); }
+  .crow .star { color: #e0a800; }
+  .counter { font-weight: 700; color: var(--ink-2); }
+  .where { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+  .ag-tb .ttl, .crow .nm, .ag-side .gi { transition: color .3s; }
+  .red-scoped .crow .nm { color: #d6336c; }
+  .red-global .crow .nm, .red-global .ag-tb .ttl, .red-global .ag-side .gi, .red-global .ag-card .nm { color: #d6336c !important; }
+  .game { max-width: 980px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › Angular › <strong>¿Qué es un componente?</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="xray" aria-pressed="true">🩻 La Agenda en piezas</button>
+      <button data-v="mold">🖨️ Un molde, muchas copias</button>
+      <button data-v="game">🎲 ¿Qué componente es?</button>
+    </div>
+  </div>
+
+  <!-- ====================================================== rayos X -->
+  <section class="layout" id="xrayView">
+    <div>
+      <div class="bar" style="margin-top:0">
+        <button class="btn primary" id="xrayBtn">🩻 Rayos X: ver componentes</button>
+        <span style="color:var(--ink-2)">Pasá el mouse o hacé clic en una parte de la pantalla.</span>
+      </div>
+      <div class="ag" id="agX" style="margin-top:12px">
+        <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="url">localhost:4200/<b>contacts</b></div></div>
+        <div data-cmp="AppComponent" style="--c:#57525f">
+          <span class="ctag">&lt;app-root&gt;</span>
+          <div data-cmp="LoggedComponent" style="--c:#7b2cbf">
+            <span class="ctag">&lt;app-logged&gt;</span>
+            <div data-cmp="HeaderComponent" style="--c:#e8590c" class="ag-tb">
+              <span class="ctag">&lt;app-header&gt;</span>
+              <div class="ib">☰</div><div class="ttl">Agenda</div><div class="who">Hola, Calo</div><div class="ib">⏻</div>
+            </div>
+            <div class="ag-body">
+              <div class="ag-side"><div class="gh">Grupos</div><div class="gi">👨‍👩‍👧 Familia</div><div class="gi">💼 Trabajo</div><div class="gi">⚽ Fútbol</div></div>
+              <div class="ag-main" data-cmp="ContactsComponent" style="--c:#1a5fb4">
+                <span class="ctag">&lt;app-contactos&gt;</span>
+                <div class="ag-table" data-cmp="ContactsTableComponent" style="--c:#2a9d8f; padding:18px 6px 6px" id="tableX"><span class="ctag">&lt;app-contacts-table&gt;</span></div>
+                <div style="height:56px"></div>
+                <div class="ag-fab">+</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="col-title">El árbol de componentes <small>cada uno vive adentro de otro</small></div>
+        <div class="tree" id="tree"></div>
+      </div>
+      <div class="panel ficha" id="ficha">
+        <div class="col-title">Ficha</div>
+        <p style="margin:0;color:var(--ink-2)">Elegí un componente para ver de qué está hecho.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================================================== el molde -->
+  <section class="layout" id="moldView" hidden>
+    <div>
+      <div class="ag" id="agM">
+        <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="url">localhost:4200/<b>contacts</b></div></div>
+        <div class="ag-tb"><div class="ib">☰</div><div class="ttl">Agenda</div><div class="who">Hola, Calo</div><div class="ib">⏻</div></div>
+        <div class="ag-body">
+          <div class="ag-side"><div class="gh">Grupos</div><div class="gi">👨‍👩‍👧 Familia</div><div class="gi">💼 Trabajo</div><div class="gi">⚽ Fútbol</div></div>
+          <div class="ag-main"><div class="ag-table stamp-area" id="tableM"></div></div>
+        </div>
+      </div>
+      <div class="bar">
+        <button class="btn primary big" id="stampBtn">🖨️ Usar &lt;app-contact-summary&gt; otra vez</button>
+        <button class="btn" id="clearBtn">↺ Empezar de nuevo</button>
+        <span class="counter" id="counter"></span>
+      </div>
+    </div>
+    <div>
+      <div class="mold">
+        <h3>ContactSummaryComponent</h3>
+        <div class="sub">El molde: se escribe <strong>una vez</strong> y se usa en cada fila. Cambiá algo y mirá todas las copias.</div>
+        <div class="col-title" style="margin:8px 0 2px">Cómo se ve <small>(el .html)</small></div>
+        <label class="opt"><input type="checkbox" data-o="av" checked> Mostrar la foto (iniciales) <span class="tagf">.html</span></label>
+        <label class="opt"><input type="checkbox" data-o="ph" checked> Mostrar el teléfono <span class="tagf">.html</span></label>
+        <label class="opt"><input type="checkbox" data-o="em" checked> Mostrar el email <span class="tagf">.html</span></label>
+        <label class="opt"><input type="checkbox" data-o="st"> ⭐ si es favorito <span class="tagf">.html</span></label>
+        <div class="col-title" style="margin:12px 0 2px">Los estilos <small>(¿dónde ponemos «nombres en rosa»?)</small></div>
+        <div class="where seg" id="whereSeg">
+          <button data-v="none" aria-pressed="true">en ningún lado</button>
+          <button data-v="scoped">contact-summary.scss</button>
+          <button data-v="global">styles.scss (global)</button>
+        </div>
+      </div>
+      <div class="explain" id="moldWhy">Tocá <strong>🖨️ Usar &lt;app-contact-summary&gt;</strong>: cada vez que se usa la etiqueta aparece una copia nueva del mismo componente, con otros datos.</div>
+    </div>
+  </section>
+
+  <!-- ====================================================== quiz -->
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, $$, sleep, esc, confetti, bindSeg, quiz } = UI;
+  const PEOPLE = [
+    { f: "Ana", l: "Gómez", ph: "351 555-1234", em: "ana@mail.com", fav: true },
+    { f: "Leo", l: "Pérez", ph: "351 444-8811", em: "leo.perez@mail.com", fav: false },
+    { f: "Sofi", l: "Ruiz", ph: "11 4321-0000", em: "sofi@correo.com", fav: false },
+    { f: "Mati", l: "Díaz", ph: "261 555-7788", em: "mati.d@mail.com", fav: true },
+    { f: "Caro", l: "Sosa", ph: "351 222-3344", em: "caro.sosa@mail.com", fav: false },
+    { f: "Juan", l: "Paz", ph: "341 999-1212", em: "juanpaz@mail.com", fav: false },
+  ];
+
+  /* =========================================================== RAYOS X */
+  const CMP = {
+    AppComponent: { c: "#57525f", sel: "app-root", parent: null, ts: "Arranca la app. Casi no tiene lógica.", html: "Un <code>&lt;router-outlet&gt;</code>: el hueco donde el Router pone la página.", css: "Nada propio.", f: "app.component" },
+    LoggedComponent: { c: "#7b2cbf", sel: "app-logged", parent: "AppComponent", ts: "El layout de cuando estás logueado.", html: "Header + menú de grupos + el hueco de las páginas hijas.", css: "Ubica el header arriba y el menú al costado.", f: "layouts/logged/logged.component" },
+    HeaderComponent: { c: "#e8590c", sel: "app-header", parent: "LoggedComponent", ts: "Sabe el título y avisa cuando tocás ☰ (un <em>output</em>).", html: "La barra violeta: botón ☰, título, saludo, salir.", css: "Colores y tamaño de la barra.", f: "components/header/header.component" },
+    ContactsComponent: { c: "#1a5fb4", sel: "app-contactos", parent: "LoggedComponent", ts: "La página /contacts: pide los contactos al servicio y abre el diálogo de «nuevo».", html: "La tabla + el botón redondo ➕.", css: "Ubica el botón flotante.", f: "pages/contacts/contacts.component" },
+    ContactsTableComponent: { c: "#2a9d8f", sel: "app-contacts-table", parent: "ContactsComponent", ts: "Recibe la lista de contactos (un <em>input</em>).", html: "Un <code>@for</code> que usa <code>&lt;app-contact-summary&gt;</code> una vez por contacto.", css: "El espacio entre filas.", f: "components/contacts-table/contacts-table.component" },
+    ContactSummaryComponent: { c: "#d6336c", sel: "app-contact-summary", parent: "ContactsTableComponent", ts: "Recibe <strong>un</strong> contacto y sabe editarlo o borrarlo.", html: "Una fila: foto, nombre, teléfono, email.", css: "Cómo se ve la fila. Sólo afecta a este componente.", f: "components/contact-summary/contact-summary.component", many: true },
+  };
+  const row = (p, i, opts = { av: 1, ph: 1, em: 1, st: 0 }) => `<div class="crow" ${i !== undefined ? `data-cmp="ContactSummaryComponent" style="--c:#d6336c"` : ""}>${i !== undefined ? '<span class="ctag">&lt;app-contact-summary&gt;</span>' : ""}${opts.av ? `<div class="av">${p.f[0]}${p.l[0]}</div>` : "<div></div>"}<div class="nm">${p.f} ${p.l}${opts.st && p.fav ? ' <span class="star">⭐</span>' : ""}</div><div class="ph">${opts.ph ? "📞 " + p.ph : ""}</div><div class="em">${opts.em ? "✉️ " + p.em : ""}</div></div>`;
+  $("#tableX").insertAdjacentHTML("beforeend", PEOPLE.slice(0, 4).map((p, i) => row(p, i)).join(""));
+  $$('#tableX .crow').forEach(r => r.style.marginTop = "6px");
+
+  // árbol
+  function treeHTML(name) {
+    const c = CMP[name], kids = Object.keys(CMP).filter(k => CMP[k].parent === name);
+    const label = `<div class="node" data-n="${name}" style="--c:${c.c}"><span class="dot"></span>&lt;${c.sel}&gt;${c.many ? " <small>× 4</small>" : ""}</div>`;
+    return label + (kids.length ? `<div class="kids">${kids.map(treeHTML).join("")}</div>` : "");
+  }
+  $("#tree").innerHTML = treeHTML("AppComponent");
+  let xray = false;
+  $("#xrayBtn").addEventListener("click", () => { xray = !xray; $("#agX").classList.toggle("xray", xray); $("#xrayBtn").textContent = xray ? "🙈 Apagar rayos X" : "🩻 Rayos X: ver componentes"; });
+  function focus(name, pin) {
+    $$("#agX [data-cmp]").forEach(el => { el.classList.toggle("focus", el.dataset.cmp === name); el.classList.toggle("dimmed", !!name && el.dataset.cmp !== name && !el.contains($(`[data-cmp="${name}"]`, el)) && !el.closest(`[data-cmp="${name}"]`)); });
+    $$("#tree .node").forEach(n => n.classList.toggle("focus", n.dataset.n === name));
+    if (pin && name) showFicha(name);
+  }
+  let pinned = null;
+  function showFicha(name) {
+    const c = CMP[name];
+    $("#ficha").innerHTML = `<div class="col-title">Ficha</div><h3 style="color:${c.c}">${name}</h3>
+      <div class="sel">se usa con la etiqueta <strong>&lt;${c.sel}&gt;</strong>${c.parent ? ` · vive adentro de <strong>${c.parent}</strong>` : " · es la raíz"}${c.many ? " · <strong>se repite 4 veces</strong>" : ""}</div>
+      <div class="parts">
+        <div class="part"><div class="pi">🧠</div><div class="pt">Lógica</div><div class="pf">${c.f}.ts</div><div class="pd">${c.ts}</div></div>
+        <div class="part"><div class="pi">🧱</div><div class="pt">Cómo se ve</div><div class="pf">${c.f}.html</div><div class="pd">${c.html}</div></div>
+        <div class="part"><div class="pi">🎨</div><div class="pt">Estilos</div><div class="pf">${c.f}.scss</div><div class="pd">${c.css}</div></div>
+      </div>`;
+  }
+  $("#agX").addEventListener("mouseover", (e) => { const el = e.target.closest("[data-cmp]"); if (el) focus(el.dataset.cmp, false); });
+  $("#agX").addEventListener("mouseleave", () => focus(pinned, false));
+  $("#agX").addEventListener("click", (e) => { const el = e.target.closest("[data-cmp]"); if (!el) return; pinned = el.dataset.cmp; if (!xray) $("#xrayBtn").click(); focus(pinned, true); });
+  $("#tree").addEventListener("mouseover", (e) => { const n = e.target.closest(".node"); if (n) focus(n.dataset.n, false); });
+  $("#tree").addEventListener("mouseleave", () => focus(pinned, false));
+  $("#tree").addEventListener("click", (e) => { const n = e.target.closest(".node"); if (!n) return; pinned = n.dataset.n; if (!xray) $("#xrayBtn").click(); focus(pinned, true); });
+
+  /* =========================================================== EL MOLDE */
+  const OPTS = { av: 1, ph: 1, em: 1, st: 0 };
+  let used = 0;
+  function renderM(flash) {
+    $("#tableM").innerHTML = PEOPLE.slice(0, used).map(p => row(p, undefined, OPTS)).join("") || `<div style="color:var(--ink-2);padding:30px;text-align:center">La tabla está vacía: todavía no se usó ningún &lt;app-contact-summary&gt;.</div>`;
+    if (flash) { $$("#tableM .crow").forEach((r, i) => { r.style.animation = "none"; setTimeout(() => { r.classList.add("flash"); setTimeout(() => r.classList.remove("flash"), 500); }, i * 90); }); }
+    $("#counter").textContent = `${used} ${used === 1 ? "copia" : "copias"} del mismo componente`;
+    $("#stampBtn").disabled = used >= PEOPLE.length;
+  }
+  $("#stampBtn").addEventListener("click", () => {
+    if (used >= PEOPLE.length) return;
+    used++;
+    const r = document.createElement("div"); r.innerHTML = row(PEOPLE[used - 1], undefined, OPTS);
+    if (used === 1) $("#tableM").innerHTML = "";
+    $("#tableM").appendChild(r.firstChild);
+    $("#counter").textContent = `${used} ${used === 1 ? "copia" : "copias"} del mismo componente`;
+    $("#stampBtn").disabled = used >= PEOPLE.length;
+    $("#moldWhy").innerHTML = used < 3 ? `Misma etiqueta <code>&lt;app-contact-summary&gt;</code>, <strong>otro contacto</strong>. El componente es el molde; cada fila es una copia con sus propios datos.` : `Ahora cambiá algo del molde (a la derecha): <strong>todas las copias cambian a la vez</strong>, porque el código está en un solo lugar.`;
+  });
+  $("#clearBtn").addEventListener("click", () => { used = 0; renderM(); $("#moldWhy").innerHTML = "Tocá <strong>🖨️ Usar &lt;app-contact-summary&gt;</strong> para empezar."; });
+  $$(".mold input").forEach(c => c.addEventListener("change", () => {
+    OPTS[c.dataset.o] = c.checked ? 1 : 0; renderM(true);
+    $("#moldWhy").className = "explain ok";
+    $("#moldWhy").innerHTML = used ? `Cambiaste el <strong>.html</strong> del componente una sola vez y se actualizaron las ${used} filas. Sin componentes, tendrías que copiar y pegar el cambio en cada fila.` : "Cambió el molde, pero todavía no hay copias en la tabla. Usá el componente unas veces.";
+  }));
+  bindSeg("#whereSeg", (v) => {
+    const ag = $("#agM"); ag.classList.toggle("red-scoped", v === "scoped"); ag.classList.toggle("red-global", v === "global");
+    $("#moldWhy").className = "explain " + (v === "global" ? "warn" : "ok");
+    $("#moldWhy").innerHTML = v === "scoped" ? "En el <strong>.scss del componente</strong> el estilo sólo toca las filas de contacto. El header y el menú ni se enteran: Angular <strong>encapsula</strong> los estilos de cada componente."
+      : v === "global" ? "En <strong>styles.scss</strong> la regla es para toda la app: también se pintan el título del header y el menú, que son de otros componentes. Úsalo sólo para lo que de verdad es general."
+      : "Sin estilos extra.";
+  });
+  renderM();
+
+  /* =========================================================== QUIZ */
+  const QUESTIONS = [
+    { prompt: "¿Qué es un componente?", options: ["Una página entera, siempre", "Una parte de la pantalla con su lógica, su HTML y sus estilos", "Un archivo de estilos", "Una función que llama al back"], right: 1, why: "Puede ser una página entera o algo chiquito como una fila: lo importante es que junta <strong>lógica + HTML + estilos</strong> de esa parte." },
+    { prompt: "En la tabla hay 30 contactos. ¿Cuántos <code>ContactSummaryComponent</code> hay que escribir?", options: ["30", "1", "Uno por cada grupo", "Ninguno"], right: 1, why: "Se escribe <strong>uno</strong> y se usa 30 veces con <code>&lt;app-contact-summary&gt;</code>, cada vez con otro contacto." },
+    { prompt: "¿Con qué se usa un componente adentro de otro?", options: ["Con su etiqueta (el selector), como <code>&lt;app-header&gt;</code>", "Copiando su HTML", "Con un <code>import</code> en el .scss", "Con un link"], right: 0, why: "Cada componente tiene un <strong>selector</strong>: es la etiqueta HTML inventada con la que se lo usa." },
+    { prompt: "Ponés <code>p { color: red }</code> en <code>contact-summary.component.scss</code>. ¿Qué se pinta?", options: ["Todos los &lt;p&gt; de la app", "Sólo los &lt;p&gt; de las filas de contacto", "Nada, en .scss no se puede", "Sólo el primero"], right: 1, why: "Los estilos de un componente están <strong>encapsulados</strong>: no se escapan a los demás." },
+    { prompt: "¿Dónde va la lógica (datos, qué pasa al hacer clic)?", options: ["En el .html", "En el .scss", "En el .ts (la clase)", "En index.html"], right: 2, why: "La clase del .ts tiene los datos y los métodos; el .html los muestra y llama a esos métodos." },
+    { prompt: "El header y la tabla son componentes distintos. ¿Por qué conviene separarlos?", options: ["Porque Angular no deja tener más de 50 líneas", "Para poder reutilizarlos y que cada uno se ocupe de una sola cosa", "Para que cargue más lento", "No conviene: mejor todo junto"], right: 1, why: "Separar en piezas hace que cada una sea más fácil de entender, probar, cambiar y reutilizar." },
+    { prompt: "En el árbol, <code>&lt;app-contact-summary&gt;</code> está adentro de…", options: ["&lt;app-header&gt;", "&lt;app-contacts-table&gt;", "&lt;app-root&gt; directamente", "Nada"], right: 1, why: "La tabla usa la fila. Los componentes forman un <strong>árbol</strong>: unos adentro de otros." },
+    { prompt: "Escribís <code>&lt;app-contact-summary&gt;</code> en la tabla, pero no lo pusiste en <code>imports</code> del componente tabla. ¿Qué pasa?", options: ["Funciona igual", "Error: Angular no conoce esa etiqueta", "Se ve sin estilos", "Se usa el de otro componente"], right: 1, why: "Un componente standalone tiene que <strong>importar</strong> los componentes que usa en su HTML." },
+  ];
+  quiz($("#quiz"), { questions: QUESTIONS, shuffle: false, summary: "Para llevarse: un componente es una pieza de la pantalla con <strong>.ts</strong> (lógica), <strong>.html</strong> (cómo se ve) y <strong>.scss</strong> (estilos encapsulados) · se usa con su etiqueta · se escribe una vez y se reutiliza · la app es un árbol de componentes." });
+
+  bindSeg("#modeSeg", (m) => { $("#xrayView").hidden = m !== "xray"; $("#moldView").hidden = m !== "mold"; $("#gameView").hidden = m !== "game"; });
+})();
+</script>
+</body>
+</html>

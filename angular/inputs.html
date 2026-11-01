@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inputs y outputs · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<link rel="stylesheet" href="../assets/css/agenda.css">
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1050px) { .layout { grid-template-columns: 1fr; } }
+  .scene { position: relative; }
+  .box { border: 3px solid var(--c); border-radius: 18px; background: color-mix(in srgb, var(--c) 6%, #fff); padding: 12px 14px; position: relative; }
+  .box > .bt { font-family: var(--mono); font-weight: 800; color: var(--c); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .box > .bt small { font-family: var(--sans); font-weight: 600; color: var(--ink-2); }
+  .parent { --c: #2a9d8f; }
+  .data { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .dc { background: #fff; border: 2px solid #cde9e4; border-radius: 12px; padding: 8px; font-size: .9rem; transition: all .3s; }
+  .dc .dk { font-family: var(--mono); font-size: .75rem; color: var(--ink-2); }
+  .dc input { width: 100%; font: inherit; font-weight: 700; border: 1px solid var(--line); border-radius: 7px; padding: 3px 6px; margin: 4px 0; }
+  .dc .fav { cursor: pointer; user-select: none; font-size: .9rem; border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 2px 6px; }
+  .dc.flash { border-color: #2a9d8f; box-shadow: 0 0 0 4px rgba(42,157,143,.25); }
+  .wires { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0; }
+  .wire { text-align: center; font-family: var(--mono); font-size: .82rem; color: var(--ink-2); position: relative; padding: 18px 0 14px; }
+  .wire::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; border-left: 3px dashed #bfb6cc; }
+  .wire span { position: relative; background: var(--bg); padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); }
+  .wire.bad span { color: var(--bad); border-color: var(--bad); background: var(--bad-bg); }
+  .wire.bad::before { border-color: var(--bad); }
+  .kids { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .child { --c: #d6336c; padding: 10px; }
+  .child > .bt { font-size: .78rem; }
+  .child .card { text-align: center; padding: 8px 4px 4px; }
+  .child .av { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, #7b2cbf, #d6336c); color: #fff; display: grid; place-items: center; font-weight: 800; margin: 0 auto 6px; }
+  .child .nm { font-weight: 800; } .child .ph { color: var(--ink-2); font-size: .88rem; }
+  .child .starb { margin-top: 6px; font: inherit; border: 2px solid var(--line); background: #fff; border-radius: 999px; padding: 3px 12px; cursor: pointer; font-size: .9rem; }
+  .child .starb.on { border-color: #e0a800; background: #fff6d6; }
+  .child .starb:hover { border-color: #d6336c; }
+  .child.flash { box-shadow: 0 0 0 5px rgba(214,51,108,.25); }
+  .child.broken { --c: var(--bad); filter: grayscale(.6); }
+  .child.broken .card { color: var(--bad); font-weight: 700; padding: 22px 4px; }
+  .child.shake { animation: shakeb .4s; }
+  .fly { position: absolute; z-index: 30; pointer-events: none; font-weight: 800; font-size: .85rem; background: #fff; border: 2px solid var(--ink); border-radius: 10px; padding: 3px 8px; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,.18); transition: left .8s ease-in-out, top .8s ease-in-out; transform: translate(-50%, -50%); }
+  .fly.up { border-color: #e8590c; color: #e8590c; }
+  .fly.down { border-color: #2a9d8f; color: #1d6b62; }
+  .fly.bad { border-color: var(--bad); color: var(--bad); }
+  .errbar { margin-top: 10px; background: #19181e; color: #ff8a8a; font-family: var(--mono); font-size: 13.5px; border-radius: 12px; padding: 8px 12px; min-height: 40px; }
+  .errbar:empty::before { content: "✓ Compila sin errores"; color: #8ff0c9; }
+  .errbar .es { color: #e8e6ef; font-family: var(--sans); font-size: .92rem; margin-top: 3px; }
+  .bindopts { display: flex; flex-direction: column; gap: 6px; }
+  .bindopts .seg { flex-direction: column; align-items: stretch; }
+  .bindopts .seg button { font-family: var(--mono); text-align: left; }
+  .game { max-width: 980px; margin-top: 16px; }
+  .log { margin: 10px 0 0; padding-left: 20px; } .log li { margin: 4px 0; animation: slidein .25s; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › Angular › <strong>Inputs (y outputs)</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="down" aria-pressed="true">⬇️ Del padre al hijo: input</button>
+      <button data-v="up">⬆️ Del hijo al padre: output</button>
+      <button data-v="game">🎲 ¿Qué llega?</button>
+    </div>
+  </div>
+
+  <section class="layout" id="sceneView">
+    <div class="scene" id="scene">
+      <div class="box parent">
+        <div class="bt">ContactsTableComponent <small>el padre · tiene los datos</small></div>
+        <div class="data" id="data"></div>
+      </div>
+      <div class="wires" id="wires"></div>
+      <div class="kids" id="kids"></div>
+    </div>
+
+    <div>
+      <div class="panel" id="downPanel">
+        <div class="col-title">Cómo lo usa el padre en su .html</div>
+        <div class="bindopts"><div class="seg" id="bindSeg">
+          <button data-v="ok" aria-pressed="true">&lt;app-contact-summary [contact]="c" /&gt;</button>
+          <button data-v="nobr">&lt;app-contact-summary contact="c" /&gt;</button>
+          <button data-v="none">&lt;app-contact-summary /&gt;</button>
+        </div></div>
+        <div class="col-title" style="margin-top:12px">Y el hijo, en su .ts</div>
+        <div id="childCode"></div>
+        <div class="errbar" id="errbar"></div>
+        <div class="explain" id="downWhy">Cambiá un nombre o tocá ⭐ <strong>en los datos del padre</strong> (arriba): mirá cómo el dato baja al hijo.</div>
+      </div>
+      <div class="panel" id="upPanel" hidden>
+        <div class="col-title">Del hijo al padre</div>
+        <p style="margin:0 0 8px">Tocá ⭐ <strong>en una tarjeta hija</strong>. Elegí cómo lo intenta el hijo:</p>
+        <div class="bindopts"><div class="seg" id="upSeg">
+          <button data-v="emit" aria-pressed="true">favorito.emit(contact().id)</button>
+          <button data-v="set">contact.set({ ...contact(), isFavorite: true })</button>
+        </div></div>
+        <div class="errbar" id="errbar2"></div>
+        <div class="explain" id="upWhy">El input es del padre: el hijo <strong>no lo puede cambiar</strong>. Lo que sí puede hacer es <strong>avisar</strong> con un <code>output</code>, y el padre decide.</div>
+        <ol class="log" id="upLog"></ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, $$, sleep, esc, bindSeg, codeBox, quiz } = UI;
+  const DATA = [
+    { id: 1, f: "Ana", l: "Gómez", ph: "351 555-1234", fav: true },
+    { id: 2, f: "Leo", l: "Pérez", ph: "351 444-8811", fav: false },
+    { id: 3, f: "Sofi", l: "Ruiz", ph: "11 4321-0000", fav: false },
+  ];
+  const S = { mode: "down", bind: "ok", up: "emit", busy: false };
+
+  function renderData() {
+    $("#data").innerHTML = DATA.map((c, i) => `<div class="dc" data-i="${i}"><div class="dk">contacts[${i}]</div><input value="${esc(c.f)}" data-i="${i}" aria-label="nombre" ${S.mode === "up" ? "disabled" : ""}><div style="display:flex;justify-content:space-between;align-items:center"><span>${esc(c.l)}</span><span class="fav" data-i="${i}">${c.fav ? "⭐" : "☆"}</span></div></div>`).join("");
+  }
+  function wireLabel() {
+    return S.bind === "ok" ? '[contact]="c"' : S.bind === "nobr" ? 'contact="c"' : "(nada)";
+  }
+  function renderWires() {
+    $("#wires").innerHTML = DATA.map(() => `<div class="wire ${S.bind === "ok" ? "" : "bad"}"><span>${wireLabel()}</span></div>`).join("");
+  }
+  function childHTML(c) {
+    if (S.bind === "nobr") return `<div class="card">recibió el texto "c" 🤷</div>`;
+    if (S.bind === "none") return `<div class="card">no recibió nada</div>`;
+    return `<div class="card"><div class="av">${c.f[0] || "?"}${c.l[0]}</div><div class="nm">${esc(c.f)} ${esc(c.l)}</div><div class="ph">${c.ph}</div><button class="starb ${c.fav ? "on" : ""}" data-i="${DATA.indexOf(c)}">${c.fav ? "⭐ favorito" : "☆ marcar"}</button></div>`;
+  }
+  function renderKids() {
+    $("#kids").innerHTML = DATA.map((c, i) => `<div class="box child ${S.bind === "ok" ? "" : "broken"}" data-i="${i}"><div class="bt">&lt;app-contact-summary&gt;</div>${childHTML(c)}</div>`).join("");
+  }
+  function updateKid(i) {
+    const k = $$("#kids .child")[i]; k.innerHTML = `<div class="bt">&lt;app-contact-summary&gt;</div>${childHTML(DATA[i])}`;
+    k.classList.add("flash"); setTimeout(() => k.classList.remove("flash"), 600);
+  }
+  // un cartelito que vuela de un elemento a otro dentro de la escena
+  async function fly(from, to, html, kind) {
+    const sc = $("#scene").getBoundingClientRect(), a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+    const f = document.createElement("div"); f.className = "fly " + kind; f.innerHTML = html;
+    f.style.left = (a.left + a.width / 2 - sc.left) + "px"; f.style.top = (a.top + a.height / 2 - sc.top) + "px";
+    $("#scene").appendChild(f); await sleep(30);
+    f.style.left = (b.left + b.width / 2 - sc.left) + "px"; f.style.top = (b.top + b.height / 2 - sc.top) + "px";
+    await sleep(850); f.remove();
+  }
+  async function sendDown(i) {
+    if (S.bind !== "ok") {
+      const k = $$("#kids .child")[i]; k.classList.add("shake"); setTimeout(() => k.classList.remove("shake"), 400);
+      return;
+    }
+    const c = DATA[i];
+    await fly($$("#data .dc")[i], $$("#kids .child")[i], `📦 { ${esc(c.f)} ${c.fav ? "⭐" : ""}… }`, "down");
+    updateKid(i);
+  }
+
+  // código del hijo
+  codeBox($("#childCode"), `export class ContactSummaryComponent {\n  contact = input.required<Contact>();\n  favorito = output<number>();\n}`);
+
+  const ERR = {
+    nobr: ["Type 'string' is not assignable to type 'Contact'.", "Sin corchetes, Angular pasa el <strong>texto</strong> <code>\"c\"</code>, no la variable <code>c</code>. Los corchetes <code>[ ]</code> dicen «evaluá esto como código»."],
+    none: ["Required input 'contact' from component ContactSummaryComponent must be specified.", "El input es <code>input.required</code>: si el padre no se lo pasa, <strong>no compila</strong>."],
+  };
+  function applyBind() {
+    renderWires(); renderKids();
+    const e = ERR[S.bind];
+    $("#errbar").innerHTML = e ? `${esc(e[0])}<div class="es">${e[1]}</div>` : "";
+    $("#downWhy").className = "explain " + (e ? "bad" : "");
+    $("#downWhy").innerHTML = e ? "Probá cambiar un dato del padre: no llega nada al hijo." : "Con <code>[contact]=\"c\"</code> cada hijo recibe <strong>su</strong> contacto. Cambiá un nombre o tocá ⭐ <strong>en los datos del padre</strong>: el dato baja solo.";
+  }
+  bindSeg("#bindSeg", (v) => { S.bind = v; applyBind(); });
+
+  $("#data").addEventListener("input", (e) => {
+    const inp = e.target.closest("input"); if (!inp) return;
+    const i = +inp.dataset.i; DATA[i].f = inp.value;
+    clearTimeout(inp._t); inp._t = setTimeout(() => sendDown(i), 350);
+  });
+  $("#data").addEventListener("click", (e) => {
+    const f = e.target.closest(".fav"); if (!f) return;
+    const i = +f.dataset.i; DATA[i].fav = !DATA[i].fav; f.textContent = DATA[i].fav ? "⭐" : "☆";
+    flashData(i); sendDown(i);
+  });
+  function flashData(i) { const d = $$("#data .dc")[i]; d.classList.add("flash"); setTimeout(() => d.classList.remove("flash"), 600); }
+
+  /* ---------- del hijo al padre ---------- */
+  function upLog(t) { const li = document.createElement("li"); li.innerHTML = t; $("#upLog").appendChild(li); }
+  bindSeg("#upSeg", (v) => { S.up = v; $("#errbar2").innerHTML = ""; $("#upLog").innerHTML = ""; });
+  $("#kids").addEventListener("click", async (e) => {
+    const b = e.target.closest(".starb"); if (!b || S.busy) return;
+    const i = +b.dataset.i, kid = $$("#kids .child")[i];
+    if (S.mode === "down") { $("#downWhy").className = "explain warn"; $("#downWhy").innerHTML = "Ese botón es del hijo: para ver cómo avisa al padre, pasá a <strong>⬆️ Del hijo al padre</strong>."; return; }
+    S.busy = true; $("#upLog").innerHTML = ""; $("#errbar2").innerHTML = "";
+    try {
+      if (S.up === "set") {
+        kid.classList.add("shake"); setTimeout(() => kid.classList.remove("shake"), 400);
+        $("#errbar2").innerHTML = `Property 'set' does not exist on type 'InputSignal&lt;Contact&gt;'.<div class="es">Un input es <strong>de sólo lectura</strong> para el hijo: el dato es del padre. Si el hijo pudiera cambiarlo, el padre tendría una cosa y el hijo otra.</div>`;
+        upLog("El hijo intenta cambiar su input… ❌ no compila.");
+        $("#upWhy").className = "explain bad"; $("#upWhy").innerHTML = "Probá con <code>favorito.emit(...)</code>: el hijo avisa y el padre hace el cambio.";
+        return;
+      }
+      upLog(`El hijo hace <code>favorito.emit(${DATA[i].id})</code>: manda un aviso hacia arriba.`);
+      await fly(kid, $$("#data .dc")[i], `📨 favorito: ${DATA[i].id}`, "up");
+      upLog(`El padre lo escucha con <code>(favorito)="marcarFavorito($event)"</code> y cambia <strong>sus</strong> datos.`);
+      DATA[i].fav = !DATA[i].fav; renderData(); flashData(i);
+      await sleep(500);
+      upLog("Como cambió el dato del padre, el input baja otra vez al hijo con el valor nuevo.");
+      await fly($$("#data .dc")[i], kid, `📦 { ${esc(DATA[i].f)} ${DATA[i].fav ? "⭐" : ""}… }`, "down");
+      updateKid(i);
+      upLog("✅ Los dos muestran lo mismo: el dato vive en un solo lugar.");
+      $("#upWhy").className = "explain ok"; $("#upWhy").innerHTML = "Los datos <strong>bajan</strong> con <code>input</code> y los avisos <strong>suben</strong> con <code>output</code>. Así el que manda es siempre el padre.";
+    } finally { S.busy = false; }
+  });
+
+  /* ---------- quiz ---------- */
+  const QUESTIONS = [
+    { prompt: "¿Para qué sirve un <code>input</code>?", options: ["Para que el hijo le mande datos al padre", "Para que el padre le pase datos al hijo", "Para leer lo que escribe el usuario", "Para llamar al back"], right: 1, why: "Los datos <strong>bajan</strong>: el padre se los pasa al hijo por sus inputs." },
+    { prompt: "¿Qué recibe el hijo?", code: `<app-contact-summary contact="ana" />`, options: ["El contacto que está en la variable ana", 'El texto "ana"', "Nada", "Un error en el navegador"], right: 1, why: "Sin corchetes es un atributo común: pasa el <strong>texto</strong>. Con TypeScript estricto ni siquiera compila si espera un <code>Contact</code>." },
+    { prompt: "¿Qué recibe el hijo?", code: `<app-contact-summary [contact]="ana" />`, options: ["El contacto que está en la variable ana", 'El texto "ana"', "Nada", "Una copia vacía"], right: 0, why: "Con <code>[ ]</code>, lo de adentro de las comillas se evalúa como código: es la variable <code>ana</code> del padre." },
+    { prompt: "El hijo tiene <code>contact = input.required&lt;Contact&gt;()</code>. ¿Cómo lo lee en su HTML?", options: ["{{ contact.firstName }}", "{{ contact().firstName }}", "{{ input.contact.firstName }}", "{{ this.contact }}"], right: 1, why: "Un input es una <strong>señal</strong>: se lee con paréntesis, <code>contact()</code>." },
+    { prompt: "El padre usa <code>&lt;app-contact-summary /&gt;</code> sin pasarle nada y el input es <code>required</code>. ¿Qué pasa?", options: ["Se muestra vacío", "No compila", "Usa el contacto anterior", "Se rompe sólo en el navegador"], right: 1, why: "<code>input.required</code> obliga al padre a pasarlo. El error aparece al compilar." },
+    { prompt: "El hijo quiere marcar el contacto como favorito. ¿Qué conviene?", options: ["Cambiar el input con contact.set(...)", "Avisarle al padre con un output", "Guardar el cambio en una variable global", "Recargar la página"], right: 1, why: "El input es de sólo lectura. El hijo <strong>avisa</strong> (<code>output</code>) y el padre cambia sus datos." },
+    { prompt: "¿Cómo escucha el padre el output <code>favorito</code>?", options: ["[favorito]=\"marcar()\"", "(favorito)=\"marcar($event)\"", "{{ favorito }}", "favorito.subscribe()"], right: 1, why: "Los outputs son <strong>eventos</strong>: van entre paréntesis, como <code>(click)</code>. <code>$event</code> trae lo que mandó el hijo." },
+    { prompt: "En la Agenda, la ruta <code>contacts/:id</code> y <code>ContactInfoComponent</code> tiene <code>id = input.required&lt;number&gt;()</code>. ¿Quién le pasa el id?", options: ["El padre en el HTML", "El Router, desde la URL", "El servicio de contactos", "Nadie: lo adivina"], right: 1, why: "Con <code>withComponentInputBinding()</code> el <strong>Router</strong> completa los inputs con los parámetros de la URL. Lo vemos en la clase del Router." },
+  ];
+  quiz($("#quiz"), { questions: QUESTIONS, shuffle: false, summary: "Para llevarse: los datos <strong>bajan</strong> con <code>input</code> (<code>[contact]=\"c\"</code>, con corchetes) y se leen como señal: <code>contact()</code> · el hijo no puede cambiar su input · los avisos <strong>suben</strong> con <code>output</code> (<code>(favorito)=\"...\"</code>, con paréntesis) y el padre decide." });
+
+  bindSeg("#modeSeg", (m) => {
+    S.mode = m;
+    $("#sceneView").hidden = m === "game"; $("#gameView").hidden = m !== "game";
+    $("#downPanel").hidden = m !== "down"; $("#upPanel").hidden = m !== "up";
+    if (m === "up" && S.bind !== "ok") { S.bind = "ok"; UI.setSeg("#bindSeg", "ok"); applyBind(); }
+    $$("#data input").forEach(x => x.disabled = m === "up"); $$("#data .fav").forEach(x => x.style.pointerEvents = m === "up" ? "none" : "");
+  });
+  renderData(); applyBind();
+})();
+</script>
+</body>
+</html>

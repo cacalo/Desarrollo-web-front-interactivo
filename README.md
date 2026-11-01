@@ -9,7 +9,9 @@ No usan frameworks ni build: cada página es HTML + CSS + JS plano, así que se 
 index.html                      Portada, ordenada por temas
 assets/css/base.css             Estilos compartidos (pensados para proyectar)
 assets/css/kit.css              Piezas comunes de las experiencias de JS (quiz, código, consola)
+assets/css/agenda.css           Maqueta de la Agenda (barra, menú, filas) y rayos X de componentes
 assets/js/ui.js                 Utilidades compartidas: quiz, bloque de código, confeti
+assets/js/videos.js             Videos de YouTube por tema: botón «🎬 Ver video» en la página y marca en la portada (la lista está adentro)
 assets/js/guard-sim.js          Motor que simula el Router + guards de la Agenda
 html-css/etiquetas-basicas.html Construir con piezas, desafíos y juego "¿Qué etiqueta es?"
 html-css/etiquetas-no-semanticas.html Agrupar con div, div vs span y juego "¿div, span o semántica?"
@@ -24,7 +26,15 @@ js-ts/bucles.html               for clásico, for…of y forEach (array, array d
 js-ts/funciones.html            De nominal a flecha paso a paso, diferencias (hoisting, return, this), "¿Son equivalentes?"
 js-ts/laboratorio.html          20 retos de JavaScript con editor, vista en vivo, pruebas y progreso guardado (ex practica-js-basica)
 js-ts/interfaces.html           El molde (interface Contact) revisando un objeto, "¿Cuándo te enterás?" (JS vs TS) y "¿Compila?"
+angular/componente.html         La Agenda en piezas (rayos X y árbol), un molde con muchas copias, estilos encapsulados
+angular/inputs.html             Datos que bajan con input ([contact]="c") y avisos que suben con output
+angular/senales.html            Red de señales del AuthService (signal, computed, effect) y memoria vs pantalla
+angular/router.html             El Router compara la URL con app.routes.ts, :id, orden de rutas y routerLink
+angular/jwt.html                Anatomía del token (leer sí, falsificar no) y el viaje del token hasta que vence
 angular/guards.html             La escena animada de los guards, con modo predicción
+angular/servicios.html          Un servicio compartido con inject vs copias con new, y "¿componente o servicio?"
+angular/fetch.html              El viaje de un pedido con await: promesa pendiente/cumplida/rechazada, 401, sin conexión
+angular/formularios.html        Formulario de login con signal forms: modelo, [formField], reglas y touched
 ```
 
 Cada experiencia busca explicar el concepto con animación e interacción, sin mostrar código de Angular (eso se ve en el repo real del proyecto).

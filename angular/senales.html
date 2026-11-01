@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Señales · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 18px; margin-top: 16px; align-items: start; }
+  @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+  .net-wrap { position: relative; width: 100%; overflow: hidden; border-radius: var(--radius); border: 1px solid var(--line); background: #fbfaf8; box-shadow: var(--shadow); }
+  .net { position: absolute; left: 0; top: 0; width: 900px; height: 430px; transform-origin: 0 0; }
+  .net svg { position: absolute; inset: 0; }
+  .net svg line { stroke: #cfc8db; stroke-width: 3; stroke-dasharray: 7 6; }
+  .net svg line.hot { stroke: #7b2cbf; stroke-dasharray: none; }
+  .nd { position: absolute; width: 230px; background: #fff; border: 3px solid var(--c); border-radius: 16px; padding: 10px 12px; box-shadow: 0 3px 0 color-mix(in srgb, var(--c) 40%, transparent); transition: transform .2s, box-shadow .3s; }
+  .nd .kind { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--c); }
+  .nd .nm { font-family: var(--mono); font-weight: 800; font-size: .95rem; margin: 2px 0 6px; }
+  .nd .val { font-family: var(--mono); font-size: .85rem; background: var(--surface-2); border-radius: 8px; padding: 5px 8px; min-height: 2em; word-break: break-all; transition: background .3s; }
+  .nd .cnt { font-size: .78rem; color: var(--ink-2); margin-top: 5px; min-height: 1.2em; }
+  .nd.ping { transform: scale(1.05); box-shadow: 0 0 0 7px color-mix(in srgb, var(--c) 25%, transparent); }
+  .nd.ping .val { background: color-mix(in srgb, var(--c) 18%, #fff); }
+  .nd.skip { opacity: .55; }
+  .nd .tpl { font-size: 1.05rem; font-weight: 700; background: #3f2a73; color: #fff; padding: 8px 10px; border-radius: 10px; margin-top: 6px; font-family: var(--sans); }
+  .pulse { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: #7b2cbf; box-shadow: 0 0 0 5px rgba(123,44,191,.25); z-index: 5; transition: left .55s linear, top .55s linear; }
+  .acts { display: flex; flex-direction: column; gap: 8px; }
+  .acts .btn { justify-content: flex-start; text-align: left; font-family: var(--mono); font-size: .92rem; }
+  .acts .btn small { font-family: var(--sans); color: var(--ink-2); margin-left: auto; font-weight: 400; }
+  .log { margin: 10px 0 0; padding-left: 20px; } .log li { margin: 4px 0; animation: slidein .25s; }
+
+  /* memoria vs pantalla */
+  .mp { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .mp .col { border: 2px solid var(--line); border-radius: 14px; padding: 10px 12px; background: #fff; transition: border-color .3s, background .3s; }
+  .mp .col h4 { margin: 0 0 6px; display: flex; justify-content: space-between; }
+  .mp .col.stale { border-color: var(--bad); background: var(--bad-bg); }
+  .mp .it { padding: 5px 8px; border-radius: 8px; background: var(--surface-2); margin: 4px 0; display: flex; justify-content: space-between; animation: slidein .25s; }
+  .mp .big { font-size: 1.6rem; font-weight: 800; }
+  .ops .btn { font-family: var(--mono); font-size: .88rem; }
+  /* nunca reasignar */
+  .re-wrap { position: relative; width: 100%; overflow: hidden; border-radius: var(--radius); border: 1px solid var(--line); background: #fbfaf8; box-shadow: var(--shadow); }
+  .re { position: absolute; left: 0; top: 0; width: 900px; height: 470px; transform-origin: 0 0; }
+  .re svg { position: absolute; inset: 0; overflow: visible; }
+  .re .wire { stroke: #7b2cbf; stroke-width: 4; fill: none; transition: stroke .3s, opacity .3s; }
+  .re .wire.cold { stroke: #c9c2d6; stroke-dasharray: 7 6; }
+  .re .ptr { stroke: #1d1b22; stroke-width: 3; fill: none; }
+  .re .cls { position: absolute; left: 20px; top: 150px; width: 190px; border: 3px solid #57525f; border-radius: 16px; background: #fff; padding: 10px 12px; }
+  .re .cls .kind { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: #57525f; }
+  .re .cls .prop { font-family: var(--mono); font-weight: 800; margin-top: 6px; background: var(--surface-2); border-radius: 8px; padding: 5px 8px; }
+  .re .sig { position: absolute; width: 200px; border: 3px solid #7b2cbf; border-radius: 16px; background: #fff; padding: 10px 12px; transition: opacity .4s, transform .4s, border-color .3s, filter .3s; box-shadow: 0 3px 0 rgba(123,44,191,.35); }
+  .re .sig .kind { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: #7b2cbf; }
+  .re .sig .val { font-family: var(--mono); font-size: 1.5rem; font-weight: 800; }
+  .re .sig .snote { font-size: .78rem; color: var(--ink-2); min-height: 1.1em; }
+  .re .sig.orphan { border-color: var(--bad); box-shadow: 0 3px 0 rgba(198,40,40,.35); } .re .sig.orphan .kind { color: var(--bad); }
+  .re .sig.old { filter: grayscale(.4); }
+  .re .sig.hidden { opacity: 0; transform: translateY(20px); }
+  .re .cons { position: absolute; left: 640px; width: 240px; border: 3px solid var(--c); border-radius: 16px; background: #fff; padding: 9px 12px; transition: box-shadow .3s; }
+  .re .cons .kind { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--c); }
+  .re .cons .nm { font-family: var(--mono); font-size: .82rem; color: var(--ink-2); margin: 2px 0 4px; }
+  .re .cons .out { font-weight: 800; font-size: 1.1rem; }
+  .re .cons .cnt { font-size: .75rem; color: var(--ink-2); }
+  .re .cons.ping { box-shadow: 0 0 0 7px color-mix(in srgb, var(--c) 25%, transparent); }
+  .re .cons.stale { border-style: dashed; }
+  .re .cons .st { display: none; color: var(--bad); font-size: .78rem; font-weight: 800; }
+  .re .cons.stale .st { display: block; }
+  .re .pulse { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: #7b2cbf; box-shadow: 0 0 0 5px rgba(123,44,191,.25); z-index: 5; transition: left .55s linear, top .55s linear; }
+  .re .boom { position: absolute; font-size: 28px; transform: translate(-50%, -50%); animation: pop .4s; }
+  .errbar { margin-top: 10px; background: #19181e; color: #ff8a8a; font-family: var(--mono); font-size: 13.5px; border-radius: 12px; padding: 8px 12px; min-height: 38px; }
+  .errbar:empty::before { content: "✓ Compila"; color: #8ff0c9; }
+  .errbar code { background: #34313f; color: #ffd479; }
+  .errbar .es { color: #e8e6ef; font-family: var(--sans); font-size: .92rem; margin-top: 3px; }
+  .game { max-width: 980px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › Angular › <strong>Señales</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="net" aria-pressed="true">🕸️ La red de señales</button>
+      <button data-v="re">🔌 Nunca reasignar</button>
+      <button data-v="mp">🧠 Memoria vs pantalla</button>
+      <button data-v="game">🎲 ¿Se actualiza?</button>
+    </div>
+  </div>
+
+  <!-- ====================================================== red -->
+  <section class="layout" id="netView">
+    <div class="net-wrap" id="netWrap">
+      <div class="net" id="net">
+        <svg viewBox="0 0 900 430"><line id="e1" x1="250" y1="215" x2="335" y2="110"/><line id="e2" x1="565" y1="110" x2="650" y2="110"/><line id="e3" x1="250" y1="215" x2="335" y2="320"/><line id="e4" x1="565" y1="320" x2="650" y2="320"/></svg>
+        <div class="nd" id="nToken" style="--c:#7b2cbf; left:20px; top:150px"><div class="kind">signal</div><div class="nm">token</div><div class="val"></div><div class="cnt"></div></div>
+        <div class="nd" id="nUser" style="--c:#1a5fb4; left:335px; top:40px"><div class="kind">computed</div><div class="nm">user</div><div class="val"></div><div class="cnt"></div></div>
+        <div class="nd" id="nTpl" style="--c:#e8590c; left:650px; top:40px"><div class="kind">template del header</div><div class="nm">{{ user()?.firstName }}</div><div class="tpl"></div><div class="cnt"></div></div>
+        <div class="nd" id="nEff" style="--c:#2a9d8f; left:335px; top:255px"><div class="kind">effect</div><div class="nm" style="font-size:.8rem">guardarTokenLocalstorage</div><div class="val" style="font-size:.78rem">token() ? setItem(…) : removeItem(…)</div><div class="cnt"></div></div>
+        <div class="nd" id="nLS" style="--c:#57525f; left:650px; top:255px"><div class="kind">el navegador</div><div class="nm">localStorage</div><div class="val"></div><div class="cnt"></div></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="col-title">Hacé algo <small>como en el AuthService de la Agenda</small></div>
+        <div class="acts">
+          <button class="btn" data-a="ana">token.set(tokenDeAna) <small>login</small></button>
+          <button class="btn" data-a="leo">token.set(tokenDeLeo) <small>otro usuario</small></button>
+          <button class="btn" data-a="same">token.set(token()) <small>el mismo valor</small></button>
+          <button class="btn" data-a="read">user() <small>leerlo otra vez</small></button>
+          <button class="btn" data-a="out">token.set(null) <small>logout</small></button>
+        </div>
+      </div>
+      <div class="explain" id="netWhy">Una <strong>señal</strong> es una caja con un valor que <strong>avisa</strong> cuando cambia. Tocá un botón y seguí el aviso por la red.</div>
+      <ol class="log" id="netLog"></ol>
+    </div>
+  </section>
+
+  <!-- ====================================================== nunca reasignar -->
+  <section class="layout" id="reView" hidden>
+    <div>
+      <div class="re-wrap" id="reWrap">
+        <div class="re" id="re">
+          <svg viewBox="0 0 900 470" id="reSvg">
+            <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1d1b22"/></marker></defs>
+            <path class="wire" id="w0" d="M500 165 C 570 165, 570 75, 640 75"/>
+            <path class="wire" id="w1" d="M500 165 C 570 165, 570 210, 640 210"/>
+            <path class="wire" id="w2" d="M500 165 C 570 165, 570 345, 640 345"/>
+            <line class="ptr" id="ptr" x1="210" y1="190" x2="296" y2="165" marker-end="url(#ah)"/>
+          </svg>
+          <div class="cls"><div class="kind">el componente</div><div class="prop">this.contador</div><div style="font-size:.78rem;color:var(--ink-2);margin-top:5px">apunta a una señal ➜</div></div>
+          <div class="sig" id="sigOld" style="left:300px;top:118px"><div class="kind">signal</div><div class="val">0</div><div class="snote"></div></div>
+          <div class="sig hidden" id="sigNew" style="left:300px;top:298px"><div class="kind">signal nueva</div><div class="val">0</div><div class="snote"></div></div>
+          <div class="cons" id="k0" style="--c:#e8590c;top:8px"><div class="kind">template</div><div class="nm">Contador: {{ contador() }}</div><div class="out"></div><div class="cnt"></div><div class="st">⚠️ no se enteró</div></div>
+          <div class="cons" id="k1" style="--c:#1a5fb4;top:148px"><div class="kind">computed</div><div class="nm">doble = computed(() =&gt; contador() * 2)</div><div class="out"></div><div class="cnt"></div><div class="st">⚠️ no se enteró</div></div>
+          <div class="cons" id="k2" style="--c:#2a9d8f;top:296px"><div class="kind">effect</div><div class="nm">effect(() =&gt; guardar(contador()))</div><div class="out"></div><div class="cnt"></div><div class="st">⚠️ no se enteró</div></div>
+        </div>
+      </div>
+      <div class="explain" id="reWhy">Las líneas violetas son la <strong>conexión</strong>: cuando el template, el computed y el effect leen <code>contador()</code>, quedan <strong>anotados</strong> en esa señal. Cuando la señal cambia, les avisa por ahí.</div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="col-title">Cambiar el contador</div>
+        <div class="acts" id="reActs">
+          <button class="btn" data-r="set">this.contador.set(5) <small>✅</small></button>
+          <button class="btn" data-r="update">this.contador.update(n =&gt; n + 1) <small>✅</small></button>
+          <button class="btn" data-r="reassign">this.contador = signal(10) <small>❌</small></button>
+          <button class="btn" data-r="number">this.contador = 10 <small>❌</small></button>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:700"><input type="checkbox" id="ro"> Declararla <code>readonly contador = signal(0)</code></label>
+        <div class="errbar" id="reErr"></div>
+        <div class="bar"><button class="btn" id="reReset">↺ Volver a empezar</button></div>
+      </div>
+      <ol class="log" id="reLog"></ol>
+    </div>
+  </section>
+
+  <!-- ====================================================== memoria vs pantalla -->
+  <section id="mpView" hidden style="margin-top:16px">
+    <div class="layout" style="margin-top:0">
+      <div>
+        <div class="mp">
+          <div class="col" id="colMem"><h4>🧠 En memoria <small style="font-weight:400;color:var(--ink-2)">lo que hay de verdad</small></h4><div id="mem"></div></div>
+          <div class="col" id="colScr"><h4>🖥️ En pantalla <small style="font-weight:400;color:var(--ink-2)">lo que ve el usuario</small></h4><div id="scr"></div></div>
+        </div>
+        <div class="explain" id="mpWhy">La lista de favoritos es una señal: <code>favoritos = signal([...])</code>, y el contador es <code>computed(() =&gt; favoritos().length)</code>. Probá distintas formas de agregar uno.</div>
+      </div>
+      <div class="panel ops">
+        <div class="col-title">Agregar a Sofi a favoritos</div>
+        <div class="acts">
+          <button class="btn" data-o="update">favoritos.update(l =&gt; [...l, sofi])</button>
+          <button class="btn" data-o="set">favoritos.set([...favoritos(), sofi])</button>
+          <button class="btn" data-o="push">favoritos().push(sofi)</button>
+          <button class="btn" data-o="plain">this.lista.push(sofi) <small>sin señal</small></button>
+        </div>
+        <div class="bar"><button class="btn" id="mpReset">↺ Volver a empezar</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, $$, sleep, esc, bindSeg, quiz } = UI;
+
+  /* =========================================================== RED */
+  const net = $("#net"), wrap = $("#netWrap");
+  function fit() { const k = Math.min(1, wrap.clientWidth / 900); net.style.transform = `scale(${k})`; wrap.style.height = 430 * k + "px"; }
+  addEventListener("resize", fit); fit();
+  const TOK = { ana: { t: "eyJhbGciOiJIUzI1NiJ9.eyJnaXZlbl9uYW1lIjoiQW5hIn0.k2f…", f: "Ana", l: "Gómez" }, leo: { t: "eyJhbGciOiJIUzI1NiJ9.eyJnaXZlbl9uYW1lIjoiTGVvIn0.9xQ…", f: "Leo", l: "Pérez" } };
+  const N = { token: null, who: null, cUser: 0, cTpl: 0, cEff: 0, busy: false };
+  const short = (t) => t ? `"${t.slice(0, 22)}…"` : "null";
+  function paint() {
+    $("#nToken .val").textContent = short(N.token);
+    $("#nUser .val").textContent = N.who ? `{ firstName: "${N.who.f}", lastName: "${N.who.l}" }` : "null";
+    $("#nTpl .tpl").textContent = N.who ? `Hola, ${N.who.f} 👋` : "Hola, ";
+    $("#nLS .val").textContent = N.token ? `token: ${short(N.token)}` : "(vacío)";
+    $("#nUser .cnt").textContent = `se calculó ${N.cUser} ${N.cUser === 1 ? "vez" : "veces"}`;
+    $("#nTpl .cnt").textContent = `se redibujó ${N.cTpl} ${N.cTpl === 1 ? "vez" : "veces"}`;
+    $("#nEff .cnt").textContent = `se ejecutó ${N.cEff} ${N.cEff === 1 ? "vez" : "veces"}`;
+  }
+  function ping(id) { const n = $(id); n.classList.add("ping"); setTimeout(() => n.classList.remove("ping"), 500); }
+  async function pulse(edge) {
+    const l = $(edge); l.classList.add("hot");
+    const p = document.createElement("div"); p.className = "pulse";
+    p.style.left = l.getAttribute("x1") + "px"; p.style.top = l.getAttribute("y1") + "px"; net.appendChild(p);
+    await sleep(30); p.style.left = l.getAttribute("x2") + "px"; p.style.top = l.getAttribute("y2") + "px";
+    await sleep(600); p.remove(); l.classList.remove("hot");
+  }
+  function log(t) { const li = document.createElement("li"); li.innerHTML = t; $("#netLog").appendChild(li); }
+  const why = (t, k = "") => { $("#netWhy").className = "explain " + k; $("#netWhy").innerHTML = t; };
+  async function act(a) {
+    if (N.busy) return; N.busy = true; $("#netLog").innerHTML = "";
+    $$(".nd").forEach(n => n.classList.remove("skip"));
+    try {
+      if (a === "read") {
+        ping("#nUser");
+        log("Alguien lee <code>user()</code>.");
+        log(`<code>token</code> no cambió desde la última vez, así que el computed <strong>no se recalcula</strong>: devuelve el valor que ya tenía guardado (sigue en ${N.cUser}).`);
+        why("Un <code>computed</code> recuerda su resultado y sólo lo recalcula si cambió alguna señal que usa. Leerlo mil veces no cuesta nada.", "ok");
+        return;
+      }
+      const next = a === "out" ? null : a === "same" ? N.token : TOK[a].t;
+      ping("#nToken");
+      log(`<code>token.set(${a === "same" ? "token()" : a === "out" ? "null" : "…"})</code>`);
+      if (next === N.token) {
+        await sleep(400);
+        $$("#nUser, #nTpl, #nEff, #nLS").forEach(n => n.classList.add("skip"));
+        log("El valor nuevo es <strong>igual</strong> al anterior: la señal no avisa a nadie.");
+        why("Si le ponés a una señal el mismo valor que ya tenía, no pasa nada: nadie se recalcula.", "ok");
+        return;
+      }
+      N.token = next; paint(); await sleep(300);
+      log("La señal cambió y <strong>avisa</strong> a todo lo que la usa.");
+      await Promise.all([pulse("#e1"), pulse("#e3")]);
+      N.cUser++; N.who = next ? TOK[a] : null; ping("#nUser");
+      N.cEff++; ping("#nEff"); paint();
+      log("El <code>computed user</code> se recalcula decodificando el token nuevo.");
+      log(`El <code>effect</code> se ejecuta: ${next ? "guarda" : "borra"} el token en localStorage.`);
+      await Promise.all([pulse("#e2"), pulse("#e4")]);
+      N.cTpl++; ping("#nTpl"); ping("#nLS"); paint();
+      log("El header se redibuja solo, porque su HTML lee <code>user()</code>.");
+      why(next ? "Cambiaste <strong>una sola cosa</strong> (el token) y todo lo que depende de él se actualizó solo: el usuario, el saludo y localStorage. Nadie tuvo que acordarse de avisar." : "Con el logout pasa lo mismo al revés: <code>user</code> pasa a <code>null</code>, el saludo se vacía y el effect borra el token de localStorage.", "ok");
+    } finally { N.busy = false; }
+  }
+  $$(".acts .btn[data-a]").forEach(b => b.addEventListener("click", () => act(b.dataset.a)));
+  paint();
+
+  /* =========================================================== NUNCA REASIGNAR */
+  const reEl = $("#re"), reWrap = $("#reWrap");
+  function reFit() { const k = Math.min(1, reWrap.clientWidth / 900); reEl.style.transform = `scale(${k})`; reWrap.style.height = 470 * k + "px"; }
+  addEventListener("resize", reFit);
+  const R = { old: 0, nu: null, ptr: "old", cnt: [1, 1, 1], seen: [0, 0, 0], busy: false, broken: false };
+  function reRender() {
+    $("#sigOld .val").textContent = R.old;
+    $("#k0 .out").textContent = R.broken ? "💥" : `Contador: ${R.seen[0]}`;
+    $("#k1 .out").textContent = `doble = ${R.seen[1] * 2}`;
+    $("#k2 .out").textContent = `guardó ${R.seen[2]}`;
+    ["redibujado", "calculado", "ejecutado"].forEach((w, i) => $(`#k${i} .cnt`).textContent = `${w} ${R.cnt[i]} ${R.cnt[i] === 1 ? "vez" : "veces"}`);
+    const cur = R.ptr === "old" ? R.old : R.nu;
+    [0, 1, 2].forEach(i => $(`#k${i}`).classList.toggle("stale", R.ptr === "new" && R.seen[i] !== cur));
+    if (R.nu !== null) $("#sigNew .val").textContent = typeof R.nu === "number" && R.ptr === "num" ? R.nu : R.nu;
+  }
+  function movePtr(toNew) {
+    const p = $("#ptr"), from = +p.getAttribute("y2"), to = toNew ? 345 : 165, x2 = toNew ? 296 : 296;
+    const t0 = performance.now();
+    const step = (t) => { const k = Math.min(1, (t - t0) / 600); p.setAttribute("y2", from + (to - from) * k); p.setAttribute("x2", x2); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }
+  async function rePulse() {
+    const pts = [[[500, 165], [640, 75]], [[500, 165], [640, 210]], [[500, 165], [640, 345]]];
+    await Promise.all(pts.map(async ([a, b]) => {
+      const d = document.createElement("div"); d.className = "pulse"; d.style.left = a[0] + "px"; d.style.top = a[1] + "px"; reEl.appendChild(d);
+      await sleep(30); d.style.left = b[0] + "px"; d.style.top = b[1] + "px"; await sleep(600); d.remove();
+    }));
+  }
+  const rePing = () => [0, 1, 2].forEach(i => { const k = $(`#k${i}`); k.classList.add("ping"); setTimeout(() => k.classList.remove("ping"), 500); });
+  function reLog(t) { const li = document.createElement("li"); li.innerHTML = t; $("#reLog").appendChild(li); }
+  const reWhy = (t, k = "") => { $("#reWhy").className = "explain " + k; $("#reWhy").innerHTML = t; };
+  function reReset() {
+    Object.assign(R, { old: 0, nu: null, ptr: "old", cnt: [1, 1, 1], seen: [0, 0, 0], busy: false, broken: false });
+    $("#sigOld").className = "sig"; $("#sigOld .kind").textContent = "signal"; $("#sigOld .snote").textContent = "";
+    $("#sigNew").className = "sig hidden"; $("#sigNew .kind").textContent = "signal nueva"; $("#sigNew .snote").textContent = "";
+    $$("#re .wire").forEach(w => w.classList.remove("cold"));
+    $("#ptr").setAttribute("y2", 165); $$("#re .boom").forEach(b => b.remove());
+    $("#reErr").innerHTML = ""; $("#reLog").innerHTML = "";
+    reRender();
+    reWhy("Las líneas violetas son la <strong>conexión</strong>: cuando el template, el computed y el effect leen <code>contador()</code>, quedan <strong>anotados</strong> en esa señal. Cuando la señal cambia, les avisa por ahí.");
+  }
+  async function reAct(a) {
+    if (R.busy) return; R.busy = true; $("#reErr").innerHTML = "";
+    try {
+      if ((a === "reassign" || a === "number") && $("#ro").checked) {
+        $("#reErr").innerHTML = `Cannot assign to 'contador' because it is a read-only property.<div class="es">Con <code>readonly</code>, TypeScript <strong>no te deja</strong> reasignarla: el error aparece mientras escribís. Los métodos (<code>set</code>, <code>update</code>) siguen funcionando, porque no cambian a qué señal apunta <code>this.contador</code>, sólo su valor.</div>`;
+        reWhy("<code>readonly</code> no hace a la señal de sólo lectura: hace que la <strong>propiedad</strong> no se pueda reasignar. Es la red de seguridad perfecta para señales.", "ok");
+        return;
+      }
+      if (a === "set" || a === "update") {
+        if (R.broken) { reWhy("La app ya está rota: tocá ↺ para empezar de nuevo.", "bad"); return; }
+        if (R.ptr === "new") {
+          R.nu = a === "set" ? 5 : R.nu + 1; reRender();
+          const n = $("#sigNew"); n.classList.add("orphan");
+          reLog(`<code>${a === "set" ? "set(5)" : "update(…)"}</code> cambia la señal <strong>nueva</strong> (${R.nu})… que no tiene a nadie conectado.`);
+          reWhy("Ahora <code>this.contador</code> apunta a la señal nueva, pero los consumidores siguen anotados en la <strong>vieja</strong>. Podés cambiar la nueva todo lo que quieras: <strong>nadie se entera</strong>. La conexión se perdió en el momento de la reasignación.", "bad");
+          return;
+        }
+        R.old = a === "set" ? 5 : R.old + 1; reRender();
+        reLog(`<code>${a === "set" ? "set(5)" : "update(n => n + 1)"}</code>: la <strong>misma</strong> señal cambia su valor a ${R.old}.`);
+        await rePulse();
+        R.seen = [R.old, R.old, R.old]; R.cnt = R.cnt.map(c => c + 1); rePing(); reRender();
+        reLog("Avisa por las tres conexiones y los tres se actualizan.");
+        reWhy("Con <code>set</code> o <code>update</code> la señal sigue siendo <strong>la misma caja</strong>: sólo cambia lo que tiene adentro, y las conexiones siguen intactas.", "ok");
+        return;
+      }
+      if (a === "reassign") {
+        if (R.ptr === "new" || R.broken) { reWhy("Ya la reasignaste: tocá ↺ para empezar de nuevo.", "warn"); return; }
+        R.nu = 10; R.ptr = "new";
+        const n = $("#sigNew"); n.classList.remove("hidden"); n.classList.add("orphan"); reRender();
+        $("#sigNew .snote").textContent = "nadie la escucha";
+        reLog("<code>signal(10)</code> crea <strong>otra</strong> señal, una caja nueva.");
+        await sleep(500);
+        movePtr(true);
+        $("#sigOld").classList.add("old"); $("#sigOld .kind").textContent = "signal vieja"; $("#sigOld .snote").textContent = "ya nadie la cambia… pero los consumidores siguen acá";
+        reLog("<code>this.contador</code> ahora apunta a la caja nueva. Las conexiones <strong>no se mudan</strong>: siguen en la vieja.");
+        await sleep(700);
+        reRender();
+        reLog("Ningún consumidor recibe aviso: la pantalla sigue mostrando el valor viejo (y el computed y el effect también).");
+        reWhy("Reasignar no cambia el valor de la señal: <strong>reemplaza la señal entera</strong>. Los consumidores quedaron anotados en la vieja, que nunca más va a cambiar. Encima, si algo hace redibujar la pantalla, el template leería la nueva pero el computed y el effect seguirían colgados de la vieja: <strong>datos mezclados</strong>. Probá ahora con <code>set</code>…", "bad");
+        return;
+      }
+      if (a === "number") {
+        if (R.broken) { reWhy("Ya está roto: tocá ↺ para empezar de nuevo.", "warn"); return; }
+        $("#reErr").innerHTML = `Type 'number' is not assignable to type 'WritableSignal&lt;number&gt;'.<div class="es">TypeScript ya te frena acá. Si igual llegara a ejecutarse, la propiedad dejaría de ser una señal: el template haría <code>contador()</code> sobre un número.</div>`;
+        R.broken = true; R.ptr = "num";
+        $$("#re .wire").forEach(w => w.classList.add("cold"));
+        movePtr(true);
+        const n = $("#sigNew"); n.classList.remove("hidden"); n.classList.add("orphan"); $("#sigNew .kind").textContent = "un número (ya no es señal)"; R.nu = 10; $("#sigNew .val").textContent = "10"; $("#sigNew .snote").textContent = "no tiene set, ni update, ni avisa";
+        await sleep(600);
+        const b = document.createElement("div"); b.className = "boom"; b.textContent = "💥"; b.style.left = "855px"; b.style.top = "30px"; reEl.appendChild(b);
+        R.broken = true; reRender();
+        reLog("En el navegador: <code>TypeError: this.contador is not a function</code>.");
+        reWhy("Peor todavía: <code>this.contador</code> ya ni siquiera es una señal. Se pierden las conexiones y además <code>contador()</code> explota porque un número no se puede llamar.", "bad");
+      }
+    } finally { R.busy = false; }
+  }
+  $$("#reActs .btn").forEach(b => b.addEventListener("click", () => reAct(b.dataset.r)));
+  $("#reReset").addEventListener("click", reReset);
+  $("#ro").addEventListener("change", () => { reReset(); if ($("#ro").checked) reWhy("Con <code>readonly</code> probá reasignarla.", "ok"); });
+  reReset();
+
+  /* =========================================================== MEMORIA VS PANTALLA */
+  const BASE = ["Ana Gómez", "Leo Pérez"];
+  const M = { mem: [], scr: [] };
+  function mpReset() { M.mem = [...BASE]; M.scr = [...BASE]; renderMP(); $("#mpWhy").className = "explain"; $("#mpWhy").innerHTML = "La lista de favoritos es una señal: <code>favoritos = signal([...])</code>, y el contador es <code>computed(() =&gt; favoritos().length)</code>. Probá distintas formas de agregar uno."; }
+  function renderMP() {
+    const list = (arr) => arr.map(n => `<div class="it">⭐ ${n}</div>`).join("");
+    $("#mem").innerHTML = list(M.mem) + `<div style="margin-top:8px">Cantidad: <span class="big">${M.mem.length}</span></div>`;
+    $("#scr").innerHTML = list(M.scr) + `<div style="margin-top:8px">Favoritos: <span class="big">${M.scr.length}</span></div>`;
+    const stale = M.mem.length !== M.scr.length;
+    $("#colScr").classList.toggle("stale", stale);
+  }
+  const MP = {
+    update: [true, "<code>update</code> recibe la lista vieja y devuelve una <strong>nueva</strong>. La señal ve que cambió, avisa, y la pantalla se actualiza."],
+    set: [true, "<code>set</code> con un array <strong>nuevo</strong> (<code>[...]</code> crea otro) también funciona: la señal ve un valor distinto y avisa."],
+    push: [false, "<code>push</code> cambia el array <strong>por dentro</strong>, pero sigue siendo el mismo array: la señal no se entera, el computed no se recalcula y la pantalla queda vieja. ¡En memoria hay 3 y en pantalla 2!"],
+    plain: [false, "Una variable común no avisa a nadie cuando cambia. Angular (sin zone.js) no sabe que tiene que redibujar: la pantalla queda vieja hasta que otra cosa la refresque."],
+  };
+  $$(".ops .btn[data-o]").forEach(b => b.addEventListener("click", () => {
+    if (M.mem.includes("Sofi Ruiz")) mpReset();
+    const [ok, t] = MP[b.dataset.o];
+    M.mem = [...M.mem, "Sofi Ruiz"];
+    if (ok) M.scr = [...M.mem];
+    renderMP();
+    $("#mpWhy").className = "explain " + (ok ? "ok" : "bad"); $("#mpWhy").innerHTML = (ok ? "✅ " : "😬 ") + t;
+  }));
+  $("#mpReset").addEventListener("click", mpReset);
+  mpReset();
+
+  /* =========================================================== QUIZ */
+  const QUESTIONS = [
+    { prompt: "¿Qué muestra el HTML?", code: `// en el .ts\nnombre = signal("Ana");\n\n// en el .html\n<p>{{ nombre }}</p>`, options: ["Ana", "La función, no el texto (algo como [Signal: Ana])", "Nada", "Un error al compilar"], right: 1, why: "Una señal se <strong>lee con paréntesis</strong>: <code>{{ nombre() }}</code>." },
+    { prompt: "¿Cuánto vale <code>doble()</code> al final?", code: `const n = signal(2);\nconst doble = computed(() => n() * 2);\nn.set(5);`, options: ["4", "10", "2", "undefined"], right: 1, why: "El computed depende de <code>n</code>: cuando <code>n</code> cambia, se recalcula. 5 × 2 = 10." },
+    { prompt: "¿Se actualiza la pantalla?", code: `favoritos = signal<Contact[]>([]);\n\nagregar(c: Contact) {\n  this.favoritos().push(c);\n}`, options: ["Sí", "No"], right: 1, why: "<code>push</code> cambia el array por dentro sin avisar. Hay que crear uno nuevo: <code>favoritos.update(l =&gt; [...l, c])</code>." },
+    { prompt: "¿Se actualiza la pantalla?", code: `favoritos = signal<Contact[]>([]);\n\nagregar(c: Contact) {\n  this.favoritos.update(l => [...l, c]);\n}`, options: ["Sí", "No"], right: 0, why: "<code>[...l, c]</code> es un array nuevo: la señal cambia y avisa." },
+    { prompt: "¿Para qué se usa un <code>effect</code>?", options: ["Para calcular un valor a partir de otras señales", "Para hacer algo «afuera» cuando cambian señales (guardar en localStorage, logout…)", "Para reemplazar al HTML", "Para pedir datos al back siempre"], right: 1, why: "Para <strong>calcular</strong> se usa <code>computed</code>; para <strong>hacer algo</strong> cuando cambian (efectos secundarios), <code>effect</code>. En la Agenda: guardar el token y cerrar la sesión al vencer." },
+    { prompt: "¿Se puede hacer <code>user.set(...)</code> si <code>user</code> es un <code>computed</code>?", options: ["Sí", "No: un computed se calcula solo, no se escribe"], right: 1, why: "El valor de un computed sale de su función. Para cambiarlo, cambiá las señales de las que depende." },
+    { prompt: "¿Cuántas veces se ejecuta el computed?", code: `const token = signal("abc");\nconst user = computed(() => decodificar(token()));\nuser(); user(); user();`, options: ["3", "1", "0", "Infinitas"], right: 1, why: "Calcula la primera vez y <strong>recuerda</strong> el resultado. Mientras <code>token</code> no cambie, devuelve lo guardado." },
+    { prompt: "¿Se actualiza la pantalla?", code: `contador = signal(0);   // el HTML muestra {{ contador() }}\n\nreiniciar() {\n  this.contador = signal(0);\n}`, options: ["Sí", "No: el HTML sigue conectado a la señal vieja"], right: 1, why: "Reasignar crea <strong>otra señal</strong>; los consumidores siguen anotados en la vieja. Se hace <code>this.contador.set(0)</code>. Y si la declarás <code>readonly</code>, TypeScript ni te deja reasignarla." },
+    { prompt: "<code>contador = signal(0)</code>. ¿Cuál suma 1?", options: ["contador++", "contador = contador + 1", "contador.update(n => n + 1)", "contador(1)"], right: 2, why: "Se escribe con <code>set(valor)</code> o <code>update(fn)</code>. <code>update</code> recibe el valor actual." },
+  ];
+  quiz($("#quiz"), { questions: QUESTIONS, shuffle: false, summary: "Para llevarse: <code>signal</code> guarda un valor y avisa cuando cambia · se lee con <code>()</code> y se escribe con <code>set</code>/<code>update</code> · <code>computed</code> calcula a partir de otras señales y recuerda el resultado · <code>effect</code> hace algo afuera cuando cambian · <strong>nunca reasignes una señal</strong> (perdés las conexiones): usá <code>set</code>/<code>update</code> y declarala <code>readonly</code> · ojo con <code>push</code>: hay que crear un valor nuevo." });
+
+  bindSeg("#modeSeg", (m) => { $("#netView").hidden = m !== "net"; $("#reView").hidden = m !== "re"; if (m === "re") reFit(); $("#mpView").hidden = m !== "mp"; $("#gameView").hidden = m !== "game"; if (m === "net") fit(); });
+})();
+</script>
+</body>
+</html>
