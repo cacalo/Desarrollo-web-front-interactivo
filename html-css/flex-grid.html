@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flexbox vs Grid · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<style>
+  .duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin-top: 14px; }
+  @media (max-width: 1000px) { .duo { grid-template-columns: 1fr; } }
+  .ctrl { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+  .ctrl input[type=range] { width: 220px; accent-color: #7b2cbf; }
+  .ctrl label { display: flex; gap: 6px; align-items: center; font-weight: 700; }
+  .stage { position: relative; background: repeating-linear-gradient(45deg, #faf8f5 0 10px, #f3f0ea 10px 20px); border: 2px dashed #cfc6dd; border-radius: 14px; padding: 12px; min-height: 120px; }
+  .box { position: relative; }
+  .it { background: #fff; border: 2px solid var(--c, #7b2cbf); border-radius: 10px; padding: 10px 12px; font-weight: 700; color: var(--c, #7b2cbf); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; z-index: 2; transition: all .3s; }
+  .it small { display: block; font-weight: 400; color: var(--ink-2); font-size: .78rem; }
+  .flex-c { display: flex; flex-wrap: wrap; gap: 10px; }
+  .flex-c .it { flex: 1 1 auto; }
+  .grid-c { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .band { position: absolute; z-index: 1; border-radius: 8px; pointer-events: none; transition: all .3s; }
+  .band.row { background: rgba(230, 89, 12, .12); border: 2px dashed rgba(230, 89, 12, .55); }
+  .band.col { background: rgba(26, 95, 180, .1); border: 2px dashed rgba(26, 95, 180, .5); }
+  .band span { position: absolute; top: -11px; left: 6px; font-size: .7rem; font-weight: 800; background: #fff; border-radius: 6px; padding: 0 5px; }
+  .band.row span { color: #c25008; } .band.col span { color: #1a5fb4; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .head h3 { margin: 0; }
+  .css { margin-top: 10px; }
+  /* jugar */
+  .play { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; margin-top: 14px; align-items: start; }
+  @media (max-width: 1000px) { .play { grid-template-columns: 1fr; } }
+  #pBox { min-height: 300px; }
+  #pBox .it { white-space: normal; }
+  .props { display: flex; flex-direction: column; gap: 10px; }
+  .props .row { display: grid; grid-template-columns: 150px 1fr; gap: 8px; align-items: center; }
+  .props .row b { font-family: var(--mono); font-size: .85rem; }
+  .props .seg button { font-family: var(--mono); font-size: .8rem; padding: 4px 8px; }
+  .axis { position: absolute; z-index: 3; font-weight: 800; color: #c25008; font-size: .85rem; background: #fff; border: 2px solid #c25008; border-radius: 999px; padding: 1px 10px; pointer-events: none; }
+  .game { max-width: 980px; margin-top: 16px; }
+  .sk { display: inline-grid; gap: 4px; padding: 6px; border: 2px solid var(--line); border-radius: 8px; background: #fff; vertical-align: middle; margin-top: 8px; }
+  .sk i { display: block; background: #e5dcf7; border-radius: 4px; min-height: 18px; min-width: 18px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › HTML y CSS › <strong>Flexbox vs Grid</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="side" aria-pressed="true">⚖️ Lado a lado</button>
+      <button data-v="play">🎛️ Jugar con las propiedades</button>
+      <button data-v="game">🎲 ¿Flex o grid?</button>
+    </div>
+  </div>
+
+  <!-- ====================================================== lado a lado -->
+  <section id="sideView">
+    <div class="ctrl">
+      <label>Ancho del contenedor <input type="range" id="w" min="260" max="640" value="560"> <span id="wv" style="font-family:var(--mono)"></span></label>
+      <label><input type="checkbox" id="lines" checked> Mostrar filas y columnas</label>
+      <label>Elementos <input type="range" id="n" min="3" max="10" value="8"> <span id="nv" style="font-family:var(--mono)"></span></label>
+    </div>
+    <div class="duo">
+      <div class="panel">
+        <div class="head"><h3 style="color:#c25008">Flexbox</h3><span class="pill warn">1 dimensión: filas</span></div>
+        <div class="stage box flex-c" id="flexBox" style="margin-top:12px"></div>
+        <div class="css" id="flexCss"></div>
+      </div>
+      <div class="panel">
+        <div class="head"><h3 style="color:#1a5fb4">Grid</h3><span class="pill info">2 dimensiones: filas y columnas</span></div>
+        <div class="stage box grid-c" id="gridBox" style="margin-top:12px"></div>
+        <div class="css" id="gridCss"></div>
+      </div>
+    </div>
+    <div class="explain" id="sideWhy">Mismos contactos, mismo ancho. Mové el <strong>ancho del contenedor</strong> y mirá cómo se acomoda cada uno.</div>
+  </section>
+
+  <!-- ====================================================== jugar -->
+  <section id="playView" hidden>
+    <div class="play">
+      <div>
+        <div class="stage box" id="pBox"></div>
+        <div class="css" id="pCss"></div>
+      </div>
+      <div class="panel">
+        <div class="props">
+          <div class="row"><b>display</b><div class="seg" id="pDisp"><button data-v="flex" aria-pressed="true">flex</button><button data-v="grid">grid</button></div></div>
+          <div id="flexProps" class="props">
+            <div class="row"><b>flex-direction</b><div class="seg" data-p="flexDirection"><button data-v="row" aria-pressed="true">row</button><button data-v="column">column</button></div></div>
+            <div class="row"><b>justify-content</b><div class="seg" data-p="justifyContent"><button data-v="flex-start" aria-pressed="true">flex-start</button><button data-v="center">center</button><button data-v="space-between">space-between</button></div></div>
+            <div class="row"><b>align-items</b><div class="seg" data-p="alignItems"><button data-v="stretch" aria-pressed="true">stretch</button><button data-v="center">center</button><button data-v="flex-start">flex-start</button></div></div>
+            <div class="row"><b>flex-wrap</b><div class="seg" data-p="flexWrap"><button data-v="nowrap" aria-pressed="true">nowrap</button><button data-v="wrap">wrap</button></div></div>
+          </div>
+          <div id="gridProps" class="props" hidden>
+            <div class="row"><b>grid-template-columns</b><div class="seg" data-p="gridTemplateColumns" style="flex-wrap:wrap"><button data-v="repeat(3, 1fr)" aria-pressed="true">repeat(3, 1fr)</button><button data-v="1fr 2fr 1fr">1fr 2fr 1fr</button><button data-v="200px 1fr">200px 1fr</button><button data-v="repeat(auto-fill, minmax(140px, 1fr))">auto-fill…</button></div></div>
+            <div class="row"><b>align-items</b><div class="seg" data-p="alignItems"><button data-v="stretch" aria-pressed="true">stretch</button><button data-v="center">center</button><button data-v="start">start</button></div></div>
+            <div class="row"><b>el 1º ocupa</b><div class="seg" id="span"><button data-v="1" aria-pressed="true">1 columna</button><button data-v="2">grid-column: span 2</button></div></div>
+          </div>
+          <div class="row"><b>gap</b><input type="range" id="gap" min="0" max="30" value="10"></div>
+        </div>
+        <div class="explain" id="playWhy" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, $$, bindSeg, setSeg, codeBox, quiz } = UI;
+  const NAMES = ["Ana", "Leonardo Pérez", "Sofi", "Matías Díaz Rodríguez", "Caro", "Juan Paz", "Valentina", "Tomi", "Mati", "Josefina Sosa"];
+  const COLORS = ["#7b2cbf", "#d6336c", "#1a5fb4", "#2a9d8f", "#e8590c", "#b26a00", "#5f3dc4", "#1f8a4c", "#c3002f", "#0b7285"];
+  const item = (i, txt) => `<div class="it" style="--c:${COLORS[i % 10]}">${txt}</div>`;
+
+  /* ---------- bandas: filas (flex) o filas y columnas (grid) ---------- */
+  function bands(box, mode) {
+    $$(".band", box).forEach(b => b.remove());
+    if (!$("#lines").checked && box.id !== "pBox") return;
+    const its = $$(".it", box); if (!its.length) return;
+    const pad = 4, add = (cls, l, t, w, h, txt) => { const d = document.createElement("div"); d.className = "band " + cls; Object.assign(d.style, { left: l - pad + "px", top: t - pad + "px", width: w + pad * 2 + "px", height: h + pad * 2 + "px" }); d.innerHTML = `<span>${txt}</span>`; box.appendChild(d); };
+    const groupBy = (key) => { const m = new Map(); its.forEach(it => { const k = Math.round(it[key]); if (!m.has(k)) m.set(k, []); m.get(k).push(it); }); return [...m.values()]; };
+    const rows = groupBy("offsetTop");
+    rows.forEach((r, i) => { const l = Math.min(...r.map(x => x.offsetLeft)), rgt = Math.max(...r.map(x => x.offsetLeft + x.offsetWidth)), t = Math.min(...r.map(x => x.offsetTop)), b = Math.max(...r.map(x => x.offsetTop + x.offsetHeight)); add("row", l, t, rgt - l, b - t, `fila ${i + 1}`); });
+    if (mode === "grid") {
+      const st = getComputedStyle(box), cols = st.gridTemplateColumns.split(" ").map(parseFloat), gap = parseFloat(st.columnGap) || 0;
+      let x = parseFloat(st.paddingLeft); const top = parseFloat(st.paddingTop), h = box.clientHeight - top - parseFloat(st.paddingBottom);
+      cols.forEach((c, i) => { add("col", x, top, c, h, `col ${i + 1}`); x += c + gap; });
+    }
+  }
+
+  /* =========================================================== LADO A LADO */
+  function renderSide() {
+    const n = +$("#n").value, w = +$("#w").value;
+    $("#wv").textContent = w + "px"; $("#nv").textContent = n;
+    const html = NAMES.slice(0, n).map((t, i) => item(i, t)).join("");
+    for (const b of [$("#flexBox"), $("#gridBox")]) { b.innerHTML = html; b.style.width = w + "px"; b.style.maxWidth = "100%"; }
+    requestAnimationFrame(() => { bands($("#flexBox"), "flex"); bands($("#gridBox"), "grid"); });
+  }
+  codeBox($("#flexCss"), `.contenedor {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 10px;\n}\n.contenedor > * { flex: 1 1 auto; }`);
+  codeBox($("#gridCss"), `.contenedor {\n  display: grid;\n  grid-template-columns:\n    repeat(auto-fill, minmax(130px, 1fr));\n  gap: 10px;\n}`);
+  ["#w", "#n"].forEach(id => $(id).addEventListener("input", renderSide));
+  $("#lines").addEventListener("change", renderSide);
+  let whyShown = false;
+  $("#w").addEventListener("input", () => {
+    if (whyShown) return; whyShown = true;
+    $("#sideWhy").className = "explain ok";
+    $("#sideWhy").innerHTML = "<strong>Flexbox</strong> piensa en <strong>filas</strong>: acomoda los elementos uno al lado del otro según lo que mide cada uno, y cuando no entran pasa a la fila de abajo. Cada fila se reparte el espacio a su manera, así que <strong>no hay columnas</strong>: los bordes no quedan alineados. <strong>Grid</strong> arma primero una <strong>cuadrícula</strong> (filas y columnas) y pone cada elemento en una celda: todo queda alineado, sin importar lo que mide cada texto.";
+  });
+
+  /* =========================================================== JUGAR */
+  const P = { disp: "flex", flexDirection: "row", justifyContent: "flex-start", alignItems: "stretch", flexWrap: "nowrap", gridTemplateColumns: "repeat(3, 1fr)", gAlign: "stretch", span: "1", gap: 10 };
+  const kebab = (s) => s.replace(/[A-Z]/g, m => "-" + m.toLowerCase());
+  function renderPlay() {
+    const b = $("#pBox");
+    b.innerHTML = [0, 1, 2, 3, 4, 5].map(i => item(i, `${i + 1}<small>${["contacto", "un contacto con nombre largo", "otro", "contacto", "x", "último"][i]}</small>`)).join("");
+    b.removeAttribute("style"); b.style.display = P.disp; b.style.gap = P.gap + "px";
+    let css;
+    if (P.disp === "flex") {
+      Object.assign(b.style, { flexDirection: P.flexDirection, justifyContent: P.justifyContent, alignItems: P.alignItems, flexWrap: P.flexWrap });
+      css = `.contenedor {\n  display: flex;\n  flex-direction: ${P.flexDirection};\n  justify-content: ${P.justifyContent};\n  align-items: ${P.alignItems};\n  flex-wrap: ${P.flexWrap};\n  gap: ${P.gap}px;\n}`;
+      $$(".it", b).forEach(x => x.style.minWidth = P.flexWrap === "wrap" ? "140px" : "");
+    } else {
+      Object.assign(b.style, { gridTemplateColumns: P.gridTemplateColumns, alignItems: P.gAlign });
+      if (P.span === "2") $(".it", b).style.gridColumn = "span 2";
+      css = `.contenedor {\n  display: grid;\n  grid-template-columns: ${P.gridTemplateColumns};\n  align-items: ${P.gAlign};\n  gap: ${P.gap}px;\n}` + (P.span === "2" ? `\n.contenedor > :first-child {\n  grid-column: span 2;\n}` : "");
+    }
+    codeBox($("#pCss"), css);
+    requestAnimationFrame(() => {
+      bands(b, P.disp);
+      $$(".axis", b).forEach(a => a.remove());
+      if (P.disp === "flex") { const a = document.createElement("div"); a.className = "axis"; a.textContent = P.flexDirection === "row" ? "eje principal →" : "eje principal ↓"; Object.assign(a.style, P.flexDirection === "row" ? { right: "10px", bottom: "-14px" } : { right: "-12px", bottom: "8px" }); b.appendChild(a); }
+    });
+    $("#flexProps").hidden = P.disp !== "flex"; $("#gridProps").hidden = P.disp !== "grid";
+    $("#playWhy").innerHTML = P.disp === "flex"
+      ? "En flex todo gira alrededor del <strong>eje principal</strong>: <code>justify-content</code> reparte <em>a lo largo</em> del eje y <code>align-items</code> acomoda <em>de costado</em>. Probá <code>flex-direction: column</code>: los dos se dan vuelta."
+      : "En grid el <strong>contenedor</strong> decide la cuadrícula con <code>grid-template-columns</code>; <code>fr</code> es «una parte del espacio que sobra». Los elementos se van ubicando en las celdas, y uno puede ocupar varias con <code>span</code>.";
+  }
+  bindSeg("#pDisp", (v) => { P.disp = v; renderPlay(); });
+  $$("#flexProps .seg, #gridProps .seg[data-p]").forEach(s => bindSeg(s, (v) => { const k = s.dataset.p; if (s.closest("#gridProps") && k === "alignItems") P.gAlign = v; else P[k] = v; renderPlay(); }));
+  bindSeg("#span", (v) => { P.span = v; renderPlay(); });
+  $("#gap").addEventListener("input", () => { P.gap = +$("#gap").value; renderPlay(); });
+
+  /* =========================================================== QUIZ */
+  const sk = (cols, cells) => `<div class="sk" style="grid-template-columns:${cols}">${cells}</div>`;
+  const FG = ["Flexbox", "Grid", "Cualquiera de los dos"];
+  const QUESTIONS = [
+    { prompt: `La barra de arriba de la Agenda: logo a la izquierda y botones a la derecha, en <strong>una sola fila</strong>.<br>${sk("40px 1fr 30px 30px", "<i></i><i style='background:none'></i><i></i><i></i>")}`, options: FG, right: 0, why: "Una fila de elementos que se reparten el espacio: flex con <code>justify-content: space-between</code> (o un <code>margin-left: auto</code>)." },
+    { prompt: `Una galería de tarjetas de contactos que tienen que quedar <strong>alineadas en columnas</strong>.<br>${sk("repeat(4, 30px)", "<i></i><i></i><i></i><i></i><i></i><i></i><i></i>")}`, options: FG, right: 1, why: "Filas <strong>y</strong> columnas alineadas: grid con <code>repeat(auto-fill, minmax(...))</code>." },
+    { prompt: `El esqueleto de la página: header arriba, menú al costado, contenido y footer.<br>${sk("40px 90px", "<i style='grid-column:span 2'></i><i style='height:40px'></i><i></i><i style='grid-column:span 2'></i>")}`, options: FG, right: 1, why: "Es un plano en dos dimensiones: grid (hasta se le puede poner nombre a cada zona con <code>grid-template-areas</code>)." },
+    { prompt: "Centrar un botón adentro de una caja, horizontal y vertical.", options: FG, right: 2, why: "Los dos sirven: <code>display: flex; justify-content: center; align-items: center</code> o <code>display: grid; place-items: center</code>." },
+    { prompt: `Los chips de grupos de un contacto (Familia, Trabajo, Fútbol…), que <strong>miden distinto</strong> y bajan de renglón si no entran.<br>${sk("50px 30px 70px 40px", "<i></i><i></i><i></i><i></i>")}`, options: FG, right: 0, why: "Cada chip mide lo que su texto; no hace falta alinear columnas: flex con <code>flex-wrap: wrap</code>." },
+    { prompt: "¿Quién decide el tamaño de las columnas en grid?", options: ["Cada elemento, según su contenido", "El contenedor, con grid-template-columns", "El navegador al azar", "El HTML"], right: 1, why: "En grid el contenedor dibuja la cuadrícula y los hijos se acomodan en ella. En flex, en cambio, manda más el tamaño de cada hijo." },
+    { prompt: "Con <code>flex-direction: column</code>, ¿hacia dónde reparte <code>justify-content</code>?", options: ["Horizontal", "Vertical", "No hace nada", "En diagonal"], right: 1, why: "<code>justify-content</code> trabaja sobre el <strong>eje principal</strong>; si la dirección es columna, el eje es vertical." },
+    { prompt: "<code>grid-template-columns: 1fr 2fr 1fr</code> en un contenedor de 800px (sin gap). ¿Cuánto mide la del medio?", options: ["200px", "400px", "533px", "Depende del texto"], right: 1, why: "Hay 4 partes (1+2+1): cada parte son 200px y la del medio tiene 2 → 400px." },
+  ];
+  quiz($("#quiz"), { questions: QUESTIONS, shuffle: false, summary: "Para llevarse: <strong>flexbox</strong> = una dimensión (una fila o una columna), los elementos deciden cuánto miden y se reparten el espacio · <strong>grid</strong> = dos dimensiones, el contenedor dibuja filas y columnas y todo queda alineado · barras, chips y centrar → flex · galerías y el plano de la página → grid. Y se combinan: un grid de tarjetas donde cada tarjeta usa flex por dentro." });
+
+  bindSeg("#modeSeg", (m) => { $("#sideView").hidden = m !== "side"; $("#playView").hidden = m !== "play"; $("#gameView").hidden = m !== "game"; if (m === "side") renderSide(); if (m === "play") renderPlay(); });
+  addEventListener("resize", () => { if (!$("#sideView").hidden) renderSide(); });
+  renderSide();
+})();
+</script>
+<script src="../assets/js/videos.js"></script>
+</body>
+</html>

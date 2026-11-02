@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>@if y @for · Clases interactivas</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/kit.css">
+<link rel="stylesheet" href="../assets/css/agenda.css">
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 18px; margin-top: 14px; align-items: start; }
+  @media (max-width: 1050px) { .layout { grid-template-columns: 1fr; } }
+  .data { font-family: var(--mono); font-size: .9rem; background: #19181e; color: #e8e6ef; border-radius: 14px; padding: 10px 12px; }
+  .data .dk { color: #7f8c98; }
+  .data .di { display: flex; align-items: center; gap: 6px; padding: 3px 0; animation: slidein .25s; }
+  .data .di .s { color: #ffd479; } .data .di .n { color: #a8e6a3; }
+  .data .di button { margin-left: auto; font-size: .8rem; border: 0; background: #2f2d38; color: #e8e6ef; border-radius: 6px; padding: 1px 7px; cursor: pointer; }
+  .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .opts { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .opts .seg button { font-family: var(--mono); font-size: .85rem; }
+  .opts label { display: flex; gap: 6px; align-items: center; font-weight: 700; }
+  #tpl { margin-top: 12px; }
+  .screen-body { padding: 12px; min-height: 260px; }
+  .screen-body h3 { margin: 0 0 8px; }
+  #rows { display: flex; flex-direction: column; gap: 6px; position: relative; }
+  .crow { grid-template-columns: 26px 36px 1.3fr 1fr auto; position: relative; }
+  .crow .ix { font-family: var(--mono); font-weight: 800; color: #7b2cbf; }
+  .crow .badge { font-size: .72rem; font-weight: 800; border-radius: 999px; padding: 1px 8px; opacity: 0; transition: opacity .3s; white-space: nowrap; }
+  .crow.isnew { border-color: var(--ok); box-shadow: 0 0 0 4px rgba(31,138,76,.18); }
+  .crow.isnew .badge { opacity: 1; background: var(--ok-bg); color: var(--ok); }
+  .crow.repaint { border-color: #e0a800; box-shadow: 0 0 0 4px rgba(224,168,0,.25); }
+  .crow.repaint .badge { opacity: 1; background: #fff6d6; color: #8a6400; }
+  .crow.moved .badge { opacity: 1; background: var(--info-bg); color: var(--info); }
+  .crow.bye { opacity: 0; transform: translateX(40px) !important; border-color: var(--bad); transition: all .45s; }
+  .crow .star { color: #e0a800; }
+  .stamp-in { animation: stampin .45s cubic-bezier(.3,1.6,.6,1); }
+  @keyframes stampin { from { transform: scale(1.2); opacity: 0; } }
+  .empty { color: var(--ink-2); text-align: center; padding: 30px 10px; font-size: 1.05rem; animation: pop .4s; }
+  .stats { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .stats .pill { font-size: .85rem; }
+  .lap { font-family: var(--mono); background: #f0e8fb; color: #5b2aa6; border: 2px solid #b9a2e6; border-radius: 10px; padding: 4px 10px; margin-bottom: 8px; min-height: 1.9em; }
+  /* @if */
+  .dom { font-family: var(--mono); font-size: .88rem; background: #19181e; color: #e8e6ef; border-radius: 14px; padding: 10px 12px; margin-top: 12px; white-space: pre; overflow-x: auto; }
+  .dom .tg { color: #ff7ab2; } .dom .cm { color: #7f8c98; font-style: italic; } .dom .new { background: rgba(80,200,120,.25); border-radius: 4px; }
+  .loading { display: flex; align-items: center; gap: 10px; color: var(--ink-2); padding: 30px 10px; justify-content: center; }
+  .spin { width: 22px; height: 22px; border: 3px solid #e5dcf7; border-top-color: #7b2cbf; border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .game { max-width: 980px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">A</div>
+  <nav class="crumbs"><a href="../index.html">Clases interactivas</a> › Angular › <strong>@if y @for en el template</strong></nav>
+</header>
+
+<main class="wrap">
+  <div class="modes">
+    <div class="seg" id="modeSeg">
+      <button data-v="if" aria-pressed="true">❓ @if</button>
+      <button data-v="for">🔁 @for</button>
+      <button data-v="game">🎲 ¿Qué se ve?</button>
+    </div>
+  </div>
+
+  <!-- ====================================================== @for -->
+  <section class="layout" id="forView" hidden>
+    <div>
+      <div class="col-title">En el .ts <small>la señal con los datos</small></div>
+      <div class="data" id="data"></div>
+      <div class="acts">
+        <button class="btn" data-a="add">➕ Agregar</button>
+        <button class="btn" data-a="del">🗑️ Borrar el primero</button>
+        <button class="btn" data-a="shuffle">🔀 Mezclar el orden</button>
+        <button class="btn" data-a="empty">∅ Vaciar</button>
+        <button class="btn" data-a="reset">↺ Original</button>
+      </div>
+      <div class="opts">
+        <div class="seg" id="trackSeg"><button data-v="id" aria-pressed="true">track contact.id</button><button data-v="index">track $index</button></div>
+        <label><input type="checkbox" id="showIdx"> usar <code>$index</code></label>
+      </div>
+      <div class="col-title" style="margin-top:12px">En el .html <small>el template</small></div>
+      <div id="tpl"></div>
+    </div>
+    <div>
+      <div class="ag">
+        <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="url">localhost:4200/<b>contacts</b></div></div>
+        <div class="ag-tb"><div class="ib">☰</div><div class="ttl">Agenda</div><div class="who">Hola, Calo</div></div>
+        <div class="screen-body">
+          <div class="lap" id="lap" hidden></div>
+          <h3 id="title"></h3>
+          <div id="rows"></div>
+        </div>
+      </div>
+      <div class="bar"><button class="btn primary" id="lapBtn">▶ Ver vuelta por vuelta</button></div>
+      <div class="stats" id="stats"></div>
+      <div class="explain" id="forWhy">El <code>@for</code> repite el bloque <strong>una vez por cada elemento</strong> de la lista. Tocá los botones de la izquierda y mirá qué filas se crean, cuáles se reutilizan y cuáles se borran.</div>
+    </div>
+  </section>
+
+  <!-- ====================================================== @if -->
+  <section class="layout" id="ifView">
+    <div>
+      <div class="col-title">El estado de los datos</div>
+      <div class="seg" id="stSeg"><button data-v="loading">⏳ cargando</button><button data-v="empty">∅ sin contactos</button><button data-v="data" aria-pressed="true">📇 con contactos</button></div>
+      <div class="col-title" style="margin-top:14px">En el .html</div>
+      <div id="tplIf"></div>
+      <div class="col-title" style="margin-top:14px">El DOM de verdad <small>lo que existe en la página (DevTools)</small></div>
+      <div class="dom" id="dom"></div>
+    </div>
+    <div>
+      <div class="ag">
+        <div class="chrome"><div class="lights"><i></i><i></i><i></i></div><div class="url">localhost:4200/<b>contacts</b></div></div>
+        <div class="ag-tb"><div class="ib">☰</div><div class="ttl">Agenda</div><div class="who">Hola, Calo</div></div>
+        <div class="screen-body" id="ifScreen"></div>
+      </div>
+      <div class="explain" id="ifWhy"></div>
+    </div>
+  </section>
+
+  <section class="game" id="gameView" hidden><div class="panel" id="quiz"></div></section>
+</main>
+
+<script src="../assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, $$, sleep, esc, bindSeg, codeBox, quiz } = UI;
+  const POOL = [
+    { id: 1, n: "Ana Gómez", ph: "351 555-1234", fav: true }, { id: 2, n: "Leo Pérez", ph: "351 444-8811", fav: false },
+    { id: 3, n: "Sofi Ruiz", ph: "11 4321-0000", fav: false }, { id: 4, n: "Mati Díaz", ph: "261 555-7788", fav: true },
+    { id: 5, n: "Caro Sosa", ph: "351 222-3344", fav: false }, { id: 6, n: "Juan Paz", ph: "341 999-1212", fav: false },
+    { id: 7, n: "Vale Ríos", ph: "11 5555-0101", fav: false },
+  ];
+  const ini = (n) => n.split(" ").map(x => x[0]).join("").slice(0, 2);
+
+  /* =========================================================== @for */
+  const F = { list: POOL.slice(0, 4).map(c => ({ ...c })), next: 5, track: "id", idx: false, busy: false };
+  let box;
+  function renderTpl() {
+    box = codeBox($("#tpl"), `<h3>Mis contactos ({{ contacts().length }})</h3>\n@for (contact of contacts(); track ${F.track === "id" ? "contact.id" : "$index"}) {\n  ${F.idx ? "{{ $index + 1 }}. " : ""}<app-contact-summary [contact]="contact" />\n} @empty {\n  <p>No tenés contactos todavía 🙃</p>\n}`);
+  }
+  function renderData() {
+    $("#data").innerHTML = `<div><span class="dk">contacts = signal([</span></div>` + F.list.map((c, i) => `<div class="di">&nbsp;&nbsp;{ id: <span class="n">${c.id}</span>, firstName: <span class="s">"${esc(c.n)}"</span> },<button data-ren="${i}" title="cambiar el nombre">✏️</button></div>`).join("") + `<div><span class="dk">]);</span></div>`;
+  }
+  const rowInner = (c, i) => `${F.idx ? `<div class="ix">${i + 1}.</div>` : "<div></div>"}<div class="av">${ini(c.n)}</div><div class="nm">${esc(c.n)}${c.fav ? ' <span class="star">⭐</span>' : ""}</div><div class="ph">📞 ${c.ph}</div><span class="badge"></span>`;
+  const ck = (c) => c.n + "|" + c.fav + "|" + c.ph;
+  // cada fila del DOM recuerda su clave de track y lo que muestra
+  function paint(stats = true) {
+    const rows = $("#rows"), keyOf = (c, i) => F.track === "id" ? "id" + c.id : "i" + i;
+    $("#title").textContent = `Mis contactos (${F.list.length})`;
+    const old = new Map($$(".crow", rows).filter(r => !r.classList.contains("bye")).map(r => [r.dataset.k, r]));
+    const before = new Map([...old].map(([k, r]) => [k, r.getBoundingClientRect().top]));
+    const S = { nuevas: 0, reutilizadas: 0, repintadas: 0, borradas: 0 };
+    const keep = new Set(F.list.map(keyOf));
+    // borrar las que ya no están
+    old.forEach((r, k) => { if (!keep.has(k)) { S.borradas++; r.classList.add("bye"); $(".badge", r).textContent = "se borra"; setTimeout(() => r.remove(), 450); } });
+    $$(".empty", rows).forEach(e => e.remove());
+    const els = F.list.map((c, i) => {
+      const k = keyOf(c, i), html = rowInner(c, i);
+      let r = old.get(k);
+      r?.classList.remove("isnew", "repaint", "moved");
+      if (!r) { r = document.createElement("div"); r.className = "crow stamp-in"; r.dataset.k = k; r.innerHTML = html; r.classList.add("isnew"); $(".badge", r).textContent = "nueva"; S.nuevas++; }
+      else if (r.dataset.h !== ck(c)) { r.innerHTML = html; r.classList.add("repaint"); $(".badge", r).textContent = "se re-pinta"; S.repintadas++; }
+      else { r.innerHTML = html; S.reutilizadas++; } // sólo se actualiza $index, que es un número
+      r.dataset.h = ck(c); return r;
+    });
+    els.forEach(r => rows.appendChild(r));
+    $$(".bye", rows).forEach(r => rows.appendChild(r)); // las que se van, al final mientras desaparecen
+    // las que se movieron: animación FLIP
+    els.forEach(r => {
+      const b = before.get(r.dataset.k); if (b === undefined) return;
+      const d = b - r.getBoundingClientRect().top;
+      if (Math.abs(d) > 2) { if (!r.classList.contains("repaint")) { r.classList.add("moved"); $(".badge", r).textContent = "se mueve"; } r.style.transition = "none"; r.style.transform = `translateY(${d}px)`; requestAnimationFrame(() => requestAnimationFrame(() => { r.style.transition = "transform .5s"; r.style.transform = ""; })); }
+    });
+    if (!F.list.length) rows.insertAdjacentHTML("beforeend", `<p class="empty">No tenés contactos todavía 🙃</p>`);
+    setTimeout(() => $$(".crow", rows).forEach(r => { r.classList.remove("isnew", "repaint", "moved", "stamp-in"); }), 1600);
+    if (stats) $("#stats").innerHTML = `<span class="pill ok">🆕 ${S.nuevas} nuevas</span><span class="pill info">♻️ ${S.reutilizadas + (S.repintadas ? 0 : 0)} reutilizadas</span><span class="pill warn">🖌️ ${S.repintadas} re-pintadas</span><span class="pill bad">🗑️ ${S.borradas} borradas</span>`;
+    box.mark(F.list.length ? [2, 3, 4] : [4, 5]);
+    return S;
+  }
+  const why = (t, k = "") => { $("#forWhy").className = "explain " + k; $("#forWhy").innerHTML = t; };
+  function shuffle(a) { const b = [...a]; do { for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } } while (b.length > 1 && b.every((x, i) => x === a[i])); return b; }
+  $(".acts").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-a]"); if (!b || F.busy) return;
+    const a = b.dataset.a;
+    if (a === "add") { const c = POOL.find(p => !F.list.some(x => x.id === p.id)); if (!c) return why("Ya están todos los contactos de ejemplo.", "warn"); F.list = [...F.list, { ...c }]; }
+    if (a === "del") F.list = F.list.slice(1);
+    if (a === "shuffle") F.list = shuffle(F.list);
+    if (a === "empty") F.list = [];
+    if (a === "reset") F.list = POOL.slice(0, 4).map(c => ({ ...c }));
+    renderData(); const S = paint();
+    const t = F.track === "id";
+    const W = {
+      add: `Se agregó uno a la señal: Angular crea <strong>sólo esa fila</strong> nueva; las demás se reutilizan tal cual.`,
+      del: t ? "Se borró el primero: con <code>track contact.id</code> Angular sabe <strong>cuál</strong> se fue y borra justo esa fila. Las otras suben sin re-pintarse." : "Con <code>track $index</code> Angular sólo ve que ahora hay una posición menos: borra <strong>la última fila</strong> y <strong>re-pinta todas las demás</strong> corriendo los datos un lugar. Más trabajo, y si una fila tenía algo propio (un input escrito, una animación) se le «cambia» el contacto de abajo.",
+      shuffle: t ? "Mismos contactos, otro orden: con <code>track contact.id</code> cada fila <strong>se mueve</strong> a su lugar nuevo sin rehacerse." : "Con <code>track $index</code> la fila 1 sigue siendo «la fila 1», pero ahora le toca otro contacto: Angular <strong>re-pinta</strong> casi todas.",
+      empty: "La lista quedó vacía: se borran todas las filas y aparece el bloque <code>@empty</code>.",
+      reset: "Lista original.",
+    };
+    why(W[a], a === "del" || a === "shuffle" ? (t ? "ok" : "warn") : "");
+  });
+  $("#data").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-ren]"); if (!b) return;
+    const i = +b.dataset.ren, c = F.list[i];
+    F.list = F.list.map((x, j) => j === i ? { ...x, n: x.n.endsWith("✏️") ? x.n.replace(" ✏️", "") : x.n + " ✏️" } : x);
+    renderData(); paint();
+    why(`Cambió el nombre de un contacto: sólo <strong>esa fila</strong> se re-pinta.`);
+  });
+  bindSeg("#trackSeg", (v) => { F.track = v; renderTpl(); $("#rows").innerHTML = ""; paint(false); $("#stats").innerHTML = ""; why(v === "id" ? "<code>track contact.id</code>: Angular reconoce cada fila por el <strong>id</strong> del contacto. Es lo recomendado cuando los datos tienen id." : "<code>track $index</code>: Angular reconoce cada fila sólo por su <strong>posición</strong>. Probá borrar el primero o mezclar y compará."); });
+  $("#showIdx").addEventListener("change", () => { F.idx = $("#showIdx").checked; renderTpl(); paint(); why(F.idx ? "<code>$index</code> es una variable que el <code>@for</code> te da gratis: la posición (empieza en 0, por eso <code>+ 1</code>). También existen <code>$first</code>, <code>$last</code>, <code>$even</code>, <code>$odd</code> y <code>$count</code>." : ""); });
+  $("#lapBtn").addEventListener("click", async () => {
+    if (F.busy || !F.list.length) return; F.busy = true; $("#lapBtn").disabled = true;
+    const rows = $("#rows"); rows.innerHTML = ""; $("#stats").innerHTML = ""; const lap = $("#lap"); lap.hidden = false;
+    box.mark([2]); lap.textContent = `contacts() tiene ${F.list.length} elementos`; await sleep(900);
+    for (let i = 0; i < F.list.length; i++) {
+      const c = F.list[i];
+      box.mark([3]); lap.textContent = `vuelta ${i + 1}: contact = { id: ${c.id}, firstName: "${c.n}" }${F.idx ? ` · $index = ${i}` : ""}`;
+      $$("#data .di")[i]?.animate([{ background: "rgba(255,214,102,.35)" }, { background: "transparent" }], { duration: 800 });
+      const r = document.createElement("div"); r.className = "crow stamp-in"; r.dataset.k = F.track === "id" ? "id" + c.id : "i" + i; r.innerHTML = rowInner(c, i); r.dataset.h = ck(c); rows.appendChild(r);
+      await sleep(850);
+    }
+    box.mark([4]); lap.textContent = "se terminó la lista: listo"; await sleep(800);
+    lap.hidden = true; box.mark([2, 3, 4]); F.busy = false; $("#lapBtn").disabled = false;
+    why("Una vuelta por contacto: en cada una, <code>contact</code> es el elemento de esa vuelta y se usa para armar <strong>un</strong> <code>&lt;app-contact-summary&gt;</code>. Es el mismo for…of de JavaScript, pero escribiendo HTML.", "ok");
+  });
+  renderTpl(); renderData(); paint(false);
+
+  /* =========================================================== @if */
+  const I = { st: "data", favs: { 1: true, 2: false, 3: false } };
+  const IFC = [{ id: 1, n: "Ana Gómez" }, { id: 2, n: "Leo Pérez" }, { id: 3, n: "Sofi Ruiz" }];
+  let boxIf;
+  function renderIf() {
+    boxIf = codeBox($("#tplIf"), `@if (contacts.isLoading()) {\n  <p>Cargando contactos…</p>\n} @else if (contacts.value().length === 0) {\n  <p>Todavía no tenés contactos</p>\n} @else {\n  @for (contact of contacts.value(); track contact.id) {\n    <p>\n      {{ contact.firstName }}\n      @if (contact.isFavorite) { <span>⭐</span> }\n    </p>\n  }\n}`);
+    const sc = $("#ifScreen"), dom = $("#dom");
+    const T = (t) => `<span class="tg">${esc(t)}</span>`;
+    if (I.st === "loading") {
+      boxIf.mark([1, 2]); boxIf.dim([3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+      sc.innerHTML = `<div class="loading"><div class="spin"></div>Cargando contactos…</div>`;
+      dom.innerHTML = `${T("<app-contactos>")}\n  ${T("<p>")}Cargando contactos…${T("</p>")}\n  <span class="cm">&lt;!--container--&gt;</span>\n${T("</app-contactos>")}`;
+      $("#ifWhy").className = "explain"; $("#ifWhy").innerHTML = "Mientras <code>isLoading()</code> es <code>true</code> entra en el primer bloque. Los otros dos <strong>no existen</strong> en la página: mirá el DOM, no están ni escondidos. (El <code>&lt;!--container--&gt;</code> es la marca que deja Angular para saber dónde poner las cosas cuando cambie la condición.)";
+    } else if (I.st === "empty") {
+      boxIf.mark([3, 4]); boxIf.dim([1, 2, 5, 6, 7, 8, 9, 10, 11, 12]);
+      sc.innerHTML = `<p class="empty">Todavía no tenés contactos</p>`;
+      dom.innerHTML = `${T("<app-contactos>")}\n  ${T("<p>")}Todavía no tenés contactos${T("</p>")}\n  <span class="cm">&lt;!--container--&gt;</span>\n${T("</app-contactos>")}`;
+      $("#ifWhy").className = "explain"; $("#ifWhy").innerHTML = "Ya no está cargando, pero la lista está vacía: la primera condición es falsa, la del <code>@else if</code> es verdadera. Como en JavaScript, entra en <strong>un solo</strong> bloque: el primero que cumpla.";
+    } else {
+      boxIf.mark([5, 6, 7, 8, 9, 10, 11, 12]); boxIf.dim([1, 2, 3, 4]);
+      sc.innerHTML = IFC.map(c => `<div class="crow" style="grid-template-columns:36px 1fr auto;margin-bottom:6px"><div class="av">${ini(c.n)}</div><div class="nm">${c.n}${I.favs[c.id] ? ' <span class="star">⭐</span>' : ""}</div><button class="btn" data-fav="${c.id}" style="padding:3px 10px;font-size:.85rem">${I.favs[c.id] ? "quitar ⭐" : "marcar ⭐"}</button></div>`).join("");
+      dom.innerHTML = `${T("<app-contactos>")}\n` + IFC.map(c => `  ${T("<p>")}${c.n}${I.favs[c.id] ? `\n    <span class="new">${T("<span>")}⭐${T("</span>")}</span>` : ""}\n    <span class="cm">&lt;!--container--&gt;</span>\n  ${T("</p>")}`).join("\n") + `\n${T("</app-contactos>")}`;
+      $("#ifWhy").className = "explain ok"; $("#ifWhy").innerHTML = "Entra en el <code>@else</code> y adentro hay un <code>@for</code> con otro <code>@if</code> por cada contacto. Tocá <strong>marcar ⭐</strong>: la estrella <strong>aparece y desaparece del DOM</strong> (no se esconde con CSS, deja de existir).";
+    }
+  }
+  bindSeg("#stSeg", (v) => { I.st = v; renderIf(); });
+  $("#ifScreen").addEventListener("click", (e) => { const b = e.target.closest("[data-fav]"); if (!b) return; I.favs[b.dataset.fav] = !I.favs[b.dataset.fav]; renderIf(); });
+  renderIf();
+
+  /* =========================================================== QUIZ */
+  const QUESTIONS = [
+    { prompt: "<code>contacts()</code> tiene 3 contactos. ¿Cuántas veces aparece <code>&lt;app-contact-summary&gt;</code> en la pantalla?", code: `@for (contact of contacts(); track contact.id) {\n  <app-contact-summary [contact]="contact" />\n}`, options: ["1", "3", "0", "4"], right: 1, why: "Una vez por cada elemento de la lista." },
+    { prompt: "La lista está vacía. ¿Qué se ve?", code: `@for (contact of contacts(); track contact.id) {\n  <app-contact-summary [contact]="contact" />\n} @empty {\n  <p>Sin contactos</p>\n}`, options: ["Nada", "Sin contactos", "Un error", "Un contacto vacío"], right: 1, why: "<code>@empty</code> se muestra cuando la lista no tiene elementos." },
+    { prompt: "¿Compila?", code: `@for (contact of contacts()) {\n  <p>{{ contact.firstName }}</p>\n}`, options: ["Sí", "No: falta el track"], right: 1, why: "En el <code>@for</code> el <code>track</code> es <strong>obligatorio</strong>: le dice a Angular cómo reconocer cada fila." },
+    { prompt: "Los contactos tienen <code>id</code>. ¿Qué track conviene?", options: ["track $index", "track contact.id", "track contact", "track true"], right: 1, why: "Con el id, Angular sabe qué fila es de quién aunque cambie el orden o se borre alguno, y no rehace las demás." },
+    { prompt: "¿Qué muestra?", code: `@for (n of ["a", "b", "c"]; track $index) {\n  <span>{{ $index }}</span>\n}`, options: ["1 2 3", "0 1 2", "a b c", "3"], right: 1, why: "<code>$index</code> empieza en 0, como en un array." },
+    { prompt: "<code>isLoading()</code> es <code>false</code> y la lista tiene 2 contactos. ¿Qué se ve?", code: `@if (isLoading()) {\n  <p>Cargando…</p>\n} @else if (contacts().length === 0) {\n  <p>Vacío</p>\n} @else {\n  <p>Hay {{ contacts().length }}</p>\n}`, options: ["Cargando…", "Vacío", "Hay 2", "Las tres cosas"], right: 2, why: "Las dos primeras condiciones son falsas: entra en el <code>@else</code>." },
+    { prompt: "Si la condición de un <code>@if</code> es falsa, el elemento de adentro…", options: ["Está en el DOM pero escondido", "No existe en el DOM", "Se ve gris", "Queda vacío"], right: 1, why: "<code>@if</code> agrega y saca elementos del DOM. Esconder con CSS (<code>[hidden]</code> o <code>display: none</code>) es otra cosa: ahí el elemento sigue estando." },
+    { prompt: "En proyectos viejos vas a ver <code>*ngFor=\"let c of contacts\"</code> y <code>*ngIf=\"cargando\"</code>. ¿Qué son?", options: ["Errores", "La sintaxis anterior de lo mismo: hoy se usa @for y @if", "Directivas para formularios", "Cosas de React"], right: 1, why: "Es la forma vieja (directivas estructurales). Desde Angular 17 se usa el control flow con <code>@</code>, que no hay que importar y es más rápido." },
+  ];
+  quiz($("#quiz"), { questions: QUESTIONS, shuffle: false, summary: "Para llevarse: <code>@for (x of lista(); track x.id)</code> repite el bloque una vez por elemento · el <code>track</code> es obligatorio y conviene el id · <code>@empty</code> para la lista vacía · <code>$index</code> empieza en 0 · <code>@if / @else if / @else</code> entra en un solo bloque y lo que no se cumple <strong>no existe</strong> en el DOM." });
+
+  bindSeg("#modeSeg", (m) => { $("#forView").hidden = m !== "for"; $("#ifView").hidden = m !== "if"; $("#gameView").hidden = m !== "game"; });
+})();
+</script>
+</body>
+</html>

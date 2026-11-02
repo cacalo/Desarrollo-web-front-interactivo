@@ -19,6 +19,7 @@ html-css/etiquetas-semanticas.html Armar la página por zonas, "¿Quién lee tu 
 html-css/selectores.html         Apuntar con selectores, "¿Qué se pinta?" y desafíos de escribir el selector
 html-css/propiedades.html       Perillas de propiedades (con herencia), "Igualá el diseño" y "¿Qué propiedad cambió?"
 html-css/modelo-caja.html       Capas de la caja, "El misterio del ancho" (box-sizing) y "¿Qué espacio es?"
+html-css/flex-grid.html         Flexbox vs Grid lado a lado (filas vs cuadrícula), propiedades para jugar y "¿Flex o grid?"
 js-ts/dom.html                  Buscar en el árbol del DOM, buscar y cambiar, y juego "¿Qué devuelve?"
 js-ts/eventos.html              Listeners y radar de eventos, input vs change vs keydown, "¿Qué evento uso?"
 js-ts/condicionales.html        Cascada de if/else if/switch (con break olvidado), ¿verdadero o falso?, "¿Qué se muestra?"
@@ -28,6 +29,7 @@ js-ts/laboratorio.html          20 retos de JavaScript con editor, vista en vivo
 js-ts/interfaces.html           El molde (interface Contact) revisando un objeto, "¿Cuándo te enterás?" (JS vs TS) y "¿Compila?"
 angular/componente.html         La Agenda en piezas (rayos X y árbol), un molde con muchas copias, estilos encapsulados
 angular/inputs.html             Datos que bajan con input ([contact]="c") y avisos que suben con output
+angular/control-flow.html       @for (track id vs $index, @empty, $index, vuelta por vuelta) y @if/@else (qué existe en el DOM)
 angular/senales.html            Red de señales del AuthService (signal, computed, effect) y memoria vs pantalla
 angular/router.html             El Router compara la URL con app.routes.ts, :id, orden de rutas y routerLink
 angular/jwt.html                Anatomía del token (leer sí, falsificar no) y el viaje del token hasta que vence
